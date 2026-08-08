@@ -1,28 +1,32 @@
+/* ============================================================
+   QuantumGuard AI — Crypto Agility Page Styles (§32)
+   ============================================================ */
+
 .agility-page {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  gap: var(--space-5);
 }
 
-.ap-header {
+.agility-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--space-6);
-}
-
-.aph-left {
-  display: flex;
-  align-items: flex-start;
   gap: var(--space-4);
 }
 
-.aph-icon {
+.ah-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.ah-icon-container {
   width: 48px;
   height: 48px;
-  background: rgba(20, 184, 166, 0.1);
-  color: var(--accent-teal);
-  border: 1px solid rgba(20, 184, 166, 0.3);
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+  border: 1px solid rgba(59, 130, 246, 0.3);
   border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
@@ -30,107 +34,244 @@
   flex-shrink: 0;
 }
 
-.aph-left h2 {
-  font-size: 1.5rem;
-  margin-bottom: 4px;
-}
+.ah-left h2 { font-size: 1.5rem; margin-bottom: 4px; }
+.ah-left p  { color: var(--text-secondary); font-size: 0.875rem; }
 
-.aph-left p {
-  color: var(--text-secondary);
-  max-width: 600px;
-}
-
-.agility-grid {
+/* ── Top Section (Score & Breakdown) ───────────────────────── */
+.agility-top-section {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-6);
+  grid-template-columns: 1fr 1.5fr;
+  gap: var(--space-4);
 }
 
-.agility-main-card {
+.agility-main-score {
   display: flex;
-  align-items: center;
-  gap: var(--space-6);
-}
-
-.agility-gauge {
-  position: relative;
-  width: 140px;
-  height: 140px;
-}
-
-.ag-content {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: var(--space-5);
+  padding: var(--space-6);
 }
 
-.ag-score {
-  font-size: 2.5rem;
-  font-weight: 800;
+.ams-circle {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 8px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  font-weight: 900;
   font-family: var(--font-mono);
-  line-height: 1;
+  background: var(--bg-body);
+  flex-shrink: 0;
 }
 
-.ag-label {
-  font-size: 0.65rem;
-  color: var(--text-tertiary);
-  margin-top: 4px;
-  letter-spacing: 0.05em;
-}
-
-.agility-desc h4 {
+.ams-labels h3 {
   font-size: 1.1rem;
   margin-bottom: 8px;
 }
 
-.agility-desc p {
+.ams-labels p {
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   line-height: 1.5;
 }
 
-.af-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  margin-top: var(--space-4);
+.agility-breakdown {
+  padding: var(--space-5);
 }
 
-.af-item {
+.agility-breakdown h3 {
+  font-size: 1rem;
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.ab-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ab-item {
   display: flex;
   align-items: center;
+  gap: 16px;
+}
+
+.ab-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 220px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.ab-icon {
+  color: var(--text-tertiary);
+}
+
+.ab-track {
+  flex: 1;
+  height: 8px;
+  background: var(--bg-elevated);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.ab-fill {
+  height: 100%;
+  border-radius: 4px;
+}
+
+.ab-value {
+  width: 40px;
+  text-align: right;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
+
+/* ── Insights Section ──────────────────────────────────────── */
+.agility-insights-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: var(--space-4);
-  padding: var(--space-3);
+}
+
+.ai-card {
+  padding: var(--space-5);
+}
+
+.ai-card h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1rem;
+  margin-bottom: 12px;
+}
+
+.ai-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ai-card li {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  position: relative;
+  padding-left: 16px;
+  line-height: 1.5;
+}
+
+.ai-card li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: var(--text-tertiary);
+}
+
+.empty-li {
+  color: var(--text-tertiary) !important;
+  font-style: italic;
+}
+
+.empty-li::before { display: none; }
+
+/* ── Evidence Section ──────────────────────────────────────── */
+.agility-evidence-section h3 {
+  font-size: 1.1rem;
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.evidence-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--space-4);
+}
+
+.evidence-card {
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  border-left: 3px solid var(--border-accent);
+}
+
+.ec-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.ec-category {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  letter-spacing: 0.05em;
+}
+
+.ec-title {
+  font-size: 0.95rem;
+  margin-top: 2px;
+}
+
+.ec-score {
+  font-size: 1.1rem;
+  font-weight: 800;
+  font-family: var(--font-mono);
+}
+
+.ec-desc {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.ec-code-box {
   background: var(--bg-elevated);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-top: auto;
 }
 
-.af-icon {
-  color: var(--text-tertiary);
-  background: rgba(255, 255, 255, 0.05);
-  padding: 8px;
-  border-radius: 50%;
-}
-
-.af-text {
+.ec-code-header {
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.2);
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
-.af-name {
-  font-weight: 600;
-  font-size: 0.9rem;
+.ec-code-box code {
+  display: block;
+  padding: 8px;
+  font-size: 0.75rem;
+  color: #f59e0b;
+  overflow-x: auto;
+  white-space: pre-wrap;
 }
 
-.af-val {
-  font-size: 0.8rem;
-  color: var(--status-critical);
-}
-
+/* ── Responsive ────────────────────────────────────────────── */
 @media (max-width: 900px) {
-  .agility-grid { grid-template-columns: 1fr; }
+  .agility-top-section { grid-template-columns: 1fr; }
+  .agility-insights-section { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 600px) {
+  .ab-label { width: 140px; }
+  .agility-main-score { flex-direction: column; text-align: center; }
 }
