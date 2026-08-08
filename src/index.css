@@ -693,3 +693,55 @@ select.input {
 @media (max-width: 640px) {
   .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
 }
+
+/* ── Global Quantum Status Badges ───────────────────────────── */
+.quantum-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 1px solid;
+}
+
+.qb-vulnerable        { background: rgba(249, 115, 22, 0.12); color: #f97316; border-color: rgba(249, 115, 22, 0.3); }
+.qb-classical-weak    { background: rgba(239, 68, 68, 0.12);  color: #ef4444; border-color: rgba(239, 68, 68, 0.3); }
+.qb-adequate          { background: rgba(59, 130, 246, 0.12); color: #3b82f6; border-color: rgba(59, 130, 246, 0.3); }
+.qb-quantum-resistant { background: rgba(34, 197, 94, 0.12);  color: #22c55e; border-color: rgba(34, 197, 94, 0.3); }
+.qb-unknown           { background: rgba(100, 116, 139, 0.12); color: #64748b; border-color: rgba(100, 116, 139, 0.3); }
+
+/* ── Global Status Pills (remediation status) ───────────────── */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: var(--radius-full);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  border: 1px solid;
+}
+
+.status-open          { background: rgba(239, 68, 68, 0.1);  color: #ef4444; border-color: rgba(239, 68, 68, 0.25); }
+.status-in-progress   { background: rgba(234, 179, 8, 0.1);  color: #eab308; border-color: rgba(234, 179, 8, 0.25); }
+.status-remediated    { background: rgba(34, 197, 94, 0.1);  color: #22c55e; border-color: rgba(34, 197, 94, 0.25); }
+.status-accepted-risk { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; border-color: rgba(139, 92, 246, 0.25); }
+.status-wont-fix      { background: rgba(100, 116, 139, 0.1); color: #64748b; border-color: rgba(100, 116, 139, 0.25); }
+.status-todo          { background: rgba(239, 68, 68, 0.1);  color: #ef4444; border-color: rgba(239, 68, 68, 0.25); }
+.status-done          { background: rgba(34, 197, 94, 0.1);  color: #22c55e; border-color: rgba(34, 197, 94, 0.25); }
+
+/* ── badge-cyan (for PQC recommendations) ──────────────────── */
+.badge-cyan {
+  background: rgba(0, 212, 255, 0.1);
+  color: #00d4ff;
+  border: 1px solid rgba(0, 212, 255, 0.25);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+

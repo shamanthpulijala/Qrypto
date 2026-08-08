@@ -1,0 +1,216 @@
+/* ============================================================
+   QuantumGuard AI — Reports Page Styles
+   ============================================================ */
+
+.reports-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+/* ── Header ──────────────────────────────────────────────── */
+.reports-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.rh-left {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+}
+
+.rh-icon {
+  width: 48px;
+  height: 48px;
+  background: rgba(139, 92, 246, 0.1);
+  color: #8b5cf6;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.rh-left h2 {
+  font-size: 1.5rem;
+  margin-bottom: 4px;
+}
+
+.rh-left p {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+/* ── Section ──────────────────────────────────────────────── */
+.report-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.section-heading {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-default);
+  padding-bottom: var(--space-2);
+}
+
+.section-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  border-bottom: 1px solid var(--border-default);
+  padding-bottom: var(--space-2);
+}
+
+.section-heading-row .section-heading {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.compliance-summary {
+  display: flex;
+  gap: var(--space-4);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+/* ── Executive Summary Grid ──────────────────────────────── */
+.exec-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4);
+}
+
+.exec-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  transition: border-color var(--transition-fast);
+}
+
+.exec-card:hover {
+  border-color: var(--border-accent);
+}
+
+.readiness-exec {
+  border-width: 1.5px;
+}
+
+.exec-val {
+  font-size: 2.5rem;
+  font-weight: 900;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.exec-unit {
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.exec-lbl {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  letter-spacing: 0.05em;
+  margin-top: 4px;
+}
+
+.exec-sub {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+/* ── Status Badge ────────────────────────────────────────── */
+.report-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ── Compliance Table ────────────────────────────────────── */
+.compliance-table-wrapper {
+  overflow-x: auto;
+}
+
+/* ── Migration Summary ───────────────────────────────────── */
+.migration-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-4);
+}
+
+.mig-stat-card {
+  text-align: center;
+  padding: var(--space-5);
+}
+
+.mig-stat-val {
+  display: block;
+  font-size: 2.5rem;
+  font-weight: 900;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.mig-stat-lbl {
+  display: block;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  letter-spacing: 0.05em;
+}
+
+/* ── Disclaimer ──────────────────────────────────────────── */
+.report-disclaimer {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  font-size: 0.78rem;
+  color: var(--text-tertiary);
+  line-height: 1.6;
+  margin-top: var(--space-2);
+}
+
+.report-disclaimer svg {
+  color: #64748b;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .exec-summary-grid { grid-template-columns: repeat(2, 1fr); }
+  .migration-summary-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 600px) {
+  .exec-summary-grid { grid-template-columns: 1fr; }
+  .migration-summary-grid { grid-template-columns: 1fr; }
+  .reports-header { flex-direction: column; }
+}

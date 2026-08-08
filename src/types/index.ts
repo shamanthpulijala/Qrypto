@@ -246,8 +246,28 @@ export interface HNDLAssessment {
   affectedFindings: string[];
 }
 
+export interface CryptoAgilityBreakdown {
+  algorithmAbstraction: number;
+  configurationCentralization: number;
+  hardcodedAlgorithms: number;
+  migrationFlexibility: number;
+  dependencyManagement: number;
+}
+
+export interface AgilityEvidenceItem {
+  scoreName: string;
+  scoreValue: number;
+  category: string;
+  description: string;
+  evidenceSnippet: string;
+  filePath: string;
+  lineNumber: number;
+}
+
 export interface CryptoAgilityScore {
-  score: number; // 0-100
+  score: number; // 0-100 (e.g. 67 / 100)
+  breakdown: CryptoAgilityBreakdown;
+  evidence: AgilityEvidenceItem[];
   positives: string[];
   negatives: string[];
   hardcodedReferences: number;

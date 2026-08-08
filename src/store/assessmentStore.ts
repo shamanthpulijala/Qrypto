@@ -114,6 +114,7 @@ interface AppState {
   isScanning: boolean;
   scanProgress: number;
   scanLog: string[];
+  scanError: string | null;
 
   // Actions
   loadDemoAssessment: () => void;
@@ -152,6 +153,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   isScanning: false,
   scanProgress: 0,
   scanLog: [],
+  scanError: null,
 
   loadDemoAssessment: () => {
     const assessment = createDemoAssessment();
@@ -256,8 +258,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   }),
 
   startScan: async (files) => {
-    const { runScanPipeline } = await import('../engine/pipeline');
-    set({ isScanning: true, scanProgress: 0, scanLog: ['Initializing scanning pipeline...'] });
+    try {
+      const { runScanPipeline } = await import('../engine/pipeline');
+      set({ isScanning: true, scanProgress: 0, scanLog: ['Initializing scanning pipeline...'], scanError: null });
 
     const pipelineFiles = files.map(f => ({ path: f.path, content: f.content }));
     const result = await runScanPipeline(pipelineFiles, {
@@ -307,11 +310,18 @@ export const useAppStore = create<AppState>((set, get) => ({
       },
     };
 
-    injectDemoData(
-      { id: assessment.id, name: assessment.name, description: 'Uploaded Repo Scan', repository: 'uploaded/repo', language: 'unknown', owner: 'user', createdAt: assessment.createdAt },
-      result.findings, services, tasks
-    );
+      injectDemoData(
+        { id: assessment.id, name: assessment.name, description: 'Uploaded Repo Scan', repository: 'uploaded/repo', language: 'unknown', owner: 'user', createdAt: assessment.createdAt },
+        result.findings, services, tasks
+      );
 
-    set({ isScanning: false, scanProgress: 100, assessment, readinessBreakdown: result.readinessIndex });
+      if (result.errors && result.errors.length > 0) {
+        set({ isScanning: false, scanProgress: 100, assessment, readinessBreakdown: result.readinessIndex, scanError: `Scan completed with errors: ${result.errors.join(', ')}` });
+      } else {
+        set({ isScanning: false, scanProgress: 100, assessment, readinessBreakdown: result.readinessIndex });
+      }
+    } catch (err: any) {
+      set({ isScanning: false, scanError: err.message || 'An unexpected error occurred during the scan.' });
+    }
   },
 }));

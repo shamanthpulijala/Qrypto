@@ -31,6 +31,125 @@
   flex-shrink: 0;
 }
 
+/* ── Progress Badge Header ───────────────────────────────────── */
+.migration-progress-badge {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  padding: 8px 16px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.mpb-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(0, 212, 255, 0.1);
+  border: 2px solid var(--accent-cyan);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mpb-val {
+  font-size: 0.9rem;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  color: var(--accent-cyan);
+}
+
+.mpb-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.mpb-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.mpb-sub {
+  font-size: 0.72rem;
+  color: var(--text-tertiary);
+}
+
+/* ── Tasks Table Extensions ─────────────────────────────────── */
+.task-checkbox {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.task-title {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 0.88rem;
+}
+
+.task-title.line-through {
+  text-decoration: line-through;
+  color: var(--text-tertiary);
+}
+
+.task-desc {
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+  max-width: 320px;
+}
+
+.task-owner {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.task-effort {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  font-family: var(--font-mono);
+  color: var(--accent-cyan);
+  white-space: nowrap;
+}
+
+.task-deps {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.dep-tag {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+}
+
+.clickable-pill {
+  cursor: pointer;
+  transition: transform var(--transition-fast);
+}
+
+.clickable-pill:hover {
+  transform: scale(1.05);
+}
+
 .mph-left h2 {
   font-size: 1.5rem;
   margin-bottom: 4px;
@@ -100,10 +219,163 @@
 }
 
 .phase-num {
-  font-size: 1.25rem;
+  font-size: 0.7rem;
   font-weight: 800;
-  color: var(--accent-cyan);
+  color: #fff;
   white-space: nowrap;
+  padding: 4px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ── §24 Before / After Migration Panel ──────────────────────── */
+.before-after-panel {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 0;
+  margin-bottom: var(--space-6);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  background: var(--bg-card);
+}
+
+.bap-block {
+  padding: var(--space-5) var(--space-6);
+}
+
+.bap-before {
+  background: rgba(239, 68, 68, 0.04);
+  border-right: 1px solid var(--border-default);
+}
+
+.bap-after {
+  background: rgba(34, 197, 94, 0.04);
+  border-left: 1px solid var(--border-default);
+}
+
+.bap-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-4);
+}
+
+.bap-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.before-indicator {
+  background: #ef4444;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.6);
+}
+
+.after-indicator {
+  background: #22c55e;
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.6);
+}
+
+.bap-metrics {
+  display: flex;
+  gap: var(--space-6);
+  flex-wrap: wrap;
+}
+
+.bap-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bap-metric-val {
+  font-size: 2rem;
+  font-weight: 900;
+  font-family: var(--font-mono);
+  line-height: 1;
+}
+
+.bap-metric-unit {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.bap-metric-lbl {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  letter-spacing: 0.05em;
+}
+
+.bap-estimate-notice {
+  margin-top: var(--space-4);
+  font-size: 0.72rem;
+  color: var(--text-tertiary);
+  background: rgba(34, 197, 94, 0.06);
+  border: 1px solid rgba(34, 197, 94, 0.15);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-style: italic;
+  max-width: 320px;
+}
+
+.bap-arrow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4) var(--space-5);
+  gap: var(--space-2);
+  background: var(--bg-elevated);
+  min-width: 140px;
+  border-left: 1px solid var(--border-default);
+  border-right: 1px solid var(--border-default);
+}
+
+.bap-arrow-line {
+  display: none;
+}
+
+.bap-arrow-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: #00d4ff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.bap-arrow-tasks {
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .before-after-panel {
+    grid-template-columns: 1fr;
+  }
+  .bap-before, .bap-after {
+    border: none;
+    border-bottom: 1px solid var(--border-default);
+  }
+  .bap-arrow {
+    flex-direction: row;
+    padding: var(--space-3);
+    min-width: unset;
+  }
 }
 
 .phase-title {

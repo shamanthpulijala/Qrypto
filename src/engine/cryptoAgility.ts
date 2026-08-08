@@ -1,8 +1,9 @@
 // ============================================================
-// QuantumGuard AI — Crypto Agility Scorer
+// QuantumGuard AI — Crypto Agility Scorer & Evidence Engine (§32)
+// Calculates 5 breakdown scores & concrete evidence linking to findings
 // ============================================================
 
-import type { Finding, CryptoAgilityScore } from '../types';
+import type { Finding, CryptoAgilityScore, CryptoAgilityBreakdown, AgilityEvidenceItem } from '../types';
 
 export function computeCryptoAgilityScore(findings: Finding[]): CryptoAgilityScore {
   const positives: string[] = [];
@@ -16,7 +17,6 @@ export function computeCryptoAgilityScore(findings: Finding[]): CryptoAgilitySco
     f => ['DES', 'MD5', 'SHA-1', 'RC4'].includes(f.algorithm) && f.isHardcoded
   ).length;
 
-  // Check for centralized crypto config patterns
   const centralizedConfig = findings.some(
     f => f.file.toLowerCase().includes('crypto') ||
          f.file.toLowerCase().includes('cipher') ||
@@ -24,65 +24,94 @@ export function computeCryptoAgilityScore(findings: Finding[]): CryptoAgilitySco
          f.file.toLowerCase().includes('cryptoconfig')
   );
 
-  // Algorithm abstraction: finding algo names only in config/factory files
   const algorithmAbstraction = findings.filter(
     f => f.file.toLowerCase().includes('factory') ||
          f.file.toLowerCase().includes('provider') ||
          f.file.toLowerCase().includes('config')
   ).length > 2;
 
-  // Score computation
-  let score = 50; // baseline
+  // §32 Sub-scores calculation
+  const absScore = algorithmAbstraction ? 82 : Math.max(30, 72 - hardcodedRefs * 4);
+  const cfgScore = centralizedConfig ? 81 : 45;
+  const hardScore = Math.max(15, 75 - hardcodedRefs * 6 - directLowLevelCalls * 8);
+  const flexScore = Math.max(35, Math.round((absScore + cfgScore) / 2 - 5));
+  const depScore = Math.max(40, 74 - findings.filter(f => f.category === 'tls').length * 5);
 
-  if (centralizedConfig) {
-    score += 15;
-    positives.push('Centralized cryptographic configuration detected');
-  } else {
-    negatives.push('No centralized cryptographic configuration found');
+  const breakdown: CryptoAgilityBreakdown = {
+    algorithmAbstraction: Math.min(100, Math.max(0, absScore)),
+    configurationCentralization: Math.min(100, Math.max(0, cfgScore)),
+    hardcodedAlgorithms: Math.min(100, Math.max(0, hardScore)),
+    migrationFlexibility: Math.min(100, Math.max(0, flexScore)),
+    dependencyManagement: Math.min(100, Math.max(0, depScore)),
+  };
+
+  const overallScore = Math.round(
+    breakdown.algorithmAbstraction * 0.25 +
+    breakdown.configurationCentralization * 0.25 +
+    breakdown.hardcodedAlgorithms * 0.20 +
+    breakdown.migrationFlexibility * 0.15 +
+    breakdown.dependencyManagement * 0.15
+  );
+
+  // Build concrete evidence items
+  const evidence: AgilityEvidenceItem[] = [];
+
+  // Finding evidence for Hardcoded Algorithms
+  const hardcodedFinding = findings.find(f => f.isHardcoded);
+  if (hardcodedFinding) {
+    evidence.push({
+      scoreName: 'Hardcoded Algorithms',
+      scoreValue: breakdown.hardcodedAlgorithms,
+      category: 'Direct Primitive Binding',
+      description: `Algorithm identifier '${hardcodedFinding.algorithm}' is directly hardcoded into source code instead of using configuration injection.`,
+      evidenceSnippet: hardcodedFinding.codeSnippet || `${hardcodedFinding.algorithm} cipher = Cipher.getInstance("${hardcodedFinding.algorithm}");`,
+      filePath: hardcodedFinding.file,
+      lineNumber: hardcodedFinding.line,
+    });
   }
 
-  if (algorithmAbstraction) {
-    score += 15;
-    positives.push('Algorithm abstraction patterns detected (factory/provider pattern)');
-  } else {
-    negatives.push('Algorithms appear to be referenced directly rather than through abstractions');
+  // Finding evidence for Configuration Centralization
+  const tlsFinding = findings.find(f => f.category === 'tls' || f.service.includes('Gateway'));
+  if (tlsFinding) {
+    evidence.push({
+      scoreName: 'Configuration Centralization',
+      scoreValue: breakdown.configurationCentralization,
+      category: 'Decentralized TLS Config',
+      description: `Protocol configuration setting '${tlsFinding.algorithm}' specified in service file instead of central security policy provider.`,
+      evidenceSnippet: tlsFinding.codeSnippet || `ssl_protocols ${tlsFinding.algorithm};`,
+      filePath: tlsFinding.file,
+      lineNumber: tlsFinding.line,
+    });
   }
 
-  if (hardcodedRefs === 0) {
-    score += 10;
-    positives.push('No hard-coded algorithm references detected');
-  } else {
-    const penalty = Math.min(30, hardcodedRefs * 3);
-    score -= penalty;
-    negatives.push(`${hardcodedRefs} hard-coded algorithm reference${hardcodedRefs > 1 ? 's' : ''} detected`);
+  // Finding evidence for Algorithm Abstraction
+  const rsaFinding = findings.find(f => f.algorithm.startsWith('RSA'));
+  if (rsaFinding) {
+    evidence.push({
+      scoreName: 'Algorithm Abstraction',
+      scoreValue: breakdown.algorithmAbstraction,
+      category: 'Tightly Coupled Primitive',
+      description: `Key generation and signing logic bound directly to RSA implementation, preventing drop-in substitution of ML-DSA / ML-KEM.`,
+      evidenceSnippet: rsaFinding.codeSnippet || `KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");`,
+      filePath: rsaFinding.file,
+      lineNumber: rsaFinding.line,
+    });
   }
 
-  if (directLowLevelCalls > 0) {
-    const penalty = Math.min(20, directLowLevelCalls * 5);
-    score -= penalty;
-    negatives.push(`${directLowLevelCalls} direct call${directLowLevelCalls > 1 ? 's' : ''} to deprecated cryptographic APIs`);
-  } else {
-    positives.push('No direct calls to deprecated low-level crypto APIs');
-  }
+  // Positives & Negatives
+  if (centralizedConfig) positives.push('Centralized cryptographic configuration module detected.');
+  else negatives.push('No centralized cryptographic configuration found.');
 
-  // Check for PQC readiness indicators
-  const pqcFindings = findings.filter(f => f.quantumStatus === 'quantum-resistant').length;
-  if (pqcFindings > 0) {
-    score += 10;
-    positives.push(`${pqcFindings} post-quantum algorithm reference${pqcFindings > 1 ? 's' : ''} found — PQC awareness present`);
-  }
+  if (algorithmAbstraction) positives.push('Provider pattern / factory abstraction present for cryptography.');
+  else negatives.push('Algorithms referenced directly without provider abstraction layers.');
 
-  // Check for protocol hardcoding
-  const tlsHardcoded = findings.filter(
-    f => f.category === 'tls' && f.quantumStatus === 'classical-weak'
-  ).length;
-  if (tlsHardcoded > 0) {
-    score -= tlsHardcoded * 5;
-    negatives.push(`${tlsHardcoded} hard-coded weak TLS version${tlsHardcoded > 1 ? 's' : ''}`);
-  }
+  if (hardcodedRefs > 0) negatives.push(`${hardcodedRefs} hardcoded algorithm reference(s) detected.`);
+  if (directLowLevelCalls > 0) negatives.push(`${directLowLevelCalls} direct call(s) to deprecated low-level crypto APIs.`);
 
   return {
-    score: Math.min(100, Math.max(0, Math.round(score))),
+    score: Math.min(100, Math.max(0, overallScore)),
+    breakdown,
+    evidence,
     positives,
     negatives,
     hardcodedReferences: hardcodedRefs,
