@@ -1,0 +1,240 @@
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+/* ── Top Row ────────────────────────────────────────────────── */
+.dashboard-top {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: var(--space-5);
+}
+
+/* Readiness Card */
+.readiness-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.readiness-gauge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.gauge-container {
+  position: relative;
+}
+
+.gauge-svg {
+  width: 180px;
+  height: 180px;
+}
+
+/* Breakdown */
+.readiness-breakdown {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.rb-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.rb-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  min-width: 130px;
+}
+
+.rb-bar {
+  flex: 1;
+  height: 5px;
+  background: var(--border-subtle);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.rb-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  transition: width 1.2s ease;
+}
+
+.rb-value {
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  min-width: 40px;
+  text-align: right;
+}
+
+/* Stats Grid */
+.dashboard-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: var(--space-3);
+}
+
+.stat-card {
+  position: relative;
+  cursor: pointer;
+}
+
+.stat-icon {
+  margin-bottom: var(--space-2);
+  color: var(--text-tertiary);
+}
+
+.stat-action {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  color: var(--text-tertiary);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.stat-card:hover .stat-action { opacity: 1; }
+
+/* ── Q-Day Section ──────────────────────────────────────────── */
+.qday-section {
+  background: linear-gradient(135deg, #0d0a0a, #1a1010);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+}
+
+.qday-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.qday-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.qday-desc {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  max-width: 600px;
+}
+
+.qday-results {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid rgba(239, 68, 68, 0.15);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.qday-impact-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-4);
+}
+
+.qday-impact-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.qi-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+}
+
+.qi-value.danger { color: var(--status-critical); }
+.qi-value.warn   { color: var(--status-medium); }
+
+.qi-label {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+}
+
+.qday-narrative {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  padding: var(--space-3);
+  background: rgba(239, 68, 68, 0.05);
+  border-radius: var(--radius-md);
+  border-left: 3px solid rgba(239, 68, 68, 0.4);
+}
+
+/* ── Charts Row ─────────────────────────────────────────────── */
+.charts-row {
+  display: grid;
+  grid-template-columns: 220px 1fr 240px;
+  gap: var(--space-5);
+}
+
+.chart-card { }
+.chart-card.wide { }
+
+/* Service Risk */
+.service-risk-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.srv-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.srv-name {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  min-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.srv-bar-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.srv-score {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 700;
+  min-width: 30px;
+  text-align: right;
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 1200px) {
+  .dashboard-top { grid-template-columns: 1fr; }
+  .dashboard-stats { grid-template-columns: repeat(3, 1fr); }
+  .charts-row { grid-template-columns: 1fr 1fr; }
+  .qday-impact-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 800px) {
+  .dashboard-stats { grid-template-columns: repeat(2, 1fr); }
+  .charts-row { grid-template-columns: 1fr; }
+}

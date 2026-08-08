@@ -1,0 +1,234 @@
+.migration-planner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.mp-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: var(--space-6);
+  gap: var(--space-4);
+}
+
+.mph-left {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+}
+
+.mph-icon {
+  width: 48px;
+  height: 48px;
+  background: rgba(34, 197, 94, 0.1);
+  color: var(--status-low);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.mph-left h2 {
+  font-size: 1.5rem;
+  margin-bottom: 4px;
+}
+
+.mph-left p {
+  color: var(--text-secondary);
+  max-width: 600px;
+}
+
+.qday-badge-warning {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: var(--status-critical);
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  font-weight: 600;
+  max-width: 300px;
+}
+
+/* ── Layout ────────────────────────────────────────────────── */
+.mp-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: var(--space-6);
+  align-items: start;
+}
+
+/* ── Timeline Phases ───────────────────────────────────────── */
+.roadmap-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.phase-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: all var(--transition-normal);
+}
+
+.phase-card:hover {
+  border-color: var(--border-accent);
+}
+
+.phase-card.expanded {
+  border-color: var(--border-accent);
+  box-shadow: 0 4px 20px rgba(0, 212, 255, 0.05);
+}
+
+.phase-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-4) var(--space-5);
+  cursor: pointer;
+  background: var(--bg-elevated);
+}
+
+.phase-h-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.phase-num {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--accent-cyan);
+  white-space: nowrap;
+}
+
+.phase-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.phase-desc {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.phase-h-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  color: var(--text-tertiary);
+}
+
+.phase-metrics {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.pm-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.pm-val {
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+}
+
+.phase-body {
+  padding: var(--space-4);
+  border-top: 1px solid var(--border-default);
+  background: var(--bg-base);
+}
+
+/* ── Sidebar ───────────────────────────────────────────────── */
+.mp-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.info-card-pqc {
+  background: rgba(0, 212, 255, 0.03);
+  border-color: rgba(0, 212, 255, 0.15);
+}
+
+.ic-title {
+  color: var(--accent-cyan);
+  margin-bottom: var(--space-4);
+  font-size: 1rem;
+  border-bottom: 1px solid rgba(0, 212, 255, 0.15);
+  padding-bottom: var(--space-2);
+}
+
+.ic-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.ic-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ic-name {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+
+.ic-desc {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.metrics-card h4 {
+  margin-bottom: var(--space-4);
+  font-size: 1rem;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+  text-align: center;
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-elevated);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
+
+.metric-val {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+}
+
+.metric-lbl {
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+@media (max-width: 1100px) {
+  .mp-layout { grid-template-columns: 1fr; }
+  .phase-h-right { gap: var(--space-4); }
+}

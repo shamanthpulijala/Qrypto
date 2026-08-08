@@ -1,0 +1,136 @@
+.agility-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.ap-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: var(--space-6);
+}
+
+.aph-left {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+}
+
+.aph-icon {
+  width: 48px;
+  height: 48px;
+  background: rgba(20, 184, 166, 0.1);
+  color: var(--accent-teal);
+  border: 1px solid rgba(20, 184, 166, 0.3);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.aph-left h2 {
+  font-size: 1.5rem;
+  margin-bottom: 4px;
+}
+
+.aph-left p {
+  color: var(--text-secondary);
+  max-width: 600px;
+}
+
+.agility-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-6);
+}
+
+.agility-main-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+}
+
+.agility-gauge {
+  position: relative;
+  width: 140px;
+  height: 140px;
+}
+
+.ag-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.ag-score {
+  font-size: 2.5rem;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  line-height: 1;
+}
+
+.ag-label {
+  font-size: 0.65rem;
+  color: var(--text-tertiary);
+  margin-top: 4px;
+  letter-spacing: 0.05em;
+}
+
+.agility-desc h4 {
+  font-size: 1.1rem;
+  margin-bottom: 8px;
+}
+
+.agility-desc p {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.af-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.af-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.af-icon {
+  color: var(--text-tertiary);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 8px;
+  border-radius: 50%;
+}
+
+.af-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.af-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.af-val {
+  font-size: 0.8rem;
+  color: var(--status-critical);
+}
+
+@media (max-width: 900px) {
+  .agility-grid { grid-template-columns: 1fr; }
+}
