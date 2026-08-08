@@ -3,99 +3,13 @@
 // Deterministic scanner — source of truth, no LLM involved
 // ============================================================
 
-import type { Finding, Language, AlgorithmCategory, QuantumStatus, Severity } from '../types';
+import type { Finding, Language, AlgorithmCategory, QuantumStatus, Severity, ClassicalStatus } from '../types';
 import { computeRiskScore } from './riskEngine';
 
-// ─── Pattern Library ────────────────────────────────────────
+import { ALL_PATTERNS } from './detectors';
 
-interface CryptoPattern {
-  regex: RegExp;
-  algorithm: string;
-  category: AlgorithmCategory;
-  quantumStatus: QuantumStatus;
-  baseSeverity: Severity;
-  usage: string;
-  keySize?: number;
-  languages?: Language[];
-  confidence: number;
-}
+const PATTERNS = ALL_PATTERNS;
 
-const PATTERNS: CryptoPattern[] = [
-  // ── Public-Key Cryptography ──────────────────────────────
-
-  // RSA variants
-  { regex: /RSA[_-]?(?:PSS|PKCS|OAEP)?[-_]?(4096)/gi, algorithm: 'RSA', category: 'public-key', quantumStatus: 'vulnerable', baseSeverity: 'high', usage: 'public-key cryptography', keySize: 4096, confidence: 0.97 },
-  { regex: /RSA[_-]?(?:PSS|PKCS|OAEP)?[-_]?(3072)/gi, algorithm: 'RSA', category: 'public-key', quantumStatus: 'vulnerable', baseSeverity: 'high', usage: 'public-key cryptography', keySize: 3072, confidence: 0.97 },
-  { regex: /RSA[_-]?(?:PSS|PKCS|OAEP)?[-_]?(2048)/gi, algorithm: 'RSA', category: 'public-key', quantumStatus: 'vulnerable', baseSeverity: 'high', usage: 'public-key cryptography', keySize: 2048, confidence: 0.97 },
-  { regex: /RSA[_-]?(?:PSS|PKCS|OAEP)?[-_]?(1024)/gi, algorithm: 'RSA', category: 'public-key', quantumStatus: 'vulnerable', baseSeverity: 'critical', usage: 'public-key cryptography (weak key size)', keySize: 1024, confidence: 0.99 },
-  { regex: /["']RSA["']/g, algorithm: 'RSA', category: 'public-key', quantumStatus: 'vulnerable', baseSeverity: 'high', usage: 'public-key cryptography', confidence: 0.90 },
-  { regex: /generate_private_key\s*\(\s*RSA\b/g, algorithm: 'RSA', category: 'public-key', quantumStatus: 'vulnerable', baseSeverity: 'high', usage: 'key generation', confidence: 0.95 },
-  { regex: /KeyPairGenerator\.getInstance\s*\(\s*["']RSA["']/g, algorithm: 'RSA', category: 'public-key', quantumStatus: 'vulnerable', baseSeverity: 'high', usage: 'key generation', languages: ['java'], confidence: 0.97 },
-  { regex: /crypto\.createSign\s*\(\s*["']RSA-/g, algorithm: 'RSA', category: 'signature', quantumStatus: 'vulnerable', baseSeverity: 'high', usage: 'digital signature', languages: ['javascript', 'typescript'], confidence: 0.97 },
-  { regex: /rsa\.encrypt|rsa\.decrypt|rsa\.sign|rsa\.verify/gi, algorithm: 'RSA', category: 'public-key', quantumStatus: 'vulnerable', baseSeverity: 'high', usage: 'public-key operation', confidence: 0.93 },
-
-  // ECDSA / ECDH / ECC
-  { regex: /["']ECDSA["']/g, algorithm: 'ECDSA', category: 'signature', quantumStatus: 'vulnerable', baseSeverity: 'high', usage: 'digital signature', confidence: 0.95 },
-  { regex: /["']ECDH["']/g, algorithm: 'ECDH', category: 'key-exchange', quantumStatus: 'vulnerable', baseSeverity: 'high', usage: 'key exchange', confidence: 0.95 },
-  { regex: /ec\.ECDH|ECDH\(\)|ecdh\.generate/gi, algorithm: 'ECDH', category: 'key-exchange', quantumStatus: 'vulnerable', baseSeverity: 'high', usage: 'key exchange', confidence: 0.95 },
-  { regex: /secp256r1|prime256v1|secp384r1|P-256|P-384|P-521/gi, algorithm: 'ECC', category: 'public-key', quantumStatus: 'vulnerable', baseSeverity: 'high', usage: 'elliptic curve', confidence: 0.94 },
-  { regex: /curve25519|ed25519|x25519/gi, algorithm: 'EdDSA/X25519', category: 'signature', quantumStatus: 'vulnerable', baseSeverity: 'medium', usage: 'elliptic curve signature/exchange', confidence: 0.92 },
-  { regex: /EC\.generate_key|ec_key_new|EC_KEY_new/g, algorithm: 'ECC', category: 'public-key', quantumStatus: 'vulnerable', baseSeverity: 'high', usage: 'ECC key generation', confidence: 0.93 },
-
-  // DH / DSA
-  { regex: /["']DH["']/g, algorithm: 'DH', category: 'key-exchange', quantumStatus: 'vulnerable', baseSeverity: 'high', usage: 'Diffie-Hellman key exchange', confidence: 0.90 },
-  { regex: /["']DSA["']/g, algorithm: 'DSA', category: 'signature', quantumStatus: 'vulnerable', baseSeverity: 'high', usage: 'digital signature', confidence: 0.90 },
-  { regex: /KeyPairGenerator\.getInstance\s*\(\s*["']DSA["']/g, algorithm: 'DSA', category: 'signature', quantumStatus: 'vulnerable', baseSeverity: 'high', usage: 'digital signature', languages: ['java'], confidence: 0.97 },
-
-  // ── Hash Functions ────────────────────────────────────────
-
-  { regex: /MD5|md5|MessageDigest\.getInstance\s*\(\s*["']MD5["']/gi, algorithm: 'MD5', category: 'hash', quantumStatus: 'classical-weak', baseSeverity: 'critical', usage: 'hash function (broken)', confidence: 0.95 },
-  { regex: /SHA-?1(?!\d)|SHA1(?!_)|["']SHA-1["']|["']SHA1["']|MessageDigest\.getInstance\s*\(\s*["']SHA-?1["']/gi, algorithm: 'SHA-1', category: 'hash', quantumStatus: 'classical-weak', baseSeverity: 'high', usage: 'hash function (weak collision resistance)', confidence: 0.94 },
-  { regex: /SHA-?256|["']SHA-256["']|["']SHA256["']|hashlib\.sha256/gi, algorithm: 'SHA-256', category: 'hash', quantumStatus: 'adequate', baseSeverity: 'info', usage: 'hash function', confidence: 0.93 },
-  { regex: /SHA-?384|["']SHA-384["']/gi, algorithm: 'SHA-384', category: 'hash', quantumStatus: 'adequate', baseSeverity: 'info', usage: 'hash function', confidence: 0.93 },
-  { regex: /SHA-?512|["']SHA-512["']|hashlib\.sha512/gi, algorithm: 'SHA-512', category: 'hash', quantumStatus: 'adequate', baseSeverity: 'info', usage: 'hash function', confidence: 0.93 },
-  { regex: /SHA-?3[-_]?(?:256|384|512)|["']SHA3-/gi, algorithm: 'SHA-3', category: 'hash', quantumStatus: 'adequate', baseSeverity: 'info', usage: 'hash function', confidence: 0.92 },
-  { regex: /SHA1withRSA|sha1WithRSA/g, algorithm: 'SHA1withRSA', category: 'signature', quantumStatus: 'classical-weak', baseSeverity: 'critical', usage: 'signature algorithm (weak)', confidence: 0.98 },
-  { regex: /SHA256withRSA|SHA256withECDSA/g, algorithm: 'SHA256withRSA', category: 'signature', quantumStatus: 'vulnerable', baseSeverity: 'high', usage: 'signature algorithm', confidence: 0.97 },
-  { regex: /bcrypt|argon2|scrypt|pbkdf2/gi, algorithm: 'Password Hash', category: 'hash', quantumStatus: 'adequate', baseSeverity: 'info', usage: 'password hashing', confidence: 0.90 },
-
-  // ── Symmetric Cryptography ───────────────────────────────
-
-  { regex: /AES[_-]?256|AES\.new.*256|Cipher\.getInstance\s*\(\s*["']AES\/[^"']*["']/gi, algorithm: 'AES-256', category: 'symmetric', quantumStatus: 'adequate', baseSeverity: 'info', usage: 'symmetric encryption', keySize: 256, confidence: 0.93 },
-  { regex: /AES[_-]?192/gi, algorithm: 'AES-192', category: 'symmetric', quantumStatus: 'adequate', baseSeverity: 'info', usage: 'symmetric encryption', keySize: 192, confidence: 0.93 },
-  { regex: /AES[_-]?128|AES\.new.*128/gi, algorithm: 'AES-128', category: 'symmetric', quantumStatus: 'adequate', baseSeverity: 'low', usage: 'symmetric encryption', keySize: 128, confidence: 0.92 },
-  { regex: /["']AES["'](?!-)/g, algorithm: 'AES', category: 'symmetric', quantumStatus: 'adequate', baseSeverity: 'low', usage: 'symmetric encryption', confidence: 0.88 },
-  { regex: /DES\.(?:encrypt|decrypt|new)|Cipher\.getInstance\s*\(\s*["']DES["']/gi, algorithm: 'DES', category: 'symmetric', quantumStatus: 'classical-weak', baseSeverity: 'critical', usage: 'symmetric encryption (broken)', keySize: 56, confidence: 0.97 },
-  { regex: /3DES|TripleDES|DESede|TDES/gi, algorithm: '3DES', category: 'symmetric', quantumStatus: 'classical-weak', baseSeverity: 'high', usage: 'symmetric encryption (weak)', confidence: 0.95 },
-  { regex: /ChaCha20|chacha20/g, algorithm: 'ChaCha20', category: 'symmetric', quantumStatus: 'adequate', baseSeverity: 'info', usage: 'symmetric encryption', confidence: 0.95 },
-  { regex: /RC4|Arcfour|arcfour/gi, algorithm: 'RC4', category: 'symmetric', quantumStatus: 'classical-weak', baseSeverity: 'critical', usage: 'symmetric encryption (broken)', confidence: 0.96 },
-
-  // ── TLS / SSL ─────────────────────────────────────────────
-
-  { regex: /TLSv?1\.?0|TLS_1_0|ssl\.PROTOCOL_TLSv1(?!_)/gi, algorithm: 'TLS 1.0', category: 'tls', quantumStatus: 'classical-weak', baseSeverity: 'critical', usage: 'transport layer security (obsolete)', confidence: 0.95 },
-  { regex: /TLSv?1\.?1|TLS_1_1|ssl\.PROTOCOL_TLSv1_1/gi, algorithm: 'TLS 1.1', category: 'tls', quantumStatus: 'classical-weak', baseSeverity: 'critical', usage: 'transport layer security (obsolete)', confidence: 0.95 },
-  { regex: /TLSv?1\.?2|TLS_1_2/gi, algorithm: 'TLS 1.2', category: 'tls', quantumStatus: 'adequate', baseSeverity: 'medium', usage: 'transport layer security', confidence: 0.93 },
-  { regex: /TLSv?1\.?3|TLS_1_3/gi, algorithm: 'TLS 1.3', category: 'tls', quantumStatus: 'adequate', baseSeverity: 'info', usage: 'transport layer security (current)', confidence: 0.95 },
-  { regex: /SSLv?2|ssl\.PROTOCOL_SSLv2/gi, algorithm: 'SSLv2', category: 'tls', quantumStatus: 'classical-weak', baseSeverity: 'critical', usage: 'transport layer security (broken)', confidence: 0.98 },
-  { regex: /SSLv?3|ssl\.PROTOCOL_SSLv3/gi, algorithm: 'SSLv3', category: 'tls', quantumStatus: 'classical-weak', baseSeverity: 'critical', usage: 'transport layer security (broken)', confidence: 0.98 },
-
-  // ── Secrets / Credentials ─────────────────────────────────
-
-  { regex: /-----BEGIN (?:RSA |EC |DSA |OPENSSH |ENCRYPTED )?PRIVATE KEY-----/g, algorithm: 'Private Key', category: 'secret', quantumStatus: 'unknown', baseSeverity: 'critical', usage: 'private key material (embedded in source)', confidence: 0.99 },
-  { regex: /(?:sk_live_|sk_test_)[a-zA-Z0-9]{20,}/g, algorithm: 'Stripe API Key', category: 'secret', quantumStatus: 'unknown', baseSeverity: 'critical', usage: 'API credential (hardcoded)', confidence: 0.99 },
-  { regex: /(?:AKIA|ASIA|AIPA)[A-Z0-9]{16}/g, algorithm: 'AWS Access Key', category: 'secret', quantumStatus: 'unknown', baseSeverity: 'critical', usage: 'AWS credential (hardcoded)', confidence: 0.99 },
-  { regex: /(?:jwt_secret|JWT_SECRET|jwtSecret)\s*[=:]\s*["'][^"']{8,}/gi, algorithm: 'JWT Secret', category: 'secret', quantumStatus: 'unknown', baseSeverity: 'critical', usage: 'JWT signing secret (hardcoded)', confidence: 0.96 },
-  { regex: /(?:password|passwd|pwd)\s*[=:]\s*["'][^"']{4,}["']/gi, algorithm: 'Hardcoded Password', category: 'secret', quantumStatus: 'unknown', baseSeverity: 'high', usage: 'credential (hardcoded)', confidence: 0.80 },
-  { regex: /(?:api_key|API_KEY|apiKey)\s*[=:]\s*["'][a-zA-Z0-9_\-]{16,}["']/gi, algorithm: 'API Key', category: 'secret', quantumStatus: 'unknown', baseSeverity: 'critical', usage: 'API credential (hardcoded)', confidence: 0.85 },
-  { regex: /ghp_[a-zA-Z0-9]{36}/g, algorithm: 'GitHub PAT', category: 'secret', quantumStatus: 'unknown', baseSeverity: 'critical', usage: 'GitHub personal access token (hardcoded)', confidence: 0.99 },
-
-  // ── PQC Algorithms (good findings) ──────────────────────
-
-  { regex: /ML-?KEM|CRYSTALS-?Kyber|kyber|Kyber(?:512|768|1024)/gi, algorithm: 'ML-KEM', category: 'pqc', quantumStatus: 'quantum-resistant', baseSeverity: 'info', usage: 'post-quantum key encapsulation', confidence: 0.96 },
-  { regex: /ML-?DSA|CRYSTALS-?Dilithium|dilithium/gi, algorithm: 'ML-DSA', category: 'pqc', quantumStatus: 'quantum-resistant', baseSeverity: 'info', usage: 'post-quantum digital signature', confidence: 0.96 },
-  { regex: /SLH-?DSA|SPHINCS\+?|sphincsplus/gi, algorithm: 'SLH-DSA', category: 'pqc', quantumStatus: 'quantum-resistant', baseSeverity: 'info', usage: 'post-quantum digital signature (hash-based)', confidence: 0.96 },
-  { regex: /FALCON|falcon-(?:512|1024)/gi, algorithm: 'FALCON', category: 'pqc', quantumStatus: 'quantum-resistant', baseSeverity: 'info', usage: 'post-quantum digital signature', confidence: 0.95 },
-];
 
 // ─── Language Detection ──────────────────────────────────────
 
@@ -118,6 +32,26 @@ function maskSecret(value: string): string {
 
 function shouldMask(category: AlgorithmCategory): boolean {
   return category === 'secret';
+}
+
+// ─── Classical Status Derivation ─────────────────────────────
+
+function deriveClassicalStatus(algorithm: string, quantumStatus: QuantumStatus, category: AlgorithmCategory): ClassicalStatus {
+  const a = algorithm.toUpperCase();
+  // Classically broken algorithms
+  if (['MD5', 'DES', 'RC4', 'SSLv2', 'SSLv3'].some(x => a.includes(x))) return 'broken';
+  // Classically weak (deprecated)
+  if (['SHA-1', 'SHA1', '3DES', 'TDES', 'DESEDE', 'TLS 1.0', 'TLS 1.1'].some(x => a.includes(x))) return 'weak';
+  // Classically strong (quantum-vulnerable but classically fine)
+  if (a.includes('RSA') || a.includes('ECDSA') || a.includes('ECDH') || a.includes('ECC') || a === 'DH') return 'adequate';
+  // Classically strong symmetric/hash
+  if (['AES-256', 'SHA-256', 'SHA-384', 'SHA-512', 'SHA-3', 'TLS 1.3', 'CHACHA20'].some(x => a.includes(x))) return 'strong';
+  if (a.includes('AES-128')) return 'adequate';
+  if (a.includes('TLS 1.2')) return 'adequate';
+  if (category === 'pqc') return 'strong';
+  if (quantumStatus === 'classical-weak') return 'weak';
+  if (quantumStatus === 'adequate' || quantumStatus === 'quantum-resistant') return 'adequate';
+  return 'unknown';
 }
 
 // ─── Finding ID Generator ─────────────────────────────────────
@@ -246,6 +180,7 @@ export function scanFile(file: ScanFile): Finding[] {
         detectedPattern,
         confidence: pattern.confidence,
         quantumStatus: pattern.quantumStatus,
+        classicalStatus: deriveClassicalStatus(pattern.algorithm, pattern.quantumStatus, pattern.category),
         severity: riskBreakdown.totalScore >= 80 ? 'critical' :
                   riskBreakdown.totalScore >= 60 ? 'high' :
                   riskBreakdown.totalScore >= 40 ? 'medium' :
@@ -266,6 +201,7 @@ export function scanFile(file: ScanFile): Finding[] {
         tags: buildTags(pattern),
         detectedAt: new Date().toISOString(),
       };
+
 
       findings.push(finding);
     }

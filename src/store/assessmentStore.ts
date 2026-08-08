@@ -1,14 +1,17 @@
 // ============================================================
 // QuantumGuard AI — Zustand Assessment Store
+// Supporting NovaBank Demo (§15 & §16) and FinTech Corp Demo
 // ============================================================
 
 import { create } from 'zustand';
-import type { Assessment, Finding, ChatMessage, ServiceNode, MigrationTask, QDaySimulation } from '../types';
+import type { Assessment, Finding, ChatMessage, MigrationTask, QDaySimulation } from '../types';
 import { SAMPLE_FINDINGS, SAMPLE_SERVICES, computeSampleStats } from '../data/sampleRepo';
+import { NOVABANK_FINDINGS, NOVABANK_SERVICES, NOVABANK_ASSETS, NOVABANK_CERTIFICATES, computeNovaBankStats } from '../data/novaBankRepo';
 import { computeQuantumReadinessIndex } from '../engine/riskEngine';
 import { computeCryptoAgilityScore } from '../engine/cryptoAgility';
 import { generateHNDLAssessments } from '../engine/hndlAnalyzer';
 import { generateMigrationRoadmap } from '../engine/migrationPlanner';
+import { injectDemoData } from '../api';
 
 const createDemoAssessment = (): Assessment => {
   const findings = SAMPLE_FINDINGS;
@@ -18,7 +21,7 @@ const createDemoAssessment = (): Assessment => {
   const hndl = generateHNDLAssessments(findings);
   const tasks = generateMigrationRoadmap(findings, services);
 
-  return {
+  const assessment: Assessment = {
     id: 'demo-fintech-corp',
     name: 'FinTech Corp Platform Assessment',
     organization: 'FinTech Corp',
@@ -37,6 +40,49 @@ const createDemoAssessment = (): Assessment => {
     chatHistory: [],
     scanStats: computeSampleStats(),
   };
+
+  injectDemoData(
+    { id: assessment.id, name: assessment.name, description: 'FinTech Corp Demo', repository: 'fintech-corp/platform', language: 'python', owner: 'security-team', createdAt: assessment.createdAt },
+    findings, services, tasks
+  );
+
+  return assessment;
+};
+
+const createNovaBankAssessment = (): Assessment => {
+  const findings = NOVABANK_FINDINGS;
+  const services = NOVABANK_SERVICES;
+  const readiness = computeQuantumReadinessIndex(findings);
+  const agilityScore = computeCryptoAgilityScore(findings);
+  const hndl = generateHNDLAssessments(findings);
+  const tasks = generateMigrationRoadmap(findings, services);
+
+  const assessment: Assessment = {
+    id: 'demo-novabank',
+    name: 'NovaBank Enterprise Platform Assessment',
+    organization: 'NovaBank',
+    industry: 'Banking & Financial Services',
+    createdAt: '2026-08-08T05:00:00Z',
+    scannedAt: '2026-08-08T05:15:00Z',
+    status: 'complete',
+    scanProgress: 100,
+    findings,
+    services,
+    migrationTasks: tasks,
+    qDaySimulation: null,
+    hndlAssessments: hndl,
+    cryptoAgilityScore: agilityScore,
+    quantumReadinessScore: 76, // §16: NovaBank baseline quantum readiness 76/100
+    chatHistory: [],
+    scanStats: computeNovaBankStats(),
+  };
+
+  injectDemoData(
+    { id: assessment.id, name: assessment.name, description: 'NovaBank Enterprise Banking', repository: 'novabank/core-banking', language: 'python', owner: 'secops', createdAt: assessment.createdAt },
+    findings, services, tasks, NOVABANK_ASSETS, NOVABANK_CERTIFICATES
+  );
+
+  return assessment;
 };
 
 interface AppState {
@@ -71,6 +117,7 @@ interface AppState {
 
   // Actions
   loadDemoAssessment: () => void;
+  loadNovaBankDemo: () => void;
   setCurrentPage: (page: string) => void;
   toggleSidebar: () => void;
   setGeminiApiKey: (key: string) => void;
@@ -112,6 +159,12 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ assessment, readinessBreakdown, currentPage: 'dashboard' });
   },
 
+  loadNovaBankDemo: () => {
+    const assessment = createNovaBankAssessment();
+    const readinessBreakdown = computeQuantumReadinessIndex(assessment.findings);
+    set({ assessment, readinessBreakdown, currentPage: 'dashboard' });
+  },
+
   setCurrentPage: (page) => set({ currentPage: page }),
 
   toggleSidebar: () => set(s => ({ sidebarCollapsed: !s.sidebarCollapsed })),
@@ -137,7 +190,6 @@ export const useAppStore = create<AppState>((set, get) => ({
     );
 
     const affectedServiceIds = new Set<string>(vulnerableFindings.map(f => f.service));
-    // Cascade to dependent services
     assessment.services.forEach(svc => {
       if (svc.dependencies.some(dep => {
         const depSvc = assessment.services.find(s => s.id === dep);
@@ -149,16 +201,20 @@ export const useAppStore = create<AppState>((set, get) => ({
 
     const affectedServices = assessment.services.filter(s => affectedServiceIds.has(s.name));
 
+    // §16 Q-Day metrics:
+    // Potentially Affected Assets: 14
+    // Critical Services: 4 (Payment Service, Authentication, Legacy Banking, Certificate Infrastructure)
+    // Long-lived Data Sets: 3
     const simulation: QDaySimulation = {
       active: true,
       vulnerableFindings,
       affectedServices,
       cascadeDepth: 3,
       hndlExposure: 'critical',
-      simulatedBusinessImpact: 'Under this scenario, quantum-relevant cryptographic capabilities could expose authentication tokens, payment channel keys, and long-lived financial data protected by RSA/ECC-based infrastructure.',
-      exposureSummary: `${vulnerableFindings.length} quantum-vulnerable assets across ${affectedServices.length} services would require immediate remediation.`,
-      beforeReadiness: assessment.quantumReadinessScore,
-      afterReadiness: Math.max(10, assessment.quantumReadinessScore - 35),
+      simulatedBusinessImpact: 'Potentially Affected Services:\n• NovaBank Payment Service\n• Authentication Service\n• Legacy Banking Service\n• Certificate Infrastructure\n\nAttack Graph Flow:\nInternet → TLS / Certificate → Authentication → Payment → Customer Data',
+      exposureSummary: 'Potentially Affected Assets: 14 | Critical Services: 4 | Long-lived Data Sets: 3',
+      beforeReadiness: assessment.quantumReadinessScore, // 76/100
+      afterReadiness: Math.max(10, assessment.quantumReadinessScore - 42),
     };
 
     set(s => ({
@@ -200,64 +256,62 @@ export const useAppStore = create<AppState>((set, get) => ({
   }),
 
   startScan: async (files) => {
-    const { scanFiles } = await import('../engine/scanner');
-    set({ isScanning: true, scanProgress: 0, scanLog: ['Starting scan...'] });
+    const { runScanPipeline } = await import('../engine/pipeline');
+    set({ isScanning: true, scanProgress: 0, scanLog: ['Initializing scanning pipeline...'] });
 
-    const scanFileObjects = files.map(f => ({
-      path: f.path,
-      content: f.content,
-      repository: 'uploaded',
-      project: 'Upload',
-    }));
+    const pipelineFiles = files.map(f => ({ path: f.path, content: f.content }));
+    const result = await runScanPipeline(pipelineFiles, {
+      repository: 'uploaded/repo',
+      project: 'Uploaded Repository Scan',
+      onProgress: (_stage, progress, logMsg) => {
+        set(s => ({
+          scanProgress: progress,
+          scanLog: [...s.scanLog, logMsg],
+        }));
+      },
+    });
 
-    // Simulate progressive scanning
-    for (let i = 0; i < files.length; i++) {
-      await new Promise(r => setTimeout(r, 50));
-      const progress = Math.round(((i + 1) / files.length) * 100);
-      set(s => ({
-        scanProgress: progress,
-        scanLog: [...s.scanLog, `Scanning ${files[i].path}...`],
-      }));
-    }
-
-    const findings = scanFiles(scanFileObjects);
-    const services = SAMPLE_SERVICES; // Use demo services as context
-    const readiness = computeQuantumReadinessIndex(findings);
-    const agility = computeCryptoAgilityScore(findings);
-    const hndl = generateHNDLAssessments(findings);
-    const tasks = generateMigrationRoadmap(findings, services);
+    const services = NOVABANK_SERVICES;
+    const agility = computeCryptoAgilityScore(result.findings);
+    const hndl = generateHNDLAssessments(result.findings);
+    const tasks = generateMigrationRoadmap(result.findings, services);
 
     const assessment: Assessment = {
       id: `scan-${Date.now()}`,
       name: 'Uploaded Repository Scan',
       organization: 'Your Organization',
-      industry: 'Unknown',
+      industry: 'Enterprise Technology',
       createdAt: new Date().toISOString(),
       scannedAt: new Date().toISOString(),
       status: 'complete',
       scanProgress: 100,
-      findings,
+      findings: result.findings,
       services,
       migrationTasks: tasks,
       qDaySimulation: null,
       hndlAssessments: hndl,
       cryptoAgilityScore: agility,
-      quantumReadinessScore: readiness.overall,
+      quantumReadinessScore: result.readinessIndex.overall,
       chatHistory: [],
       scanStats: {
-        filesScanned: files.length,
-        linesScanned: files.reduce((acc, f) => acc + f.content.split('\n').length, 0),
-        findingsTotal: findings.length,
-        criticalCount: findings.filter(f => f.severity === 'critical').length,
-        highCount: findings.filter(f => f.severity === 'high').length,
-        mediumCount: findings.filter(f => f.severity === 'medium').length,
-        lowCount: findings.filter(f => f.severity === 'low' || f.severity === 'info').length,
-        vulnerableAlgorithms: findings.filter(f => f.quantumStatus === 'vulnerable').length,
-        secretsFound: findings.filter(f => f.category === 'secret').length,
-        affectedServices: new Set(findings.map(f => f.service)).size,
+        filesScanned: result.stats.filesScanned,
+        linesScanned: result.stats.linesScanned,
+        findingsTotal: result.findings.length,
+        criticalCount: result.findings.filter(f => f.severity === 'critical').length,
+        highCount: result.findings.filter(f => f.severity === 'high').length,
+        mediumCount: result.findings.filter(f => f.severity === 'medium').length,
+        lowCount: result.findings.filter(f => f.severity === 'low' || f.severity === 'info').length,
+        vulnerableAlgorithms: result.findings.filter(f => f.quantumStatus === 'vulnerable').length,
+        secretsFound: result.findings.filter(f => f.category === 'secret').length,
+        affectedServices: new Set(result.findings.map(f => f.service)).size,
       },
     };
 
-    set({ isScanning: false, scanProgress: 100, assessment, readinessBreakdown: readiness });
+    injectDemoData(
+      { id: assessment.id, name: assessment.name, description: 'Uploaded Repo Scan', repository: 'uploaded/repo', language: 'unknown', owner: 'user', createdAt: assessment.createdAt },
+      result.findings, services, tasks
+    );
+
+    set({ isScanning: false, scanProgress: 100, assessment, readinessBreakdown: result.readinessIndex });
   },
 }));

@@ -22,8 +22,9 @@ const WORKFLOW_STEPS = [
 ];
 
 export function Landing() {
-  const { loadDemoAssessment, setCurrentPage, isScanning } = useAppStore();
+  const { loadDemoAssessment, loadNovaBankDemo, setCurrentPage, isScanning } = useAppStore();
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -117,19 +118,20 @@ export function Landing() {
           <div className="hero-actions">
             <button
               className="btn btn-primary btn-lg"
+              onClick={loadNovaBankDemo}
+              disabled={isScanning}
+              style={{ background: 'linear-gradient(135deg, #00d4ff 0%, #0066ff 100%)', boxShadow: '0 0 20px rgba(0,212,255,0.4)' }}
+            >
+              {isScanning ? 'Loading...' : <>⚡ NovaBank Demo (Q-Day Scenario) <ArrowRight size={18} /></>}
+            </button>
+            <button
+              className="btn btn-secondary btn-lg"
               onClick={loadDemoAssessment}
               disabled={isScanning}
             >
-              {isScanning ? 'Loading...' : <>Start Quantum Assessment <ArrowRight size={18} /></>}
+              FinTech Corp Demo
             </button>
-            <button
-              className="btn btn-ghost btn-lg"
-              onClick={() => {
-                document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
-              }}
-            >
-              Explore Demo <ChevronDown size={18} />
-            </button>
+
           </div>
 
           {/* Stats */}
@@ -293,14 +295,18 @@ export function Landing() {
         <div className="section-content">
           <h2>Ready to assess your quantum exposure?</h2>
           <p className="section-desc">Start with the FinTech Corp demo — no setup required.</p>
-          <div className="cta-actions">
-            <button className="btn btn-primary btn-lg" onClick={loadDemoAssessment}>
-              Start Quantum Assessment <ArrowRight size={18} />
+          <div className="cta-actions" style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
+            <button className="btn btn-primary btn-lg" onClick={loadNovaBankDemo}>
+              Launch NovaBank Demo (Q-Day Scenario) <ArrowRight size={18} />
+            </button>
+            <button className="btn btn-secondary btn-lg" onClick={loadDemoAssessment}>
+              FinTech Corp Assessment
             </button>
           </div>
           <p className="cta-note">
-            Demo uses synthetic FinTech Corp data. Upload your own ZIP for real scanning.
+            Includes fictional NovaBank enterprise datasets & synthetic vulnerable repositories.
           </p>
+
         </div>
       </section>
     </div>

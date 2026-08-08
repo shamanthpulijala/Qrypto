@@ -22,9 +22,112 @@ export type QuantumStatus =
   | 'quantum-resistant' // ML-KEM, ML-DSA, SLH-DSA
   | 'unknown';
 
+export type ClassicalStatus =
+  | 'broken'           // MD5, DES, RC4, SSL — classically compromised
+  | 'weak'             // SHA-1, 3DES, TLS 1.0/1.1 — deprecated
+  | 'adequate'         // RSA-2048, AES-128, TLS 1.2 — acceptable classically
+  | 'strong'           // AES-256, SHA-256, TLS 1.3 — classically strong
+  | 'unknown';
+
 export type Severity = 'critical' | 'high' | 'medium' | 'low' | 'info';
 
 export type RemediationStatus = 'open' | 'in-progress' | 'remediated' | 'accepted-risk' | 'wont-fix';
+
+// ============================================================
+// §10 — Core Entity: Project
+// ============================================================
+
+export interface Project {
+  id: string;
+  name: string;
+  description: string;
+  repository: string;
+  language: Language;
+  owner: string;
+  createdAt: string; // ISO date
+}
+
+// ============================================================
+// §10 — Core Entity: Asset
+// ============================================================
+
+export type AssetType = 'service' | 'database' | 'library' | 'infrastructure' | 'certificate' | 'config';
+export type AssetEnvironment = 'production' | 'staging' | 'development' | 'test';
+export type AssetCriticality = 'critical' | 'high' | 'medium' | 'low';
+
+export interface Asset {
+  id: string;
+  projectId: string;
+  type: AssetType;
+  name: string;
+  location: string;        // e.g. "services/payment/src"
+  environment: AssetEnvironment;
+  criticality: AssetCriticality;
+  internetFacing: boolean;
+  dataSensitivity: 'critical' | 'high' | 'medium' | 'low';
+}
+
+// ============================================================
+// §10 — Core Entity: Certificate
+// ============================================================
+
+export type CertificateStatus = 'valid' | 'expiring' | 'expired' | 'revoked' | 'unknown';
+
+export interface Certificate {
+  id: string;
+  assetId: string;
+  subject: string;
+  issuer: string;
+  algorithm: string;       // e.g. "SHA256withRSA", "SHA1withRSA"
+  keySize: number;
+  validFrom: string;       // ISO date
+  validTo: string;         // ISO date
+  tlsVersion: string;      // e.g. "TLS 1.3", "TLS 1.2"
+  status: CertificateStatus;
+}
+
+// ============================================================
+// §10 — Core Entity: SecretFinding
+// ============================================================
+
+export type SecretType =
+  | 'api-key'
+  | 'jwt-secret'
+  | 'private-key'
+  | 'password'
+  | 'oauth-token'
+  | 'aws-key'
+  | 'database-credential'
+  | 'certificate-material'
+  | 'unknown';
+
+export interface SecretFinding {
+  id: string;
+  projectId: string;
+  file: string;
+  line: number;
+  type: SecretType;
+  maskedValue: string;     // e.g. "sk_live_****...92"
+  severity: Severity;
+  rotationRequired: boolean;
+  status: RemediationStatus;
+}
+
+// ============================================================
+// §10 — Core Entity: Simulation
+// ============================================================
+
+export interface Simulation {
+  id: string;
+  projectId: string;
+  scenario: string;        // e.g. "Q-Day: Cryptographically-Relevant Quantum Computer"
+  assumptions: string[];
+  affectedAssets: string[];   // asset IDs
+  affectedServices: string[]; // service names
+  riskBefore: number;      // 0-100
+  riskAfter: number;       // 0-100
+  createdAt: string;       // ISO date
+}
 
 export interface RiskBreakdown {
   algorithmRisk: number;        // 0-100
@@ -55,6 +158,7 @@ export interface Finding {
   confidence: number;       // 0.0 - 1.0
   // Classification
   quantumStatus: QuantumStatus;
+  classicalStatus: ClassicalStatus; // §10 — independent classical security posture
   severity: Severity;
   // Context
   internetFacing: boolean;
@@ -103,17 +207,20 @@ export interface ServiceNode {
 
 export interface MigrationTask {
   id: string;
+  findingId?: string;       // §10 — optional link to triggering CryptoFinding
   phase: 1 | 2 | 3 | 4;
   title: string;
   description: string;
   priority: 'critical' | 'high' | 'medium' | 'low';
   effort: 'days' | 'weeks' | 'months';
   effortValue: number;
+  estimatedEffort: string;  // §10 — human-readable, e.g. "2 weeks"
   affectedServices: string[];
   affectedFindings: string[];
   reason: string;
   dependencies: string[];
   owner?: string;
+  dueDate?: string;         // §10 — ISO date for scheduling
   status: 'todo' | 'in-progress' | 'done';
   tags: string[];
 }

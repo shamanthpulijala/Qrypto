@@ -1,37 +1,43 @@
+// ============================================================
+// QuantumGuard AI — §26 Navigation Sidebar
+//
+// Sidebar items:
+// Overview | Inventory | Findings | Q-Day Simulator |
+// Attack Graph | AI Advisor | Migration | Crypto Agility |
+// Reports | Settings
+// ============================================================
+
 import React from 'react';
 import {
   LayoutDashboard, Package, AlertTriangle, Zap, Network,
-  Map, Bot, FileText, Shield, BarChart3, Clock, ChevronLeft,
-  ChevronRight, Settings, Globe, Menu
+  Map, Bot, FileText, Shield, BarChart3, ChevronLeft,
+  ChevronRight, Settings
 } from 'lucide-react';
 import { useAppStore } from '../../store/assessmentStore';
 import './Sidebar.css';
 
 const NAV_ITEMS = [
-  { id: 'dashboard',   icon: LayoutDashboard, label: 'Dashboard',      group: 'main' },
-  { id: 'inventory',   icon: Package,          label: 'Inventory',      group: 'main' },
-  { id: 'findings',    icon: AlertTriangle,    label: 'Findings',       group: 'main' },
-  { id: 'qday',        icon: Zap,              label: 'Q-Day Simulator',group: 'quantum' },
-  { id: 'attackmap',   icon: Network,          label: 'Attack Map',     group: 'quantum' },
-  { id: 'hndl',        icon: Clock,            label: 'HNDL Analyzer',  group: 'quantum' },
-  { id: 'migration',   icon: Map,              label: 'Migration Plan', group: 'planning' },
-  { id: 'agility',     icon: BarChart3,        label: 'Crypto Agility', group: 'planning' },
-  { id: 'ai',          icon: Bot,              label: 'AI Advisor',     group: 'ai' },
-  { id: 'compliance',  icon: Shield,           label: 'Compliance',     group: 'ai' },
-  { id: 'reports',     icon: FileText,         label: 'Reports',        group: 'ai' },
+  { id: 'dashboard',  icon: LayoutDashboard, label: 'Overview',       group: 'main' },
+  { id: 'inventory',  icon: Package,         label: 'Inventory',      group: 'main' },
+  { id: 'findings',   icon: AlertTriangle,   label: 'Findings',       group: 'main' },
+  { id: 'qday',       icon: Zap,             label: 'Q-Day Simulator',group: 'quantum' },
+  { id: 'attackmap',  icon: Network,         label: 'Attack Graph',   group: 'quantum' },
+  { id: 'ai',         icon: Bot,             label: 'AI Advisor',     group: 'quantum' },
+  { id: 'migration',  icon: Map,             label: 'Migration',      group: 'planning' },
+  { id: 'agility',    icon: BarChart3,       label: 'Crypto Agility', group: 'planning' },
+  { id: 'reports',    icon: FileText,        label: 'Reports',        group: 'planning' },
 ];
 
 const GROUP_LABELS: Record<string, string> = {
-  main: 'Assessment',
+  main: 'Core Platform',
   quantum: 'Quantum Analysis',
-  planning: 'Planning',
-  ai: 'Intelligence',
+  planning: 'Migration & Governance',
 };
 
 export function Sidebar() {
   const { currentPage, setCurrentPage, sidebarCollapsed, toggleSidebar, assessment } = useAppStore();
 
-  const groups = ['main', 'quantum', 'planning', 'ai'];
+  const groups = ['main', 'quantum', 'planning'];
 
   return (
     <aside className={`sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
@@ -82,7 +88,7 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* Bottom */}
+      {/* Bottom Settings item */}
       <div className="sidebar-bottom">
         <button
           className={`nav-item ${currentPage === 'settings' ? 'active' : ''}`}

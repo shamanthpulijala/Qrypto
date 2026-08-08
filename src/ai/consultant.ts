@@ -1,75 +1,110 @@
 // ============================================================
-// QuantumGuard AI — Gemini AI Consultant
-// Grounded in actual scan findings — cannot invent results
+// QuantumGuard AI — §18 & §22 AI Security Consultant
+//
+// Strictly grounded in actual scan findings via §19 Context Builder.
+// §20 Rate limiting & §22 Offline Fallback handling.
+// Explicitly labels offline fallback: "AI service unavailable. Showing deterministic migration guidance."
 // ============================================================
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import type { Finding, Assessment } from '../types';
-import { PQC_ALGORITHMS, ALGORITHM_RISK_TABLE } from '../data/pqcKnowledge';
+import type { Assessment } from '../types';
+import { buildAIContext, formatAIContextPrompt } from './contextBuilder';
+import { aiRateLimiter } from '../engine/security';
+import { getUsageAwareRecommendation } from '../engine/migrationPlanner';
 
-function buildSystemPrompt(assessment: Assessment): string {
+// ─── Offline / Deterministic Guidance Generator (§22) ─────────
+
+export function getDeterministicFallbackGuidance(question: string, assessment: Assessment): {
+  answer: string;
+  citedFindings: string[];
+} {
+  const qLower = question.toLowerCase();
   const findings = assessment.findings;
-  const criticalFindings = findings.filter(f => f.severity === 'critical').slice(0, 10);
-  const highFindings = findings.filter(f => f.severity === 'high').slice(0, 10);
-  const vulnerableFindings = findings.filter(f => f.quantumStatus === 'vulnerable').slice(0, 15);
+  const criticals = findings.filter(f => f.severity === 'critical');
+  const vulnerables = findings.filter(f => f.quantumStatus === 'vulnerable');
+  const secrets = findings.filter(f => f.category === 'secret');
 
-  const findingSummary = [...criticalFindings, ...highFindings]
-    .slice(0, 15)
-    .map(f => `  [${f.id}] ${f.algorithm} in ${f.file}:${f.line} (Service: ${f.service}, Risk: ${f.riskScore}/100, Status: ${f.remediationStatus})`)
-    .join('\n');
+  let answer = `> **Notice**: AI service unavailable. Showing deterministic migration guidance.\n\n`;
+  const citedFindings: string[] = [];
 
-  const serviceSummary = assessment.services
-    .filter(s => s.id !== 'internet')
-    .map(s => `  ${s.name}: Risk ${s.riskScore}/100, Internet-facing: ${s.internetFacing}`)
-    .join('\n');
+  if (qLower.includes('fix first') || qLower.includes('migrate first') || qLower.includes('priority')) {
+    answer += `### Priority Migration Sequence\n\nBased on deterministic risk analysis of **${assessment.organization}**:\n\n`;
 
-  const algoCounts: Record<string, number> = {};
-  findings.forEach(f => { algoCounts[f.algorithm] = (algoCounts[f.algorithm] || 0) + 1; });
+    // 1. Secrets
+    if (secrets.length > 0) {
+      const topSecret = secrets[0];
+      citedFindings.push(topSecret.id);
+      answer += `1. **Remove Hardcoded Credentials** [${topSecret.id}]\n`;
+      answer += `   - **Detected**: ${topSecret.algorithm} in \`${topSecret.file}:${topSecret.line}\`\n`;
+      answer += `   - **Action**: Rotate immediately and adopt HashiCorp Vault / AWS Secrets Manager.\n\n`;
+    }
 
-  const pqcContext = PQC_ALGORITHMS.map(a =>
-    `${a.name} (${a.nistId}): ${a.category} — ${a.description}`
-  ).join('\n');
+    // 2. Internet-facing quantum-vulnerable (Payment Service)
+    const paymentVulns = vulnerables.filter(f => f.service.includes('Payment'));
+    if (paymentVulns.length > 0) {
+      const topPayment = paymentVulns[0];
+      citedFindings.push(topPayment.id);
+      answer += `2. **NovaBank Payment Service Key Establishment** [${topPayment.id}]\n`;
+      answer += `   - **Detected**: ${topPayment.algorithm} (${topPayment.usage}) in \`${topPayment.file}:${topPayment.line}\`\n`;
+      answer += `   - **Recommendation**: Evaluate hybrid X25519 + ML-KEM-768 key encapsulation.\n\n`;
+    }
 
-  return `You are the QuantumGuard AI Security Consultant — a specialized AI assistant for quantum cryptography risk assessment.
+    // 3. Authentication
+    const authVulns = vulnerables.filter(f => f.service.includes('Auth'));
+    if (authVulns.length > 0) {
+      const topAuth = authVulns[0];
+      citedFindings.push(topAuth.id);
+      answer += `3. **Authentication Token Signatures** [${topAuth.id}]\n`;
+      answer += `   - **Detected**: ${topAuth.algorithm} in \`${topAuth.file}:${topAuth.line}\`\n`;
+      answer += `   - **Recommendation**: Plan transition to ML-DSA-65 (FIPS 204) signatures.\n\n`;
+    }
 
-ASSESSMENT CONTEXT:
-Organization: ${assessment.organization}
-Industry: ${assessment.industry}
-Total Findings: ${findings.length}
-Critical: ${assessment.scanStats.criticalCount}
-High: ${assessment.scanStats.highCount}
-Quantum-Vulnerable: ${assessment.scanStats.vulnerableAlgorithms}
-Hardcoded Secrets: ${assessment.scanStats.secretsFound}
-Quantum Readiness Score: ${assessment.quantumReadinessScore}/100
+    // 4. Legacy / Certificates
+    const certVulns = findings.filter(f => f.service.includes('Certificate') || f.algorithm.includes('SHA1'));
+    if (certVulns.length > 0) {
+      const topCert = certVulns[0];
+      citedFindings.push(topCert.id);
+      answer += `4. **Legacy Certificate Infrastructure** [${topCert.id}]\n`;
+      answer += `   - **Detected**: ${topCert.algorithm} in \`${topCert.file}:${topCert.line}\`\n`;
+      answer += `   - **Recommendation**: Re-issue certificates using SHA-256 and plan ML-DSA certificate authority migration.\n\n`;
+    }
 
-KEY FINDINGS (top by risk):
-${findingSummary || '  No critical findings detected.'}
+  } else if (qLower.includes('rsa') || qLower.includes('replace rsa')) {
+    const rsaFindings = findings.filter(f => f.algorithm.includes('RSA'));
+    answer += `### RSA Analysis & PQC Replacement Guidance\n\n`;
+    answer += `Found **${rsaFindings.length} RSA instances** across your codebase:\n\n`;
+    rsaFindings.slice(0, 3).forEach(f => {
+      citedFindings.push(f.id);
+      const rec = getUsageAwareRecommendation(f.algorithm, f.usage);
+      answer += `- **[${f.id}]** \`${f.file}:${f.line}\` (${f.service}) — Usage: *${f.usage}*\n`;
+      answer += `  - **PQC Successor**: **${rec.replacement}**\n`;
+      answer += `  - **Strategy**: ${rec.strategy}\n\n`;
+    });
+    answer += `*Note: RSA key establishment requires ML-KEM (FIPS 203), whereas RSA signatures require ML-DSA (FIPS 204).*`;
 
-SERVICES:
-${serviceSummary}
+  } else if (qLower.includes('hndl') || qLower.includes('harvest')) {
+    answer += `### Harvest-Now-Decrypt-Later (HNDL) Risk Assessment\n\n`;
+    answer += `HNDL attacks involve adversaries recording encrypted traffic today to decrypt once cryptographically-relevant quantum computers exist.\n\n`;
+    answer += `**High HNDL Risk Assets in ${assessment.organization}**:\n`;
+    findings.filter(f => f.dataLifetimeYears >= 15).slice(0, 4).forEach(f => {
+      citedFindings.push(f.id);
+      answer += `- **[${f.id}]** \`${f.file}:${f.line}\` (${f.service}) — Data retention: **${f.dataLifetimeYears} years**\n`;
+    });
+    answer += `\n**Remediation**: Prioritize hybrid key encapsulation (X25519 + ML-KEM-768) for all internet-facing channels carrying long-lived data.`;
 
-ALGORITHM DISTRIBUTION:
-${Object.entries(algoCounts).map(([alg, count]) => `  ${alg}: ${count} occurrence${count > 1 ? 's' : ''}`).join('\n')}
+  } else {
+    // General fallback summary
+    answer += `### Cryptographic Assessment Overview\n\n`;
+    answer += `- **Organization**: ${assessment.organization}\n`;
+    answer += `- **Quantum Readiness Score**: **${assessment.quantumReadinessScore}/100**\n`;
+    answer += `- **Total Findings**: ${findings.length} (${criticals.length} Critical, ${vulnerables.length} Quantum-Vulnerable)\n\n`;
+    answer += `**Immediate Recommendation**: Focus on high-risk findings in **Payment Service** and **Authentication Service**. Configure a Gemini API key in Settings for full interactive AI capabilities.`;
+  }
 
-PQC KNOWLEDGE BASE:
-${pqcContext}
-
-CRITICAL RULES YOU MUST FOLLOW:
-1. You MUST ground all answers in the actual scan findings above. Never invent findings not in the dataset.
-2. When citing findings, use the exact finding ID (e.g., [QG-0001]).
-3. Use technically accurate language about quantum computing threats.
-4. Do NOT claim quantum computers can currently break RSA — this is future-oriented risk assessment.
-5. Do NOT claim PQC is mathematically proven unbreakable.
-6. Do NOT claim AES is completely unaffected by quantum computing (Grover's algorithm applies, but doubles required key length).
-7. Use terms like "quantum-vulnerable", "HNDL risk", "migration priority" — not "quantum-broken" or "quantum-safe".
-8. When asked about specific algorithms, explain the ACTUAL risk vs classical vs quantum scenarios.
-9. Always provide actionable recommendations citing specific NIST-standardized PQC algorithms (ML-KEM FIPS 203, ML-DSA FIPS 204, SLH-DSA FIPS 205).
-10. When explaining to executives, simplify without oversimplifying — use analogies but don't mislead.
-11. Cite finding IDs when referencing specific issues.
-12. Distinguish between "fix now" (classical weak) vs "plan migration" (quantum-vulnerable) priorities.
-
-Be concise, authoritative, and technically accurate. Format responses with clear structure.`;
+  return { answer, citedFindings };
 }
+
+// ─── Main AI Consultant Function ──────────────────────────────
 
 export async function askConsultant(
   question: string,
@@ -77,30 +112,59 @@ export async function askConsultant(
   apiKey: string,
   chatHistory: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }> = []
 ): Promise<{ answer: string; citedFindings: string[] }> {
-  if (!apiKey) {
+
+  // §22 Rule: If AI API key is missing, return clean, explicit deterministic fallback
+  if (!apiKey || apiKey.trim() === '') {
+    return getDeterministicFallbackGuidance(question, assessment);
+  }
+
+  // §20 Rule: Check rate limits
+  const rateCheck = aiRateLimiter.canMakeCall();
+  if (!rateCheck.allowed) {
     return {
-      answer: 'Please configure your Gemini API key in Settings to use the AI Consultant.',
+      answer: `> **Rate Limit**: AI request limit reached. Please wait ${rateCheck.retryAfterSec} seconds before asking another question.\n\n${getDeterministicFallbackGuidance(question, assessment).answer}`,
       citedFindings: [],
     };
   }
 
-  const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({
-    model: 'gemini-2.0-flash',
-    systemInstruction: buildSystemPrompt(assessment),
-  });
-
-  const chat = model.startChat({
-    history: chatHistory,
-  });
-
   try {
+    const genAI = new GoogleGenerativeAI(apiKey);
+
+    // §19 Structured context object
+    const structuredContext = buildAIContext(assessment, question);
+    const systemPrompt = `You are QuantumGuard AI, an enterprise cryptography and post-quantum migration assistant.
+
+STRUCTURED ASSESSMENT DATA:
+${formatAIContextPrompt(structuredContext)}
+
+STRICT RULES YOU MUST FOLLOW:
+1. Explain what was detected.
+2. Explain why it matters.
+3. Distinguish classical security risk (MD5, SHA-1, weak TLS) from quantum migration risk (RSA, ECC, ECDH).
+4. Explain business impact when data is available.
+5. Recommend a migration strategy citing NIST PQC standards (ML-KEM FIPS 203, ML-DSA FIPS 204, SLH-DSA FIPS 205).
+6. Mention uncertainty when information is missing.
+7. Never claim a quantum computer currently breaks the asset.
+8. Never claim a specific future year when RSA/ECC will be broken.
+9. Never claim a migration is production-ready without testing.
+10. When generating code, label it as an example unless verified.
+11. Prefer hybrid migration strategies where appropriate (e.g. X25519 + ML-KEM).
+12. For signatures and key establishment, distinguish their different PQC replacements (Key establishment → ML-KEM FIPS 203; Signatures → ML-DSA FIPS 204).
+13. Cite the relevant finding IDs (e.g. [NB-0001] or [QG-0001]) when available.
+
+Format responses using clean Markdown headers, bullet points, and bold text.`;
+
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-2.0-flash',
+      systemInstruction: systemPrompt,
+    });
+
+    const chat = model.startChat({ history: chatHistory });
     const result = await chat.sendMessage(question);
     const answer = result.response.text();
 
-    // Extract cited finding IDs
     const citedFindings: string[] = [];
-    const idMatches = answer.match(/\[QG-\d{4}\]/g) || [];
+    const idMatches = answer.match(/\[(?:NB|QG)-\d{4}\]/g) || [];
     idMatches.forEach(match => {
       const id = match.replace(/[\[\]]/g, '');
       if (!citedFindings.includes(id)) citedFindings.push(id);
@@ -108,23 +172,23 @@ export async function askConsultant(
 
     return { answer, citedFindings };
   } catch (error: any) {
+    // §22 Rule: On API error, return explicit deterministic fallback notice
+    console.error('Gemini API call failed:', error);
+    const fallback = getDeterministicFallbackGuidance(question, assessment);
     return {
-      answer: `AI Consultant error: ${error.message || 'Unknown error'}. Please check your API key.`,
-      citedFindings: [],
+      answer: `> **Notice**: AI service unavailable (${error.message || 'API call failed'}). Showing deterministic migration guidance.\n\n${fallback.answer.replace('> **Notice**: AI service unavailable. Showing deterministic migration guidance.\n\n', '')}`,
+      citedFindings: fallback.citedFindings,
     };
   }
 }
 
-// Suggested questions for the UI
 export const SUGGESTED_QUESTIONS = [
+  'What should we fix first?',
   'Which service should we migrate first and why?',
   'Explain our biggest quantum risk to a non-technical executive.',
   'Where are we using RSA and what should we replace it with?',
   'What is a "harvest now, decrypt later" attack and which of our systems are at risk?',
-  'What is our recommended migration strategy for the Payment Service?',
+  'What is our recommended migration strategy for NovaBank Payment Service?',
   'Which of our findings are classical security problems (not quantum-related)?',
-  'Explain ML-KEM and when we should use it vs ML-DSA.',
-  'What should we fix in the next 30 days?',
-  'How does our quantum readiness score compare to industry standards?',
-  'What is crypto agility and why does it matter for us?',
+  'Explain ML-KEM vs ML-DSA and when to use each.',
 ];

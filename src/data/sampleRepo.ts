@@ -36,6 +36,17 @@ function f(
     keySize,
   });
 
+  // Derive classical status independently of quantum status
+  const deriveClassicalStatus = (alg: string, qs: string): import('../types').ClassicalStatus => {
+    const a = alg.toUpperCase();
+    if (['MD5', 'DES', 'RC4', 'SSLv2', 'SSLv3', 'SSLV2', 'SSLV3'].some(x => a.includes(x))) return 'broken';
+    if (['SHA-1', 'SHA1', '3DES', 'TDES', 'DESEDE', 'TLS 1.0', 'TLS 1.1'].some(x => a.includes(x))) return 'weak';
+    if (['AES-256', 'SHA-256', 'SHA-384', 'SHA-512', 'SHA-3', 'TLS 1.3', 'CHACHA20'].some(x => a.includes(x))) return 'strong';
+    if (qs === 'classical-weak') return 'weak';
+    if (qs === 'adequate' || qs === 'quantum-resistant') return 'adequate';
+    return 'adequate';
+  };
+
   return {
     id,
     file,
@@ -53,6 +64,7 @@ function f(
     detectedPattern: pattern,
     confidence: 0.95,
     quantumStatus: quantumStatus as any,
+    classicalStatus: deriveClassicalStatus(algorithm, quantumStatus),
     severity: severity as any,
     internetFacing,
     dataSensitivity: dataSensitivity as any,
@@ -72,6 +84,7 @@ function f(
     detectedAt: '2026-08-08T04:00:00Z',
   };
 }
+
 
 export const SAMPLE_FINDINGS: Finding[] = [
   // ── PAYMENT SERVICE (Critical) ─────────────────────────────
