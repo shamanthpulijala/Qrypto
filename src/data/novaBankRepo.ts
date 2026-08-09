@@ -258,7 +258,7 @@ export const NOVABANK_SERVICES: ServiceNode[] = [
   {
     id: 'cert-infra',
     name: 'Certificate Infrastructure',
-    type: 'infrastructure',
+    type: 'service',
     internetFacing: false,
     dataSensitivity: 'critical',
     cryptoFindings: ['NB-0027', 'NB-0028'],
@@ -287,7 +287,7 @@ export const NOVABANK_ASSETS: Asset[] = [
   { id: 'ast-03', projectId: 'novabank-corp', type: 'service', name: 'Legacy Banking Service', location: 'services/legacy/src', environment: 'production', criticality: 'critical', internetFacing: false, dataSensitivity: 'critical' },
   { id: 'ast-04', projectId: 'novabank-corp', type: 'infrastructure', name: 'Certificate Infrastructure', location: 'infrastructure/pki', environment: 'production', criticality: 'critical', internetFacing: false, dataSensitivity: 'critical' },
   { id: 'ast-05', projectId: 'novabank-corp', type: 'database', name: 'Customer DB', location: 'services/customer-db', environment: 'production', criticality: 'critical', internetFacing: false, dataSensitivity: 'critical' },
-  { id: 'ast-06', projectId: 'novabank-corp', type: 'storage', name: 'Document Storage', location: 'services/document-storage', environment: 'production', criticality: 'high', internetFacing: false, dataSensitivity: 'critical' },
+  { id: 'ast-06', projectId: 'novabank-corp', type: 'database', name: 'Document Storage', location: 'services/document-storage', environment: 'production', criticality: 'high', internetFacing: false, dataSensitivity: 'critical' },
   { id: 'ast-07', projectId: 'novabank-corp', type: 'service', name: 'Customer API', location: 'services/customer-api', environment: 'production', criticality: 'high', internetFacing: true, dataSensitivity: 'high' },
   { id: 'ast-08', projectId: 'novabank-corp', type: 'service', name: 'Mobile Backend', location: 'services/mobile', environment: 'production', criticality: 'high', internetFacing: true, dataSensitivity: 'high' },
   { id: 'ast-09', projectId: 'novabank-corp', type: 'service', name: 'Internal Admin Portal', location: 'services/admin', environment: 'production', criticality: 'medium', internetFacing: false, dataSensitivity: 'high' },

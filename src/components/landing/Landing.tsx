@@ -1,314 +1,477 @@
-import React, { useEffect, useRef } from 'react';
-import { Shield, Zap, ArrowRight, ChevronDown, Search, BarChart3, Network, Bot, Lock, Eye, AlertTriangle } from 'lucide-react';
+// ============================================================
+// QuantumGuard AI — Premium Landing Page §09-§20
+// Cinematic scroll-driven editorial experience
+// ============================================================
+
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { Shield, Zap, ArrowRight, Upload, FileCode2, AlertCircle, Eye, ChevronRight, Check } from 'lucide-react';
 import { useAppStore } from '../../store/assessmentStore';
+import JSZip from 'jszip';
+import { ENTERPRISE_SAMPLE_FILES } from '../../data/enterpriseSampleRepo';
+import { PQC_READY_SAMPLE_FILES } from '../../data/pqcReadySampleRepo';
+import { QuantumComputer } from './QuantumComputer';
 import './Landing.css';
 
-const FEATURES = [
-  { icon: Search, title: 'Cryptographic Discovery', desc: 'Scan source code, configs, and infrastructure for cryptographic assets across Python, Java, JavaScript, and more.', color: '#00d4ff' },
-  { icon: BarChart3, title: 'Quantum Risk Intelligence', desc: 'Transparent, deterministic risk scoring with component-level breakdown — no black-box scores.', color: '#8b5cf6' },
-  { icon: Zap, title: 'Q-Day Simulation', desc: 'Simulate your organization\'s exposure if quantum-relevant capabilities threatened current public-key cryptography.', color: '#ef4444' },
-  { icon: Network, title: 'Attack Path Analysis', desc: 'Interactive dependency graph showing how quantum vulnerability propagates through your architecture.', color: '#f97316' },
-  { icon: Bot, title: 'AI Security Consultant', desc: 'Grounded AI advisor that cites actual findings and provides actionable migration guidance.', color: '#22c55e' },
-  { icon: Lock, title: 'Crypto Agility Score', desc: 'Evaluate how easily your organization can replace cryptographic algorithms as standards evolve.', color: '#14b8a6' },
+// ─── Crypto labels for §10 ────────────────────────────────────
+const CRYPTO_LABELS = [
+  { name: 'RSA-2048', status: 'QUANTUM VULNERABLE', cls: 'vulnerable', pos: { top: '12%', left: '5%' },
+    tooltip: 'RSA relies on integer factorization, which Shor\'s algorithm can solve in polynomial time on a quantum computer.' },
+  { name: 'ECC', status: 'QUANTUM VULNERABLE', cls: 'vulnerable', pos: { top: '25%', right: '3%' },
+    tooltip: 'Elliptic Curve Cryptography is broken by quantum computers using Shor\'s algorithm on the discrete logarithm problem.' },
+  { name: 'ECDH', status: 'QUANTUM VULNERABLE', cls: 'vulnerable', pos: { bottom: '30%', left: '2%' },
+    tooltip: 'ECDH key exchange is vulnerable to quantum attack. Migrate to ML-KEM (FIPS 203) for post-quantum key encapsulation.' },
+  { name: 'AES-256', status: 'STRONG', cls: 'strong', pos: { bottom: '15%', right: '8%' },
+    tooltip: 'AES-256 remains quantum-safe. Grover\'s algorithm only halves the effective key strength to 128-bit equivalent.' },
+  { name: 'ML-KEM', status: 'POST-QUANTUM', cls: 'pqc', pos: { top: '60%', left: '8%' },
+    tooltip: 'FIPS 203 (ML-KEM, formerly Kyber). NIST\'s primary post-quantum key encapsulation mechanism based on Module-LWE.' },
+  { name: 'TLS 1.2', status: 'MIGRATION REQUIRED', cls: 'migration', pos: { top: '45%', right: '2%' },
+    tooltip: 'TLS 1.2 is classically adequate but should be migrated to TLS 1.3 with PQC cipher suites for quantum safety.' },
 ];
 
-const WORKFLOW_STEPS = [
-  { num: '01', title: 'Discover', desc: 'Upload code or analyze a sample repository to detect all cryptographic usage' },
-  { num: '02', title: 'Inventory', desc: 'Build a Cryptographic Bill of Materials (CBOM) with full context for every finding' },
-  { num: '03', title: 'Evaluate', desc: 'Score each finding with a transparent, multi-factor quantum risk formula' },
-  { num: '04', title: 'Simulate', desc: 'Run Q-Day scenarios to understand your exposure under various assumptions' },
-  { num: '05', title: 'Plan', desc: 'Generate a prioritized, phased migration roadmap with effort estimates' },
-  { num: '06', title: 'Remediate', desc: 'Get AI-generated code migration examples and track your progress to quantum readiness' },
+// ─── Discovery nodes §12 ──────────────────────────────────────
+const DISCOVERY_NODES = [
+  { icon: '🌐', label: 'Internet', algo: 'TLS' },
+  { icon: '☁️', label: 'Cloud', algo: 'AES' },
+  { icon: '📱', label: 'Applications', algo: 'RSA' },
+  { icon: '🔗', label: 'APIs', algo: 'ECDH' },
+  { icon: '🔐', label: 'Authentication', algo: 'ECDSA' },
+  { icon: '📜', label: 'Certificates', algo: 'SHA-256' },
+  { icon: '🗄️', label: 'Databases', algo: 'AES-256' },
+  { icon: '📦', label: 'Archives', algo: 'SHA-1' },
 ];
 
-export function Landing() {
-  const { loadDemoAssessment, loadNovaBankDemo, setCurrentPage, isScanning } = useAppStore();
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+// ─── Risk model factors §14 ──────────────────────────────────
+const RISK_FACTORS = [
+  { name: 'Quantum Vulnerability', weight: '30%', fill: 85, color: '#ef4444' },
+  { name: 'Business Criticality', weight: '20%', fill: 70, color: '#f97316' },
+  { name: 'Internet Exposure', weight: '15%', fill: 60, color: '#eab308' },
+  { name: 'Confidentiality Lifetime', weight: '15%', fill: 75, color: '#7c3aed' },
+  { name: 'Data Sensitivity', weight: '10%', fill: 65, color: '#00d4ff' },
+  { name: 'Migration Difficulty', weight: '10%', fill: 50, color: '#8b5cf6' },
+];
 
+// ─── Migration transforms §18 ────────────────────────────────
+const MIGRATIONS = [
+  { from: 'RSA-2048', to: 'HYBRID ML-KEM', progress: 65 },
+  { from: 'ECDSA', to: 'ML-DSA (FIPS 204)', progress: 40 },
+  { from: 'TLS 1.0', to: 'TLS 1.3', progress: 80 },
+  { from: 'SHA-1', to: 'SHA-3-256', progress: 90 },
+  { from: 'HARDCODED KEYS', to: 'MANAGED VAULT', progress: 30 },
+];
 
+// ─── HNDL data categories §16 ────────────────────────────────
+const HNDL_CATEGORIES = ['Medical Records', 'Financial Records', 'Government Data', 'Source Code', 'Customer Data', 'Intellectual Property'];
+const HNDL_RISKS: Record<string, number> = {
+  'Medical Records': 98, 'Financial Records': 92, 'Government Data': 97,
+  'Source Code': 78, 'Customer Data': 88, 'Intellectual Property': 95,
+};
+
+const SUPPORTED_EXT = ['.py', '.java', '.js', '.ts', '.jsx', '.tsx', '.go', '.yml', '.yaml', '.json', '.xml', '.sh', '.conf', '.env', '.properties', '.gradle', '.toml', '.tf'];
+const MAX_ZIP_SIZE = 50 * 1024 * 1024;
+const MAX_FILES = 2000;
+
+interface FileEntry { path: string; content: string; }
+
+// ─── Intersection Observer hook ───────────────────────────────
+function useFadeIn() {
+  const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    canvas.width = canvas.offsetWidth;
-    canvas.height = canvas.offsetHeight;
-
-    const particles: Array<{ x: number; y: number; vx: number; vy: number; size: number; opacity: number }> = [];
-    for (let i = 0; i < 60; i++) {
-      particles.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        vx: (Math.random() - 0.5) * 0.4,
-        vy: (Math.random() - 0.5) * 0.4,
-        size: Math.random() * 2 + 0.5,
-        opacity: Math.random() * 0.4 + 0.1,
-      });
-    }
-
-    let animId: number;
-    function draw() {
-      if (!ctx || !canvas) return;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      particles.forEach(p => {
-        p.x += p.vx;
-        p.y += p.vy;
-        if (p.x < 0) p.x = canvas!.width;
-        if (p.x > canvas!.width) p.x = 0;
-        if (p.y < 0) p.y = canvas!.height;
-        if (p.y > canvas!.height) p.y = 0;
-
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(0, 212, 255, ${p.opacity})`;
-        ctx.fill();
-      });
-
-      // Draw connections
-      for (let i = 0; i < particles.length; i++) {
-        for (let j = i + 1; j < particles.length; j++) {
-          const dx = particles[i].x - particles[j].x;
-          const dy = particles[i].y - particles[j].y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 100) {
-            ctx.beginPath();
-            ctx.moveTo(particles[i].x, particles[i].y);
-            ctx.lineTo(particles[j].x, particles[j].y);
-            ctx.strokeStyle = `rgba(0, 212, 255, ${0.1 * (1 - dist / 100)})`;
-            ctx.lineWidth = 0.5;
-            ctx.stroke();
-          }
-        }
-      }
-
-      animId = requestAnimationFrame(draw);
-    }
-
-    draw();
-
-    const handleResize = () => {
-      canvas.width = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
-    };
-    window.addEventListener('resize', handleResize);
-    return () => { cancelAnimationFrame(animId); window.removeEventListener('resize', handleResize); };
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { el.classList.add('visible'); obs.disconnect(); } },
+      { threshold: 0.15 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
   }, []);
+  return ref;
+}
+
+// ─── Main Component ───────────────────────────────────────────
+export function Landing() {
+  const { startScan, isScanning, scanProgress, scanLog, scanError } = useAppStore();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const dropRef = useRef<HTMLDivElement>(null);
+
+  const [dragging, setDragging] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [fileSummary, setFileSummary] = useState<{ name: string; count: number } | null>(null);
+  const [pendingFiles, setPendingFiles] = useState<FileEntry[] | null>(null);
+  const [hoveredLabel, setHoveredLabel] = useState<string | null>(null);
+  const [selectedHndl, setSelectedHndl] = useState('Medical Records');
+
+  // Fade-in refs
+  const discoveryRef = useFadeIn();
+  const riskRef = useFadeIn();
+  const hndlRef = useFadeIn();
+  const migrationRef = useFadeIn();
+  const uploadRef = useFadeIn();
+  const accuracyRef = useFadeIn();
+
+  // ── File processing ──
+  const processZip = useCallback(async (file: File): Promise<FileEntry[]> => {
+    if (file.size > MAX_ZIP_SIZE) throw new Error(`ZIP file too large (max 50 MB). Got ${(file.size / 1024 / 1024).toFixed(1)} MB.`);
+    const zip = await JSZip.loadAsync(file);
+    const entries: FileEntry[] = [];
+    const jobs: Promise<void>[] = [];
+    zip.forEach((relativePath, zipEntry) => {
+      if (zipEntry.dir) return;
+      if (relativePath.includes('..')) return;
+      const lower = relativePath.toLowerCase();
+      if (!SUPPORTED_EXT.some(ext => lower.endsWith(ext))) return;
+      if (entries.length >= MAX_FILES) return;
+      jobs.push(zipEntry.async('string').then(content => { entries.push({ path: relativePath, content }); }).catch(() => {}));
+    });
+    await Promise.all(jobs);
+    if (entries.length === 0) throw new Error('No supported source files found in ZIP.');
+    return entries;
+  }, []);
+
+  const handleFiles = useCallback(async (fileList: FileList | null) => {
+    if (!fileList || fileList.length === 0) return;
+    setUploadError(null); setPendingFiles(null); setFileSummary(null);
+    const file = fileList[0];
+    try {
+      let entries: FileEntry[];
+      if (file.name.endsWith('.zip')) { entries = await processZip(file); }
+      else {
+        const ext = '.' + file.name.split('.').pop()?.toLowerCase();
+        if (!SUPPORTED_EXT.includes(ext)) throw new Error(`Unsupported file type: ${ext}`);
+        entries = [{ path: file.name, content: await file.text() }];
+      }
+      setFileSummary({ name: file.name, count: entries.length });
+      setPendingFiles(entries);
+    } catch (err: any) { setUploadError(err.message || 'Failed to read file.'); }
+  }, [processZip]);
+
+  const handleScan = useCallback(() => { if (pendingFiles) startScan(pendingFiles); }, [pendingFiles, startScan]);
+
+  // ── Drag and drop ──
+  const onDragOver = useCallback((e: React.DragEvent) => { e.preventDefault(); setDragging(true); }, []);
+  const onDragLeave = useCallback(() => setDragging(false), []);
+  const onDrop = useCallback((e: React.DragEvent) => { e.preventDefault(); setDragging(false); handleFiles(e.dataTransfer.files); }, [handleFiles]);
+
+  // Compute scan steps for cinematic display
+  const scanSteps = [
+    { label: 'Repository indexed', done: scanProgress >= 10 },
+    { label: 'Dependencies analyzed', done: scanProgress >= 25 },
+    { label: 'Cryptographic APIs discovered', done: scanProgress >= 45 },
+    { label: 'Certificates inspected', done: scanProgress >= 60 },
+    { label: 'Configuration analyzed', done: scanProgress >= 75 },
+    { label: 'Risk model generated', done: scanProgress >= 90 },
+  ];
 
   return (
     <div className="landing">
-      {/* Hero */}
+
+      {/* ═══ HERO §09 ═══ */}
       <section className="hero">
-        <canvas ref={canvasRef} className="hero-canvas" />
-        <div className="hero-content">
-          <div className="hero-badge">
-            <Shield size={12} />
-            QUANTUM READINESS PLATFORM
+        <div className="hero-bg-gradient" />
+        <div className="hero-inner">
+          <div className="hero-text">
+            <div className="hero-badge">
+              <Shield size={11} />
+              QUANTUMGUARD AI
+            </div>
+            <h1 className="hero-title">
+              SEE WHAT BREAKS<br />
+              <span className="hero-title-accent">BEFORE QUANTUM</span> DOES.
+            </h1>
+            <p className="hero-subtitle">
+              Discover, evaluate, and migrate the cryptography protecting your digital
+              infrastructure — before quantum computing changes the rules.
+            </p>
+            <div className="hero-actions">
+              <button className="btn-hero-primary" onClick={() => document.getElementById('upload-section')?.scrollIntoView({ behavior: 'smooth' })}>
+                START ASSESSMENT <ArrowRight size={16} />
+              </button>
+              <button className="btn-hero-secondary" onClick={() => {
+                setFileSummary({ name: 'qrypto-enterprise-sample.zip', count: ENTERPRISE_SAMPLE_FILES.length });
+                setPendingFiles(ENTERPRISE_SAMPLE_FILES);
+                setTimeout(() => document.getElementById('upload-section')?.scrollIntoView({ behavior: 'smooth' }), 100);
+              }}>
+                EXPLORE Q-DAY <Zap size={16} />
+              </button>
+            </div>
+            <div className="hero-stats">
+              <div className="hero-stat">
+                <span className="hero-stat-value">58+</span>
+                <span className="hero-stat-label">Detection Patterns</span>
+              </div>
+              <div className="hero-stat">
+                <span className="hero-stat-value">8</span>
+                <span className="hero-stat-label">Languages</span>
+              </div>
+              <div className="hero-stat">
+                <span className="hero-stat-value">FIPS 203–205</span>
+                <span className="hero-stat-label">NIST PQC Standards</span>
+              </div>
+            </div>
           </div>
-          <h1 className="hero-title">
-            Know what breaks
-            <span className="hero-accent"> before </span>
-            quantum does.
-          </h1>
-          <p className="hero-subtitle">
-            Discover cryptography. Measure quantum exposure. Simulate Q-Day.
-            Build your migration roadmap. Become quantum ready.
-          </p>
-          <div className="hero-actions">
+
+          {/* 3D Quantum Computer §08 */}
+          <div className="hero-3d-container">
+            <QuantumComputer />
+            {/* Floating crypto labels §10 */}
+            <div className="crypto-labels">
+              {CRYPTO_LABELS.map(l => (
+                <div
+                  key={l.name}
+                  className="crypto-label"
+                  style={l.pos as React.CSSProperties}
+                  onMouseEnter={() => setHoveredLabel(l.name)}
+                  onMouseLeave={() => setHoveredLabel(null)}
+                >
+                  <span className="cl-name">{l.name}</span>
+                  <span className={`cl-status ${l.cls}`}>{l.status}</span>
+                  {hoveredLabel === l.name && (
+                    <div className="crypto-label-tooltip">{l.tooltip}</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ DISCOVERY §12 ═══ */}
+      <div ref={discoveryRef} className="landing-section fade-in-section">
+        <div className="section-badge danger">THE CHALLENGE</div>
+        <h2 className="section-title">
+          YOU CAN'T PROTECT<br />WHAT YOU CAN'T SEE.
+        </h2>
+        <p className="section-desc">
+          Cryptographic dependencies are embedded across every layer of your infrastructure.
+          QuantumGuard maps them all — automatically.
+        </p>
+        <div className="discovery-grid">
+          {DISCOVERY_NODES.map(n => (
+            <div key={n.label} className="discovery-node">
+              <span className="discovery-node-icon">{n.icon}</span>
+              <span className="discovery-node-label">{n.label}</span>
+              <span className="discovery-node-algo">{n.algo}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ═══ RISK MODEL §14 ═══ */}
+      <div ref={riskRef} className="landing-section fade-in-section">
+        <div className="section-badge">QUANTUMGUARD RISK MODEL</div>
+        <h2 className="section-title">
+          NOT EVERY<br />CRYPTOGRAPHIC RISK<br />IS THE SAME.
+        </h2>
+        <p className="section-desc">
+          Our deterministic, multi-factor risk model evaluates each cryptographic asset
+          based on quantum vulnerability, business context, and migration complexity.
+        </p>
+        <div className="risk-formula">
+          {RISK_FACTORS.map(f => (
+            <div key={f.name} className="risk-factor">
+              <span className="risk-factor-weight">{f.weight}</span>
+              <span className="risk-factor-name">{f.name}</span>
+              <div className="risk-factor-bar">
+                <div className="risk-factor-bar-fill" style={{ width: `${f.fill}%`, background: f.color }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ═══ HNDL §16 ═══ */}
+      <div ref={hndlRef} className="landing-section fade-in-section">
+        <div className="section-badge danger">HARVEST NOW, DECRYPT LATER</div>
+        <h2 className="section-title">
+          Your data is being<br />collected today.
+        </h2>
+        <p className="section-desc">
+          Adversaries are intercepting encrypted data now, storing it until quantum computers
+          can decrypt it. How long does your data need to remain confidential?
+        </p>
+        <div className="hndl-categories">
+          {HNDL_CATEGORIES.map(c => (
             <button
-              className="btn btn-primary btn-lg"
-              onClick={loadNovaBankDemo}
-              disabled={isScanning}
-              style={{ background: 'linear-gradient(135deg, #00d4ff 0%, #0066ff 100%)', boxShadow: '0 0 20px rgba(0,212,255,0.4)' }}
+              key={c}
+              className={`hndl-category-btn ${selectedHndl === c ? 'active' : ''}`}
+              onClick={() => setSelectedHndl(c)}
             >
-              {isScanning ? 'Loading...' : <>⚡ NovaBank Demo (Q-Day Scenario) <ArrowRight size={18} /></>}
+              {c}
             </button>
-            <button
-              className="btn btn-secondary btn-lg"
-              onClick={loadDemoAssessment}
-              disabled={isScanning}
-            >
-              FinTech Corp Demo
-            </button>
-
-          </div>
-
-          {/* Stats */}
-          <div className="hero-stats">
-            <div className="hero-stat">
-              <span className="hero-stat-value">15</span>
-              <span className="hero-stat-label">Feature Modules</span>
-            </div>
-            <div className="hero-stat">
-              <span className="hero-stat-value">58+</span>
-              <span className="hero-stat-label">Detection Patterns</span>
-            </div>
-            <div className="hero-stat">
-              <span className="hero-stat-value">FIPS 203–205</span>
-              <span className="hero-stat-label">NIST PQC Standards</span>
-            </div>
-          </div>
+          ))}
         </div>
-
-        {/* Dashboard Preview */}
-        <div className="hero-preview">
-          <div className="preview-card">
-            <div className="preview-header">
-              <div className="preview-dot red" />
-              <div className="preview-dot yellow" />
-              <div className="preview-dot green" />
-              <span className="preview-title">QuantumGuard AI — Dashboard</span>
-            </div>
-            <div className="preview-body">
-              <div className="preview-gauge">
-                <div className="gauge-circle">
-                  <svg viewBox="0 0 100 100">
-                    <circle cx="50" cy="50" r="40" fill="none" stroke="#1e2d4a" strokeWidth="8"/>
-                    <circle cx="50" cy="50" r="40" fill="none" stroke="#00d4ff" strokeWidth="8"
-                      strokeDasharray="164" strokeDashoffset="42" strokeLinecap="round"
-                      transform="rotate(-90 50 50)" />
-                  </svg>
-                  <div className="gauge-label">
-                    <span className="gauge-value">74</span>
-                    <span className="gauge-sub">/ 100</span>
-                  </div>
-                </div>
-                <p className="gauge-title">Quantum Readiness</p>
-              </div>
-              <div className="preview-grid">
-                <div className="preview-stat critical">
-                  <span className="pstat-value">12</span>
-                  <span className="pstat-label">Critical</span>
-                </div>
-                <div className="preview-stat high">
-                  <span className="pstat-value">23</span>
-                  <span className="pstat-label">High Risk</span>
-                </div>
-                <div className="preview-stat warn">
-                  <span className="pstat-value">37</span>
-                  <span className="pstat-label">Quantum Vuln</span>
-                </div>
-                <div className="preview-stat ok">
-                  <span className="pstat-value">41%</span>
-                  <span className="pstat-label">PQC Progress</span>
-                </div>
-              </div>
-              <button className="preview-btn">⚡ SIMULATE Q-DAY</button>
-            </div>
+        <div className="hndl-result">
+          <div>
+            <div className="hndl-risk-label">LONG-TERM CONFIDENTIALITY RISK</div>
+            <div className="hndl-risk-value">{HNDL_RISKS[selectedHndl]}%</div>
           </div>
-        </div>
-      </section>
-
-      {/* Problem Section */}
-      <section className="problem-section">
-        <div className="section-content">
-          <div className="section-badge danger">THE CHALLENGE</div>
-          <h2>Your cryptography is everywhere.<br />Do you know where?</h2>
-          <p className="section-desc">
-            Organizations have cryptographic assets scattered across source code, certificates, APIs,
-            dependencies, and infrastructure. Most don't know which algorithms are quantum-vulnerable,
-            which systems are highest priority, or what a migration path should look like.
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+            {selectedHndl} with 20+ year confidentiality requirements face extreme HNDL risk.
+            Data intercepted today can be decrypted when CRQCs arrive.
           </p>
-          <div className="problem-grid">
-            {[
-              { q: 'Where is cryptography being used?', icon: '🔍' },
-              { q: 'Which algorithms are quantum-vulnerable?', icon: '⚠️' },
-              { q: 'Which assets are most business-critical?', icon: '💼' },
-              { q: 'What is our HNDL exposure?', icon: '📦' },
-              { q: 'What should we migrate first?', icon: '🎯' },
-              { q: 'How difficult is migration?', icon: '🛠️' },
-              { q: 'Are we crypto-agile?', icon: '🔄' },
-              { q: 'What is our quantum readiness?', icon: '📊' },
-            ].map(item => (
-              <div key={item.q} className="problem-item">
-                <span className="problem-icon">{item.icon}</span>
-                <span>{item.q}</span>
-              </div>
-            ))}
-          </div>
         </div>
-      </section>
+      </div>
 
-      {/* How It Works */}
-      <section id="how-it-works" className="workflow-section">
-        <div className="section-content">
-          <div className="section-badge">HOW IT WORKS</div>
-          <h2>From discovery to quantum readiness</h2>
-          <p className="section-desc">A complete end-to-end workflow — not just a scanner.</p>
-          <div className="workflow-grid">
-            {WORKFLOW_STEPS.map((step, i) => (
-              <div key={step.num} className="workflow-step">
-                <div className="step-num">{step.num}</div>
-                <h4>{step.title}</h4>
-                <p>{step.desc}</p>
-                {i < WORKFLOW_STEPS.length - 1 && <div className="step-arrow">→</div>}
+      {/* ═══ MIGRATION §18 ═══ */}
+      <div ref={migrationRef} className="landing-section fade-in-section">
+        <div className="section-badge cyan">MIGRATION PATHWAYS</div>
+        <h2 className="section-title">
+          From classical<br />to quantum-safe.
+        </h2>
+        <p className="section-desc">
+          QuantumGuard generates step-by-step migration paths aligned with NIST FIPS 203, 204, and 205.
+        </p>
+        <div className="migration-transforms">
+          {MIGRATIONS.map(m => (
+            <div key={m.from} className="migration-row">
+              <span className="migration-from">{m.from}</span>
+              <span className="migration-arrow">→</span>
+              <span className="migration-to">{m.to}</span>
+              <div className="migration-bar">
+                <div className="migration-bar-fill" style={{ width: `${m.progress}%` }} />
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
-      </section>
+      </div>
 
-      {/* Features */}
-      <section className="features-section">
-        <div className="section-content">
-          <div className="section-badge">CAPABILITIES</div>
-          <h2>Everything you need for quantum migration</h2>
-          <div className="features-grid">
-            {FEATURES.map(f => {
-              const Icon = f.icon;
-              return (
-                <div key={f.title} className="feature-card" style={{ '--accent-color': f.color } as React.CSSProperties}>
-                  <div className="feature-icon" style={{ color: f.color, background: `${f.color}18`, border: `1px solid ${f.color}33` }}>
-                    <Icon size={22} />
+      {/* ═══ UPLOAD SECTION ═══ */}
+      <div id="upload-section" ref={uploadRef} className="upload-section fade-in-section">
+        <div className="upload-section-inner">
+          {isScanning ? (
+            /* Cinematic scanning experience §47 */
+            <div className="scan-cinematic">
+              <div className="scan-title">INITIALIZING QUANTUM ASSESSMENT</div>
+              <div className="scan-steps">
+                {scanSteps.map((s, i) => (
+                  <div
+                    key={s.label}
+                    className={`scan-step ${s.done ? 'complete' : ''}`}
+                    style={{ animationDelay: `${i * 0.3}s` }}
+                  >
+                    {s.done ? (
+                      <Check size={14} className="scan-step-icon" />
+                    ) : (
+                      <div className="scan-step-icon pending" style={{ width: 14, height: 14, borderRadius: '50%', border: '2px solid var(--text-tertiary)' }} />
+                    )}
+                    {s.label}
                   </div>
-                  <h4>{f.title}</h4>
-                  <p>{f.desc}</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* Accuracy Notice */}
-      <section className="accuracy-section">
-        <div className="section-content">
-          <div className="accuracy-card">
-            <div className="accuracy-icon"><Eye size={28} /></div>
-            <div>
-              <h3>Built on technical accuracy</h3>
-              <p>
-                QuantumGuard AI distinguishes classical security problems (MD5, SHA-1, weak TLS) from
-                quantum migration concerns (RSA, ECC, ECDH). It does not claim quantum computers can
-                currently break RSA, or that PQC algorithms are mathematically guaranteed to be secure.
-                Every recommendation is grounded in NIST-standardized PQC algorithms (ML-KEM FIPS 203,
-                ML-DSA FIPS 204, SLH-DSA FIPS 205) and accurate security context.
+                ))}
+              </div>
+              <div className="scan-bar-track">
+                <div className="scan-bar-fill" style={{ width: `${scanProgress}%` }} />
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="section-badge">START YOUR ASSESSMENT</div>
+              <h2 className="section-title" style={{ textAlign: 'center' }}>
+                Scan your repository.
+              </h2>
+              <p className="section-desc" style={{ textAlign: 'center', margin: '0 auto 0' }}>
+                Upload a ZIP archive or individual source file. Everything is processed entirely in your browser.
               </p>
-            </div>
+              <div className="upload-card">
+                <div className="upload-card-header">
+                  <FileCode2 size={20} className="upload-header-icon" />
+                  <div>
+                    <h3>Scan Your Repository</h3>
+                    <p>Upload a ZIP archive or individual source file</p>
+                  </div>
+                </div>
+
+                <div
+                  ref={dropRef}
+                  className={`drop-zone ${dragging ? 'dragging' : ''} ${fileSummary ? 'has-file' : ''}`}
+                  onDragOver={onDragOver}
+                  onDragLeave={onDragLeave}
+                  onDrop={onDrop}
+                  onClick={() => !fileSummary && fileInputRef.current?.click()}
+                >
+                  <input
+                    ref={fileInputRef} type="file"
+                    accept=".zip,.py,.java,.js,.ts,.jsx,.tsx,.go,.yml,.yaml,.json,.xml,.sh,.conf,.env,.toml,.tf"
+                    style={{ display: 'none' }}
+                    onChange={e => handleFiles(e.target.files)}
+                  />
+                  {fileSummary ? (
+                    <div className="drop-zone-ready">
+                      <div className="dz-file-icon">📦</div>
+                      <div className="dz-file-info">
+                        <span className="dz-file-name">{fileSummary.name}</span>
+                        <span className="dz-file-count">{fileSummary.count} file{fileSummary.count !== 1 ? 's' : ''} ready to scan</span>
+                      </div>
+                      <button className="dz-change-btn" onClick={e => { e.stopPropagation(); setPendingFiles(null); setFileSummary(null); fileInputRef.current?.click(); }}>
+                        Change
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <Upload size={32} className="dz-icon" />
+                      <p className="dz-primary">Drop your ZIP or source file here</p>
+                      <p className="dz-secondary">or <span className="dz-link">browse files</span></p>
+                      <p className="dz-hint">.zip, .py, .java, .js, .ts, .go, .yml, .json · Max 50 MB</p>
+                    </>
+                  )}
+                </div>
+
+                {uploadError && <div className="upload-error"><AlertCircle size={14} />{uploadError}</div>}
+                {scanError && !isScanning && <div className="upload-error"><AlertCircle size={14} />{scanError}</div>}
+
+                <button className="upload-scan-btn" onClick={handleScan} disabled={!pendingFiles || isScanning}>
+                  {pendingFiles ? <><Zap size={16} /> Run Quantum Scan <ArrowRight size={16} /></> : <>Select Files to Begin</>}
+                </button>
+
+                {!pendingFiles && (
+                  <div className="sample-btns">
+                    <button
+                      className="load-sample-btn"
+                      onClick={() => { setFileSummary({ name: 'PQC-Ready Sample (85+ Score)', count: PQC_READY_SAMPLE_FILES.length }); setPendingFiles(PQC_READY_SAMPLE_FILES); }}
+                      style={{ color: '#22c55e', borderColor: 'rgba(34, 197, 94, 0.3)', background: 'rgba(34, 197, 94, 0.06)' }}
+                    >
+                      🛡️ Load PQC-Ready Sample (85+ Score)
+                    </button>
+                    <button
+                      className="load-sample-btn"
+                      onClick={() => { setFileSummary({ name: 'Vulnerable Enterprise Sample', count: ENTERPRISE_SAMPLE_FILES.length }); setPendingFiles(ENTERPRISE_SAMPLE_FILES); }}
+                      style={{ color: '#00d4ff', borderColor: 'rgba(0, 212, 255, 0.3)', background: 'rgba(0, 212, 255, 0.04)' }}
+                    >
+                      ⚡ Load Vulnerable Enterprise Sample
+                    </button>
+                  </div>
+                )}
+
+                <p className="upload-disclaimer">Files are processed entirely in your browser — no code is sent to a server.</p>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* ═══ ACCURACY NOTICE ═══ */}
+      <div ref={accuracyRef} className="landing-section fade-in-section">
+        <div className="accuracy-card">
+          <div className="accuracy-icon"><Eye size={28} /></div>
+          <div>
+            <h3>Built on technical accuracy</h3>
+            <p>
+              QuantumGuard distinguishes classical security problems (MD5, SHA-1, weak TLS) from
+              quantum migration concerns (RSA, ECC, ECDH). It does not claim quantum computers can
+              currently break RSA, or that PQC algorithms are mathematically guaranteed to be secure.
+              Every recommendation is grounded in NIST-standardized PQC algorithms (ML-KEM FIPS 203,
+              ML-DSA FIPS 204, SLH-DSA FIPS 205). Your source code never leaves your browser.
+            </p>
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* CTA */}
-      <section className="cta-section">
-        <div className="section-content">
-          <h2>Ready to assess your quantum exposure?</h2>
-          <p className="section-desc">Start with the FinTech Corp demo — no setup required.</p>
-          <div className="cta-actions" style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
-            <button className="btn btn-primary btn-lg" onClick={loadNovaBankDemo}>
-              Launch NovaBank Demo (Q-Day Scenario) <ArrowRight size={18} />
-            </button>
-            <button className="btn btn-secondary btn-lg" onClick={loadDemoAssessment}>
-              FinTech Corp Assessment
-            </button>
-          </div>
-          <p className="cta-note">
-            Includes fictional NovaBank enterprise datasets & synthetic vulnerable repositories.
-          </p>
-
+      {/* ═══ FOOTER ═══ */}
+      <footer className="landing-footer">
+        <div className="landing-footer-logo">
+          <Shield size={16} /> QuantumGuard AI
         </div>
-      </section>
+        <span className="landing-footer-text">Post-Quantum Cryptography Readiness Platform</span>
+      </footer>
     </div>
   );
 }

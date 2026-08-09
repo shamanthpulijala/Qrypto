@@ -52,13 +52,14 @@ function buildTestAssessment(): Assessment {
     scanStats: {
       filesScanned: 15,
       linesScanned: 2500,
+      findingsTotal: findings.length,
       criticalCount: findings.filter(f => f.severity === 'critical').length,
       highCount: findings.filter(f => f.severity === 'high').length,
       mediumCount: findings.filter(f => f.severity === 'medium').length,
       lowCount: findings.filter(f => f.severity === 'low').length,
-      infoCount: findings.filter(f => f.severity === 'info').length,
-      algorithmsDetected: [...new Set(findings.map(f => f.algorithm))],
-      languagesScanned: ['python', 'typescript', 'java'],
+      vulnerableAlgorithms: 3,
+      secretsFound: 2,
+      affectedServices: 5,
     },
   };
 }
@@ -92,7 +93,7 @@ describe('Frontend — Dashboard loads', () => {
 
   it('severity counts are consistent', () => {
     const { criticalCount, highCount, mediumCount, lowCount } = assessment.scanStats;
-    const total = criticalCount + highCount + mediumCount + lowCount + assessment.scanStats.infoCount;
+    const total = criticalCount + highCount + mediumCount + lowCount + (assessment.findings.filter(f => f.severity === 'info').length);
     expect(total).toBe(assessment.findings.length);
   });
 

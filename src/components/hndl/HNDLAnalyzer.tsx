@@ -11,37 +11,36 @@ export function HNDLAnalyzer() {
 
   const hndlFindings = assessment.findings.filter(f => f.category !== 'hash' && f.category !== 'secret');
 
-  // Scatter plot data: X=Data Lifetime, Y=Risk Score, Z=Data Sensitivity (determines radius)
   const scatterData = hndlFindings.map(f => {
-    let lifetimeVal = 0;
-    if (f.dataLifetime === 'ephemeral') lifetimeVal = 1;
-    else if (f.dataLifetime === 'short') lifetimeVal = 2;
-    else if (f.dataLifetime === 'medium') lifetimeVal = 5;
-    else if (f.dataLifetime === 'long') lifetimeVal = 10;
-    else lifetimeVal = 25; // indefinite
+    const lifetimeVal = f.dataLifetimeYears;
+    let lifetimeStr = 'long';
+    if (lifetimeVal <= 1) lifetimeStr = 'ephemeral';
+    else if (lifetimeVal <= 2) lifetimeStr = 'short';
+    else if (lifetimeVal <= 5) lifetimeStr = 'medium';
 
     let sensVal = 0;
-    if (f.dataSensitivity === 'public') sensVal = 100;
-    else if (f.dataSensitivity === 'internal') sensVal = 300;
-    else if (f.dataSensitivity === 'confidential') sensVal = 600;
-    else if (f.dataSensitivity === 'restricted') sensVal = 900;
-    else sensVal = 1200; // critical
+    if (f.dataSensitivity === 'low') sensVal = 100;
+    else if (f.dataSensitivity === 'medium') sensVal = 300;
+    else if (f.dataSensitivity === 'high') sensVal = 600;
+    else if (f.dataSensitivity === 'critical') sensVal = 1200;
+
+    const hndlScore = (f.riskBreakdown.dataLifetime + f.riskBreakdown.dataSensitivity) / 2;
 
     let color = '#22c55e'; // low exposure
-    if (f.riskBreakdown.hndlExposure > 60) color = '#ef4444'; // critical exposure
-    else if (f.riskBreakdown.hndlExposure > 30) color = '#f97316'; // high
-    else if (f.riskBreakdown.hndlExposure > 15) color = '#eab308'; // medium
+    if (hndlScore > 60) color = '#ef4444'; // critical exposure
+    else if (hndlScore > 30) color = '#f97316'; // high
+    else if (hndlScore > 15) color = '#eab308'; // medium
 
     return {
       id: f.id,
       algorithm: f.algorithm,
       service: f.service,
-      lifetime: f.dataLifetime,
+      lifetime: lifetimeStr,
       lifetimeVal,
       sensitivity: f.dataSensitivity,
       sensVal,
       risk: f.riskScore,
-      hndlScore: f.riskBreakdown.hndlExposure,
+      hndlScore,
       color,
     };
   });

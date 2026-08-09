@@ -253,11 +253,10 @@ describe('Scanner — Secret Detection', () => {
   });
 
   it('masks secret values in detected patterns', () => {
+    const fakeStripeKey = "sk_" + "live_" + "A".repeat(48);
     const findings = scanFile({
       path: 'api/config.py',
-      const fakeStripeKey = "sk_" + "live_" + "A".repeat(48);
-
-      content: `STRIPE_SECRET_KEY = "${fakeStripeKey}"`, "`,
+      content: `STRIPE_SECRET_KEY = "${fakeStripeKey}"`,
     });
     const secretFindings = findings.filter(f => f.category === 'secret');
     if (secretFindings.length > 0) {

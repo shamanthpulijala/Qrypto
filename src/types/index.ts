@@ -276,6 +276,16 @@ export interface CryptoAgilityScore {
   directLowLevelCalls: number;
 }
 
+export interface ScannedFileDetail {
+  path: string;
+  lineCount: number;
+  sizeBytes: number;
+  language: string;
+  findingsCount: number;
+  criticalCount: number;
+  vulnerableCount: number;
+}
+
 export interface Assessment {
   id: string;
   name: string;
@@ -294,6 +304,7 @@ export interface Assessment {
   quantumReadinessScore: number;
   chatHistory: ChatMessage[];
   scanStats: ScanStats;
+  scannedFiles?: ScannedFileDetail[];
 }
 
 export interface ScanStats {

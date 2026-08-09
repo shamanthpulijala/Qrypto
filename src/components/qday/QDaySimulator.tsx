@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Zap, Shield, ShieldAlert, ArrowRight, Activity, Clock, ShieldCheck, ChevronRight } from 'lucide-react';
+import { Zap, Shield, ShieldAlert, ArrowRight, Activity, Clock, ShieldCheck, ChevronRight, Network } from 'lucide-react';
 import { useAppStore } from '../../store/assessmentStore';
 import { scoreToColor } from '../../engine/riskEngine';
 import type { Finding } from '../../types';
@@ -24,12 +24,45 @@ export function QDaySimulator() {
     }, 1500);
   };
 
-  // Pre-calculate exposure based on year
+  // Dynamic calculation based on scanned repository findings & 2000-2050 timeline
   const getExposure = (year: number) => {
-    if (year <= 2026) return { value: 18, risk: 'Low', color: '#22c55e' };
-    if (year <= 2028) return { value: 32, risk: 'Moderate', color: '#eab308' };
-    if (year <= 2030) return { value: 61, risk: 'High', color: '#f97316' };
-    return { value: 89, risk: 'Critical', color: '#ef4444' };
+    if (!assessment) return { value: 0, risk: 'Low', color: '#22c55e', era: 'Pre-Quantum Era' };
+    const vuln = assessment.findings.filter(
+      f => f.quantumStatus === 'vulnerable' || f.classicalStatus === 'broken' || f.classicalStatus === 'weak'
+    );
+
+    // If repo is 100% PQC clean (0 vulnerable algorithms)
+    if (vuln.length === 0) {
+      return {
+        value: 0,
+        risk: 'Verified Clean',
+        color: '#22c55e',
+        era: year < 2010 ? 'Pre-Quantum Era (2000s)' :
+             year < 2020 ? 'HNDL Discovery (2010s)' :
+             year < 2030 ? 'PQC Transition (2020s)' :
+             year < 2040 ? 'CRQC Window (2030s)' : 'Post-RSA Era (2040s+)',
+      };
+    }
+
+    const basePct = Math.round((vuln.length / Math.max(1, assessment.findings.length)) * 100);
+    const decadeProgress = (year - 2000) / 50; // 0.0 at 2000, 1.0 at 2050
+    const multiplier = 0.15 + decadeProgress * 1.35;
+    const value = Math.min(100, Math.round(basePct * multiplier));
+
+    let risk = 'Low';
+    let color = '#22c55e';
+    if (value >= 70) { risk = 'Critical'; color = '#ef4444'; }
+    else if (value >= 45) { risk = 'High'; color = '#f97316'; }
+    else if (value >= 20) { risk = 'Moderate'; color = '#eab308'; }
+
+    let era = '';
+    if (year < 2010) era = 'Pre-Quantum Legacy (2000s)';
+    else if (year < 2020) era = 'HNDL Exposure (2010s)';
+    else if (year < 2030) era = 'PQC Migration Era (2020s)';
+    else if (year < 2040) era = 'CRQC Threat Window (2030s)';
+    else era = 'Post-RSA Deprecation (2040s+)';
+
+    return { value, risk, color, era };
   };
 
   const currentExposure = getExposure(qdayYear);
@@ -46,7 +79,7 @@ export function QDaySimulator() {
           </div>
         </div>
         <div className="qh-right">
-          <div className="scenario-label">SCENARIO MODEL — NOT A PREDICTION</div>
+          <div className="scenario-label">SCENARIO MODEL — 2000 TO 2050 TIMELINE</div>
         </div>
       </div>
 
@@ -55,25 +88,27 @@ export function QDaySimulator() {
         <div className="qday-controls">
           <div className="card qm-card">
             <h3 className="qm-title">Quantum Time Machine</h3>
-            <p className="qm-desc">Adjust the scenario assumption timeline to see potential exposure growth.</p>
+            <p className="qm-desc">Adjust the 2000–2050 timeline slider to observe decade-by-decade quantum risk evolution.</p>
 
             <div className="timeline-slider">
               <div className="tl-labels">
-                <span>2026</span>
-                <span>2028</span>
+                <span>2000</span>
+                <span>2010</span>
+                <span>2020</span>
                 <span>2030</span>
-                <span>2035</span>
+                <span>2040</span>
+                <span>2050</span>
               </div>
               <input
                 type="range"
-                min="2026"
-                max="2035"
+                min="2000"
+                max="2050"
                 step="1"
                 value={qdayYear}
                 onChange={e => setQDayYear(Number(e.target.value))}
                 className="slider"
               />
-              <div className="tl-current" style={{ left: `${((qdayYear - 2026) / (2035 - 2026)) * 100}%` }}>
+              <div className="tl-current" style={{ left: `${((qdayYear - 2000) / 50) * 100}%` }}>
                 {qdayYear}
               </div>
             </div>
@@ -81,6 +116,7 @@ export function QDaySimulator() {
             <div className="exposure-box" style={{ borderColor: currentExposure.color }}>
               <div className="eb-left">
                 <span className="eb-label">Potential Exposure ({qdayYear})</span>
+                <span className="eb-era-tag">{currentExposure.era}</span>
                 <span className="eb-risk" style={{ color: currentExposure.color }}>{currentExposure.risk}</span>
               </div>
               <div className="eb-right">

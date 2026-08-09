@@ -1,8 +1,6 @@
 // ============================================================
 // QuantumGuard AI — Migration Planner Engine
 // Generates prioritized 4-phase PQC migration roadmap from findings
-// §17: Usage-aware recommendations (key establishment ≠ signature)
-// §31: Standard migration tasks with Owner, Priority, Effort, Dependencies, Status
 // ============================================================
 
 import type { Finding, MigrationTask, ServiceNode } from '../types';
@@ -46,15 +44,6 @@ export function getUsageAwareRecommendation(
     };
   }
 
-  // RSA general → context-dependent
-  if (alg.startsWith('RSA')) {
-    return {
-      replacement: 'ML-KEM (key encapsulation) or ML-DSA (signatures)',
-      strategy: 'Determine usage context before recommending specific PQC algorithm. Evaluate hybrid approach during migration.',
-      notes: 'Usage context must be established before selecting PQC successor.',
-    };
-  }
-
   // ECDH used for key establishment → ML-KEM / hybrid
   if (alg === 'ECDH' || usageLower.includes('key exchange') || usageLower.includes('key establishment')) {
     return {
@@ -68,7 +57,7 @@ export function getUsageAwareRecommendation(
   if (alg === 'SHA-1' || alg.includes('SHA1')) {
     return {
       replacement: 'SHA-256 or SHA-3-256',
-      strategy: 'Replace with SHA-256 where appropriate.',
+      strategy: 'Replace with SHA-256 or SHA-3-256 where appropriate.',
       notes: 'SHA-1 has known collision vulnerabilities.',
     };
   }
@@ -107,7 +96,7 @@ export function getUsageAwareRecommendation(
   };
 }
 
-// ─── Roadmap Generator ───────────────────────────────────────
+// ─── Dynamic Roadmap Generator ───────────────────────────────
 
 export function generateMigrationRoadmap(
   findings: Finding[],
@@ -116,134 +105,217 @@ export function generateMigrationRoadmap(
   taskCounter = 0;
   const tasks: MigrationTask[] = [];
 
-  // §31 Task 1: Remove SHA-1 from Legacy API
-  const sha1Findings = findings.filter(f => f.algorithm.includes('SHA1') || f.algorithm.includes('SHA-1'));
-  tasks.push({
-    id: taskId(),
-    findingId: sha1Findings[0]?.id,
-    phase: 1,
-    title: 'Remove SHA-1 from Legacy API',
-    description: 'Deprecate SHA-1 hashing in legacy API integrations. Upgrade to SHA-256 / SHA-3 to eliminate classical collision vulnerabilities.',
-    priority: 'high',
-    effort: 'weeks',
-    effortValue: 2,
-    estimatedEffort: '2 weeks',
-    affectedServices: ['Legacy API Service', 'API Gateway'],
-    affectedFindings: sha1Findings.map(f => f.id),
-    reason: 'SHA-1 is classically broken due to collision attacks. Deprecation is required by NIST and PCI-DSS compliance.',
-    dependencies: [],
-    owner: 'DevSecOps Team',
-    dueDate: daysFromNow(14),
-    status: 'done',
-    tags: ['sha-1', 'legacy-api', 'compliance'],
-  });
-
-  // §31 Task 2: Upgrade TLS configuration
-  const tlsFindings = findings.filter(f => f.category === 'tls');
-  tasks.push({
-    id: taskId(),
-    findingId: tlsFindings[0]?.id,
-    phase: 1,
-    title: 'Upgrade TLS configuration',
-    description: 'Disable TLS 1.0/1.1 across all load balancers and API endpoints. Enforce minimum TLS 1.2 with preference for TLS 1.3 cipher suites.',
-    priority: 'critical',
-    effort: 'weeks',
-    effortValue: 2,
-    estimatedEffort: '2 weeks',
-    affectedServices: ['API Gateway', 'Payment Service', 'Auth Service'],
-    affectedFindings: tlsFindings.map(f => f.id),
-    reason: 'Weak TLS protocols expose communications to POODLE/BEAST attacks. Upgrade is mandatory before PQC transition.',
-    dependencies: ['MT-001'],
-    owner: 'Core Infrastructure Team',
-    dueDate: daysFromNow(21),
-    status: 'done',
-    tags: ['tls', 'infrastructure', 'security'],
-  });
-
-  // §31 Task 3: Rotate exposed secret
+  const vulnerableFindings = findings.filter(f => f.quantumStatus === 'vulnerable');
+  const weakFindings = findings.filter(f => f.quantumStatus === 'classical-weak');
   const secretFindings = findings.filter(f => f.category === 'secret');
-  tasks.push({
-    id: taskId(),
-    findingId: secretFindings[0]?.id,
-    phase: 1,
-    title: 'Rotate exposed secret',
-    description: 'Revoke and rotate hardcoded cryptographic keys and credentials detected in source code. Inject via HashiCorp Vault.',
-    priority: 'critical',
-    effort: 'days',
-    effortValue: 1,
-    estimatedEffort: '3 days',
-    affectedServices: ['Payment Service', 'Auth Service'],
-    affectedFindings: secretFindings.map(f => f.id),
-    reason: 'Hardcoded secrets in source repositories represent immediate compromise vectors regardless of quantum computing timeline.',
-    dependencies: [],
-    owner: 'Security Engineering',
-    dueDate: daysFromNow(5),
-    status: 'in-progress',
-    tags: ['secrets', 'immediate', 'credentials'],
-  });
+  const tlsFindings = findings.filter(f => f.category === 'tls' && f.quantumStatus !== 'adequate');
+  const pqcFindings = findings.filter(f => f.quantumStatus === 'quantum-resistant');
 
-  // §31 Task 4: Assess RSA payment certificate
-  const paymentCertFindings = findings.filter(f => f.service.includes('Payment') || f.algorithm.includes('RSA'));
-  tasks.push({
-    id: taskId(),
-    findingId: paymentCertFindings[0]?.id,
-    phase: 2,
-    title: 'Assess RSA payment certificate',
-    description: 'Audit 2048-bit and 4096-bit RSA TLS certificates used in Payment Service. Formulate PQC CA migration timeline.',
-    priority: 'high',
-    effort: 'months',
-    effortValue: 3,
-    estimatedEffort: '1 month',
-    affectedServices: ['Payment Service'],
-    affectedFindings: paymentCertFindings.map(f => f.id),
-    reason: 'RSA certificates protecting high-value transactions must transition to post-quantum signatures (ML-DSA / SLH-DSA).',
-    dependencies: ['MT-002', 'MT-003'],
-    owner: 'Payment Engineering',
-    dueDate: daysFromNow(45),
-    status: 'todo',
-    tags: ['rsa', 'payment', 'pqc-assessment'],
-  });
+  // Case A: High Readiness / PQC-Migrated Repo (0 critical/vulnerable findings or mostly PQC)
+  if (vulnerableFindings.length === 0 && weakFindings.length === 0 && secretFindings.length === 0) {
+    tasks.push({
+      id: taskId(),
+      phase: 1,
+      title: 'Maintain NIST PQC Compliance & Continuous Audit',
+      description: 'Continuous monitoring of active NIST ML-KEM (FIPS 203) and ML-DSA (FIPS 204) algorithms across all microservices.',
+      priority: 'low',
+      effort: 'days',
+      effortValue: 1,
+      estimatedEffort: '3 days',
+      affectedServices: services.map(s => s.name).slice(0, 3),
+      affectedFindings: pqcFindings.map(f => f.id).slice(0, 5),
+      reason: 'Architecture is verified PQC-compliant with 0 quantum-vulnerable primitives.',
+      dependencies: [],
+      owner: 'Lead Cryptographer',
+      dueDate: daysFromNow(7),
+      status: 'done',
+      tags: ['pqc-verified', 'compliance', 'fips-203'],
+    });
 
-  // §31 Task 5: Evaluate hybrid key establishment
-  const keyEstFindings = findings.filter(f => f.usage.toLowerCase().includes('key') || f.quantumStatus === 'vulnerable');
-  tasks.push({
-    id: taskId(),
-    findingId: keyEstFindings[0]?.id,
-    phase: 2,
-    title: 'Evaluate hybrid key establishment',
-    description: 'Benchmark hybrid X25519 + ML-KEM-768 key encapsulation in staging environment for internet-facing data paths.',
-    priority: 'high',
-    effort: 'months',
-    effortValue: 4,
-    estimatedEffort: '2 months',
-    affectedServices: ['API Gateway', 'Payment Service'],
-    affectedFindings: keyEstFindings.map(f => f.id),
-    reason: 'Hybrid key encapsulation protects long-lived sensitive data against Harvest-Now-Decrypt-Later attacks while preserving classical safety.',
-    dependencies: ['MT-004'],
-    owner: 'Cryptography Research Team',
-    dueDate: daysFromNow(60),
-    status: 'todo',
-    tags: ['ml-kem', 'hybrid', 'hndl-mitigation'],
-  });
+    tasks.push({
+      id: taskId(),
+      phase: 2,
+      title: 'Benchmark ML-KEM & ML-DSA Performance in Staging',
+      description: 'Run automated load testing on ML-KEM-768 key exchange latency and ML-DSA-65 signature sizes under high throughput.',
+      priority: 'low',
+      effort: 'weeks',
+      effortValue: 2,
+      estimatedEffort: '2 weeks',
+      affectedServices: services.map(s => s.name).slice(0, 4),
+      affectedFindings: pqcFindings.map(f => f.id).slice(0, 5),
+      reason: 'Validate post-quantum throughput and memory overhead under enterprise load.',
+      dependencies: ['MT-001'],
+      owner: 'Performance Engineering',
+      dueDate: daysFromNow(30),
+      status: 'in-progress',
+      tags: ['benchmarking', 'performance', 'pqc'],
+    });
 
-  // §31 Task 6: Centralize crypto configuration
+    tasks.push({
+      id: taskId(),
+      phase: 3,
+      title: 'Automate Cryptographic Bill of Materials (CBOM) in CI/CD',
+      description: 'Integrate automated Qrypto CBOM scanning into GitHub Actions / GitLab CI pipeline on every pull request.',
+      priority: 'medium',
+      effort: 'weeks',
+      effortValue: 2,
+      estimatedEffort: '2 weeks',
+      affectedServices: services.map(s => s.name).slice(0, 4),
+      affectedFindings: [],
+      reason: 'Prevent regressions or accidental introduction of legacy RSA/ECC primitives in new code commits.',
+      dependencies: ['MT-002'],
+      owner: 'DevSecOps Team',
+      dueDate: daysFromNow(60),
+      status: 'todo',
+      tags: ['cbom', 'cicd', 'automation'],
+    });
+
+    tasks.push({
+      id: taskId(),
+      phase: 4,
+      title: 'Annual Post-Quantum Cryptographic Agility Review',
+      description: 'Conduct annual audit of cryptographic abstraction layers to ensure readiness for future NIST PQC round updates.',
+      priority: 'low',
+      effort: 'months',
+      effortValue: 3,
+      estimatedEffort: '1 month',
+      affectedServices: services.map(s => s.name),
+      affectedFindings: [],
+      reason: 'Ensure enterprise crypto-agility remains high as cryptographic standards evolve.',
+      dependencies: ['MT-003'],
+      owner: 'Security Architecture Board',
+      dueDate: daysFromNow(120),
+      status: 'todo',
+      tags: ['crypto-agility', 'annual-audit'],
+    });
+
+    return tasks;
+  }
+
+  // Case B: Standard Scanned Repository with Detected Vulnerabilities
+
+  // Phase 1: Rotate Secrets if detected
+  if (secretFindings.length > 0) {
+    const affectedServs = [...new Set(secretFindings.map(f => f.service))];
+    tasks.push({
+      id: taskId(),
+      findingId: secretFindings[0]?.id,
+      phase: 1,
+      title: `Rotate ${secretFindings.length} Hardcoded Secret(s)`,
+      description: `Revoke and rotate hardcoded credentials detected in ${affectedServs.join(', ')}. Inject via Vault / AWS Secrets Manager.`,
+      priority: 'critical',
+      effort: 'days',
+      effortValue: 1,
+      estimatedEffort: '3 days',
+      affectedServices: affectedServs,
+      affectedFindings: secretFindings.map(f => f.id),
+      reason: 'Hardcoded secrets represent an immediate compromise vector.',
+      dependencies: [],
+      owner: 'Security Engineering',
+      dueDate: daysFromNow(3),
+      status: 'todo',
+      tags: ['secrets', 'immediate', 'credentials'],
+    });
+  }
+
+  // Phase 1: Deprecate Classically Weak Algorithms (MD5, SHA-1, Weak TLS)
+  if (weakFindings.length > 0 || tlsFindings.length > 0) {
+    const weakList = [...new Set([...weakFindings, ...tlsFindings])];
+    const weakAlgos = [...new Set(weakList.map(f => f.algorithm))].join(', ');
+    const affectedServs = [...new Set(weakList.map(f => f.service))];
+    tasks.push({
+      id: taskId(),
+      findingId: weakList[0]?.id,
+      phase: 1,
+      title: `Deprecate Classically Weak Algorithms (${weakAlgos})`,
+      description: `Replace deprecated primitives (${weakAlgos}) in ${affectedServs.join(', ')} with SHA-256 / SHA-3 or TLS 1.3.`,
+      priority: 'high',
+      effort: 'weeks',
+      effortValue: 2,
+      estimatedEffort: '2 weeks',
+      affectedServices: affectedServs,
+      affectedFindings: weakList.map(f => f.id),
+      reason: 'Classically weak primitives are vulnerable to immediate collision or decryption attacks.',
+      dependencies: [],
+      owner: 'Core Services Team',
+      dueDate: daysFromNow(14),
+      status: 'in-progress',
+      tags: ['legacy-crypto', 'deprecation', 'sha1-md5'],
+    });
+  }
+
+  // Phase 2: Migrate RSA / ECC Key Establishment to ML-KEM (FIPS 203)
+  const keyEstFindings = vulnerableFindings.filter(f =>
+    f.algorithm.startsWith('RSA') || f.algorithm === 'ECDH' || f.algorithm === 'DH' || f.category === 'public-key'
+  );
+  if (keyEstFindings.length > 0) {
+    const affectedServs = [...new Set(keyEstFindings.map(f => f.service))];
+    tasks.push({
+      id: taskId(),
+      findingId: keyEstFindings[0]?.id,
+      phase: 2,
+      title: `Migrate ${keyEstFindings.length} Key Establishment Instance(s) to ML-KEM-768`,
+      description: `Implement hybrid X25519 + ML-KEM-768 key encapsulation for key exchange in ${affectedServs.join(', ')}.`,
+      priority: 'critical',
+      effort: 'months',
+      effortValue: 3,
+      estimatedEffort: '1 month',
+      affectedServices: affectedServs,
+      affectedFindings: keyEstFindings.map(f => f.id),
+      reason: 'Public key encryption and key exchange are vulnerable to Shor\'s algorithm (Harvest-Now-Decrypt-Later).',
+      dependencies: tasks.length > 0 ? [tasks[0].id] : [],
+      owner: 'Cryptography Engineering',
+      dueDate: daysFromNow(45),
+      status: 'todo',
+      tags: ['ml-kem', 'fips-203', 'hybrid-kem'],
+    });
+  }
+
+  // Phase 3: Migrate RSA / ECDSA Signatures to ML-DSA (FIPS 204)
+  const sigFindings = vulnerableFindings.filter(f =>
+    f.algorithm === 'ECDSA' || f.algorithm === 'DSA' || (f.algorithm.startsWith('RSA') && f.usage.toLowerCase().includes('sign'))
+  );
+  if (sigFindings.length > 0) {
+    const affectedServs = [...new Set(sigFindings.map(f => f.service))];
+    tasks.push({
+      id: taskId(),
+      findingId: sigFindings[0]?.id,
+      phase: 3,
+      title: `Migrate Digital Signatures to ML-DSA-65 (FIPS 204)`,
+      description: `Replace classical digital signatures in ${affectedServs.join(', ')} with ML-DSA-65 post-quantum signatures.`,
+      priority: 'high',
+      effort: 'months',
+      effortValue: 4,
+      estimatedEffort: '2 months',
+      affectedServices: affectedServs,
+      affectedFindings: sigFindings.map(f => f.id),
+      reason: 'Digital signatures must be post-quantum secure to prevent transaction forging.',
+      dependencies: tasks.length > 0 ? [tasks[tasks.length - 1].id] : [],
+      owner: 'Security Architecture',
+      dueDate: daysFromNow(75),
+      status: 'todo',
+      tags: ['ml-dsa', 'fips-204', 'signatures'],
+    });
+  }
+
+  // Phase 4: Centralize Crypto-Agility Abstraction Layer
   tasks.push({
     id: taskId(),
-    phase: 3,
-    title: 'Centralize crypto configuration',
-    description: 'Refactor direct low-level cryptographic library calls into a unified crypto-provider interface to support seamless algorithm agility.',
+    phase: 4,
+    title: 'Centralize Cryptographic Abstraction & Provider Layer',
+    description: `Refactor direct cryptographic library calls across ${services.map(s => s.name).slice(0, 3).join(', ')} into a central Security Policy Provider.`,
     priority: 'medium',
     effort: 'months',
     effortValue: 5,
     estimatedEffort: '3 months',
-    affectedServices: ['User Service', 'Account Database', 'Auth Service'],
-    affectedFindings: [],
-    reason: 'Decentralized crypto implementations complicate algorithm replacement during future PQC upgrades.',
-    dependencies: ['MT-005'],
+    affectedServices: services.map(s => s.name),
+    affectedFindings: findings.filter(f => f.isHardcoded).map(f => f.id),
+    reason: 'Centralized algorithm management ensures future PQC algorithm swaps require zero application code changes.',
+    dependencies: tasks.length > 0 ? [tasks[tasks.length - 1].id] : [],
     owner: 'Architecture Guild',
-    dueDate: daysFromNow(90),
+    dueDate: daysFromNow(120),
     status: 'todo',
-    tags: ['crypto-agility', 'architecture', 'refactoring'],
+    tags: ['crypto-agility', 'refactoring', 'architecture'],
   });
 
   return tasks;

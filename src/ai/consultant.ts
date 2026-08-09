@@ -134,6 +134,57 @@ export function getDeterministicFallbackGuidance(question: string, assessment: A
   return { answer, citedFindings };
 }
 
+// ─── OpenRouter API Integration ────────────────────────────────
+async function callOpenRouter(
+  apiKey: string,
+  systemPrompt: string,
+  question: string
+): Promise<string> {
+  const models = [
+    'google/gemini-2.0-flash-001',
+    'meta-llama/llama-3.3-70b-instruct',
+    'openai/gpt-4o-mini',
+    'deepseek/deepseek-r1-distill-llama-70b',
+  ];
+
+  let lastErr: Error | null = null;
+  for (const model of models) {
+    try {
+      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey.trim()}`,
+          'HTTP-Referer': 'https://qrypto.local',
+          'X-Title': 'Qrypto AI Security Consultant',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: question },
+          ],
+          temperature: 0.3,
+          max_tokens: 2048,
+        }),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`OpenRouter ${res.status}: ${errText}`);
+      }
+
+      const data = await res.json();
+      const text = data.choices?.[0]?.message?.content;
+      if (text) return text;
+    } catch (err: any) {
+      console.warn(`OpenRouter model ${model} failed:`, err.message || err);
+      lastErr = err;
+    }
+  }
+  throw lastErr || new Error('Failed to query OpenRouter models.');
+}
+
 // ─── Main AI Consultant Function ──────────────────────────────
 
 export async function askConsultant(
@@ -157,11 +208,9 @@ export async function askConsultant(
     };
   }
 
-  try {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const structuredContext = buildAIContext(assessment, question);
+  const structuredContext = buildAIContext(assessment, question);
 
-    const systemPrompt = `You are QuantumGuard AI, an enterprise cryptography and post-quantum migration assistant.
+  const systemPrompt = `You are Qrypto AI, an enterprise cryptography and post-quantum migration security consultant.
 
 STRUCTURED ASSESSMENT DATA:
 ${formatAIContextPrompt(structuredContext)}
@@ -171,30 +220,74 @@ STRICT RULES YOU MUST FOLLOW:
 2. Explain why it matters.
 3. Distinguish classical security risk from quantum migration risk.
 4. Recommend a migration strategy citing NIST PQC standards (ML-KEM FIPS 203, ML-DSA FIPS 204, SLH-DSA FIPS 205).
-5. Cite finding IDs [NB-XXXX] or [QG-XXXX] when relevant.`;
+5. Cite finding IDs when relevant.`;
 
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-2.0-flash',
-      systemInstruction: systemPrompt,
-    });
+  // Branch 1: OpenRouter API Key (sk-or-...)
+  if (apiKey.includes('sk-or-')) {
+    try {
+      const answer = await callOpenRouter(apiKey, systemPrompt, question);
+      const citedFindings: string[] = [];
+      const idMatches = answer.match(/\[(?:NB|QG|F|MT)-\d{3,4}\]/g) || [];
+      idMatches.forEach(match => {
+        const id = match.replace(/[\[\]]/g, '');
+        if (!citedFindings.includes(id)) citedFindings.push(id);
+      });
+      return { answer, citedFindings };
+    } catch (err: any) {
+      console.error('OpenRouter call failed:', err);
+      const fallback = getDeterministicFallbackGuidance(question, assessment);
+      return {
+        answer: `> ⚠️ **OpenRouter API Error**: ${err.message || 'Unable to connect'}. Showing deterministic migration guidance.\n\n${fallback.answer.replace('> **Notice**: AI service unavailable. Showing deterministic migration guidance.\n\n', '')}`,
+        citedFindings: fallback.citedFindings,
+      };
+    }
+  }
 
-    const chat = model.startChat({ history: chatHistory });
-    const result = await chat.sendMessage(question);
-    const answer = result.response.text();
+  // Branch 2: Google Gemini SDK Key
+  try {
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const modelsToTry = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash'];
+    let lastError: any = null;
 
-    const citedFindings: string[] = [];
-    const idMatches = answer.match(/\[(?:NB|QG|F|MT)-\d{3,4}\]/g) || [];
-    idMatches.forEach(match => {
-      const id = match.replace(/[\[\]]/g, '');
-      if (!citedFindings.includes(id)) citedFindings.push(id);
-    });
+    for (const modelName of modelsToTry) {
+      try {
+        const model = genAI.getGenerativeModel({
+          model: modelName,
+          systemInstruction: systemPrompt,
+        });
 
-    return { answer, citedFindings };
+        const chat = model.startChat({ history: chatHistory });
+        const result = await chat.sendMessage(question);
+        const answer = result.response.text();
+
+        const citedFindings: string[] = [];
+        const idMatches = answer.match(/\[(?:NB|QG|F|MT)-\d{3,4}\]/g) || [];
+        idMatches.forEach(match => {
+          const id = match.replace(/[\[\]]/g, '');
+          if (!citedFindings.includes(id)) citedFindings.push(id);
+        });
+
+        return { answer, citedFindings };
+      } catch (err: any) {
+        lastError = err;
+        console.warn(`Gemini model ${modelName} failed:`, err.message || err);
+      }
+    }
+
+    const fallback = getDeterministicFallbackGuidance(question, assessment);
+    const isQuota = lastError?.message?.includes('429') || lastError?.message?.includes('quota') || lastError?.message?.includes('Quota');
+    const noticeText = isQuota
+      ? `> ⚠️ **API Quota Exceeded**: The API key quota limit was reached. You can update your API key in **Settings**. Showing deterministic migration guidance.\n\n`
+      : `> **Notice**: AI service unavailable. Showing deterministic migration guidance.\n\n`;
+
+    return {
+      answer: `${noticeText}${fallback.answer.replace('> **Notice**: AI service unavailable. Showing deterministic migration guidance.\n\n', '')}`,
+      citedFindings: fallback.citedFindings,
+    };
   } catch (error: any) {
-    console.error('Gemini API call failed:', error);
     const fallback = getDeterministicFallbackGuidance(question, assessment);
     return {
-      answer: `> **Notice**: AI service unavailable (${error.message || 'API error'}). Showing deterministic migration guidance.\n\n${fallback.answer.replace('> **Notice**: AI service unavailable. Showing deterministic migration guidance.\n\n', '')}`,
+      answer: `> ⚠️ **API Error**: Unable to process request (${error.message || 'Error'}). Showing deterministic migration guidance.\n\n${fallback.answer.replace('> **Notice**: AI service unavailable. Showing deterministic migration guidance.\n\n', '')}`,
       citedFindings: fallback.citedFindings,
     };
   }

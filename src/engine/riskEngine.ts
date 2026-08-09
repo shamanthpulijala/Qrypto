@@ -151,8 +151,9 @@ export function computeRiskScore(input: RiskInput): RiskBreakdown {
   };
 }
 
-// ─── Severity Thresholds ──────────────────────────────────────
+// ─── Severity & Score Color Helpers ───────────────────────────
 
+/** Risk score color (higher risk = red) */
 export function scoreToSeverity(score: number): string {
   if (score >= 80) return 'Critical';
   if (score >= 60) return 'High';
@@ -167,6 +168,15 @@ export function scoreToColor(score: number): string {
   if (score >= 40) return '#eab308';
   if (score >= 20) return '#22c55e';
   return '#94a3b8';
+}
+
+/** Readiness & Agility score color (higher score = green/good!) */
+export function readinessScoreToColor(score: number): string {
+  if (score >= 80) return '#22c55e'; // Green (Excellent / Agile)
+  if (score >= 60) return '#14b8a6'; // Cyan/Teal (Good)
+  if (score >= 40) return '#eab308'; // Yellow (Moderate)
+  if (score >= 20) return '#f97316'; // Orange (Low)
+  return '#ef4444';                   // Red (Poor / Rigid)
 }
 
 // ─── Quantum Readiness Index ─────────────────────────────────

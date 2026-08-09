@@ -10,7 +10,7 @@ import { useAppStore } from '../../store/assessmentStore';
 import {
   Activity, CheckCircle2, XCircle, Code, Settings, Unlock, RefreshCw, Box
 } from 'lucide-react';
-import { scoreToColor } from '../../engine/riskEngine';
+import { readinessScoreToColor } from '../../engine/riskEngine';
 import './CryptoAgility.css';
 
 export function CryptoAgility() {
@@ -29,7 +29,7 @@ export function CryptoAgility() {
   const { cryptoAgilityScore } = assessment;
   const { breakdown, evidence, positives, negatives } = cryptoAgilityScore;
 
-  const scoreColor = scoreToColor(cryptoAgilityScore.score);
+  const scoreColor = readinessScoreToColor(cryptoAgilityScore.score);
 
   const breakdownItems = [
     { label: 'Algorithm Abstraction', value: breakdown.algorithmAbstraction, icon: Box },
@@ -80,9 +80,9 @@ export function CryptoAgility() {
                     <span>{item.label}</span>
                   </div>
                   <div className="ab-track">
-                    <div className="ab-fill" style={{ width: `${item.value}%`, background: scoreToColor(item.value) }} />
+                    <div className="ab-fill" style={{ width: `${item.value}%`, background: readinessScoreToColor(item.value) }} />
                   </div>
-                  <div className="ab-value" style={{ color: scoreToColor(item.value) }}>
+                  <div className="ab-value" style={{ color: readinessScoreToColor(item.value) }}>
                     {item.value}
                   </div>
                 </div>
@@ -126,7 +126,7 @@ export function CryptoAgility() {
                     <span className="ec-category">{ev.category}</span>
                     <h4 className="ec-title">{ev.scoreName}</h4>
                   </div>
-                  <div className="ec-score" style={{ color: scoreToColor(ev.scoreValue) }}>
+                  <div className="ec-score" style={{ color: readinessScoreToColor(ev.scoreValue) }}>
                     {ev.scoreValue}/100
                   </div>
                 </div>

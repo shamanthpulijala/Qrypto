@@ -13,6 +13,9 @@ import { CryptoAgility } from './components/agility/CryptoAgility';
 import { AIAdvisor } from './components/aiAdvisor/AIAdvisor';
 import { Reports } from './components/reports/Reports';
 import { Settings } from './components/settings/Settings';
+import { QuantumCursor } from './components/cursor/QuantumCursor';
+import { DashboardBackground } from './components/dashboard/DashboardBackground';
+import { CommandPalette } from './components/common/CommandPalette';
 import { useAppStore } from './store/assessmentStore';
 
 function App() {
@@ -90,11 +93,14 @@ function App() {
   };
 
   if (currentPage === 'landing') {
-    return <Landing />;
+    return <><QuantumCursor /><Landing /></>;
   }
 
   return (
     <div className="app-shell">
+      <QuantumCursor />
+      <DashboardBackground />
+      <CommandPalette />
       <Sidebar />
       <main className="main-content">
         <Topbar />

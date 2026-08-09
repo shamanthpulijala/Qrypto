@@ -1,240 +1,209 @@
+/* ============================================================
+   QuantumGuard AI — Command Center Dashboard §21-§26
+   Asymmetric Editorial Layout
+   ============================================================ */
+
 .dashboard {
   display: flex;
   flex-direction: column;
-  gap: var(--space-5);
-}
-
-/* ── Top Row ────────────────────────────────────────────────── */
-.dashboard-top {
-  display: grid;
-  grid-template-columns: 380px 1fr;
-  gap: var(--space-5);
-}
-
-/* Readiness Card */
-.readiness-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-4);
-}
-
-.readiness-gauge {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.gauge-container {
+  gap: var(--space-6);
   position: relative;
+  z-index: 1;
 }
 
-.gauge-svg {
-  width: 180px;
-  height: 180px;
+/* ── Asymmetric Layout §26 ──────────────────────────────────── */
+.dashboard-asymmetric {
+  display: grid;
+  grid-template-columns: 60% 40%;
+  gap: var(--space-6);
+  align-items: start;
 }
 
-/* Breakdown */
-.readiness-breakdown {
-  width: 100%;
+@media (max-width: 1100px) {
+  .dashboard-asymmetric {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dash-left {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-6);
 }
 
-.rb-row {
+.dash-right {
   display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+/* ── Quantum Core Orbital Readiness Gauge §25 ──────────────── */
+.quantum-core-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  padding: 1.75rem;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: var(--space-3);
-}
-
-.rb-label {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  min-width: 130px;
-}
-
-.rb-bar {
-  flex: 1;
-  height: 5px;
-  background: var(--border-subtle);
-  border-radius: var(--radius-full);
+  position: relative;
   overflow: hidden;
+  box-shadow: var(--glass-shadow);
 }
 
-.rb-fill {
-  height: 100%;
-  border-radius: var(--radius-full);
-  transition: width 1.2s ease;
-}
-
-.rb-value {
-  font-size: 0.75rem;
-  font-family: var(--font-mono);
-  font-weight: 600;
-  min-width: 40px;
-  text-align: right;
-}
-
-/* Stats Grid */
-.dashboard-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(2, 1fr);
-  gap: var(--space-3);
-}
-
-.stat-card {
+.orbital-gauge-container {
   position: relative;
+  width: 220px;
+  height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.orbital-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.orbital-ring {
+  fill: none;
+  stroke-linecap: round;
+  transition: all 0.5s ease;
   cursor: pointer;
 }
 
-.stat-icon {
-  margin-bottom: var(--space-2);
-  color: var(--text-tertiary);
+.orbital-ring:hover {
+  stroke-width: 8;
+  filter: drop-shadow(0 0 8px currentColor);
 }
 
-.stat-action {
+.orbital-center {
   position: absolute;
-  top: var(--space-4);
-  right: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.orbital-score {
+  font-size: 2.75rem;
+  font-weight: 800;
+  font-family: var(--font-sans);
+  line-height: 1;
+  color: var(--text-primary);
+}
+
+.orbital-max {
+  font-size: 0.75rem;
   color: var(--text-tertiary);
-  opacity: 0;
-  transition: opacity var(--transition-fast);
+  font-family: var(--font-mono);
+  margin-top: 2px;
 }
 
-.stat-card:hover .stat-action { opacity: 1; }
-
-/* ── Q-Day Section ──────────────────────────────────────────── */
-.qday-section {
-  background: linear-gradient(135deg, #0d0a0a, #1a1010);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  border-radius: var(--radius-lg);
-  padding: var(--space-5);
+.orbital-status {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  margin-top: 6px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
 }
 
-.qday-content {
+.orbital-tooltip {
+  margin-top: 1rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  background: var(--bg-card);
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Digital Twin Preview Frame §27 ────────────────────────── */
+.digital-twin-frame {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  padding: 1.5rem;
+  min-height: 480px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.dt-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-4);
-  flex-wrap: wrap;
+  margin-bottom: 1rem;
 }
 
-.qday-title {
-  font-size: 1rem;
+.dt-title {
+  font-size: 0.95rem;
   font-weight: 700;
+  letter-spacing: 0.05em;
   color: var(--text-primary);
-  margin-bottom: 4px;
-}
-
-.qday-desc {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-  max-width: 600px;
-}
-
-.qday-results {
-  margin-top: var(--space-4);
-  padding-top: var(--space-4);
-  border-top: 1px solid rgba(239, 68, 68, 0.15);
   display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
+  align-items: center;
+  gap: 8px;
 }
 
-.qday-impact-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--space-4);
-}
-
-.qday-impact-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.qi-value {
-  font-size: 1.5rem;
-  font-weight: 800;
-  font-family: var(--font-mono);
-  color: var(--text-primary);
-}
-
-.qi-value.danger { color: var(--status-critical); }
-.qi-value.warn   { color: var(--status-medium); }
-
-.qi-label {
-  font-size: 0.75rem;
+.dt-sub {
+  font-size: 0.72rem;
   color: var(--text-tertiary);
 }
 
-.qday-narrative {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-  line-height: 1.6;
-  padding: var(--space-3);
-  background: rgba(239, 68, 68, 0.05);
-  border-radius: var(--radius-md);
-  border-left: 3px solid rgba(239, 68, 68, 0.4);
+.dt-body {
+  flex: 1;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  position: relative;
+  overflow: hidden;
+  min-height: 380px;
+  background: radial-gradient(circle at 50% 50%, rgba(124, 58, 237, 0.03) 0%, transparent 80%);
 }
 
-/* ── Charts Row ─────────────────────────────────────────────── */
-.charts-row {
+/* ── Stat Mini Cards ────────────────────────────────────────── */
+.mini-stats-grid {
   display: grid;
-  grid-template-columns: 220px 1fr 240px;
-  gap: var(--space-5);
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
 }
 
-.chart-card { }
-.chart-card.wide { }
-
-/* Service Risk */
-.service-risk-list {
+.mini-stat {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.srv-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
+.mini-stat:hover {
+  border-color: var(--accent-violet);
+  transform: translateY(-1px);
 }
 
-.srv-name {
-  font-size: 0.78rem;
-  color: var(--text-secondary);
-  min-width: 110px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.srv-bar-container {
-  flex: 1;
-  display: flex;
-  align-items: center;
-}
-
-.srv-score {
+.mini-stat-val {
+  font-size: 1.4rem;
+  font-weight: 800;
   font-family: var(--font-mono);
-  font-size: 0.8rem;
-  font-weight: 700;
-  min-width: 30px;
-  text-align: right;
 }
 
-/* ── Responsive ─────────────────────────────────────────────── */
-@media (max-width: 1200px) {
-  .dashboard-top { grid-template-columns: 1fr; }
-  .dashboard-stats { grid-template-columns: repeat(3, 1fr); }
-  .charts-row { grid-template-columns: 1fr 1fr; }
-  .qday-impact-grid { grid-template-columns: repeat(2, 1fr); }
-}
-
-@media (max-width: 800px) {
-  .dashboard-stats { grid-template-columns: repeat(2, 1fr); }
-  .charts-row { grid-template-columns: 1fr; }
+.mini-stat-lbl {
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+  font-weight: 600;
 }

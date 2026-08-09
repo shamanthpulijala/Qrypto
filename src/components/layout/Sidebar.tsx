@@ -1,37 +1,32 @@
 // ============================================================
-// QuantumGuard AI — §26 Navigation Sidebar
-//
-// Sidebar items:
-// Overview | Inventory | Findings | Q-Day Simulator |
-// Attack Graph | AI Advisor | Migration | Crypto Agility |
-// Reports | Settings
+// QuantumGuard AI — Navigation Rail §22
+// Slim floating glass sidebar with icon-only default state
 // ============================================================
 
 import React from 'react';
 import {
-  LayoutDashboard, Package, AlertTriangle, Zap, Network,
-  Map, Bot, FileText, Shield, BarChart3, ChevronLeft,
-  ChevronRight, Settings
+  LayoutDashboard, Search, Network, AlertTriangle, Zap,
+  Map, Bot, FileText, Shield, BarChart3, Settings
 } from 'lucide-react';
 import { useAppStore } from '../../store/assessmentStore';
 import './Sidebar.css';
 
 const NAV_ITEMS = [
   { id: 'dashboard',  icon: LayoutDashboard, label: 'Overview',       group: 'main' },
-  { id: 'inventory',  icon: Package,         label: 'Inventory',      group: 'main' },
+  { id: 'inventory',  icon: Search,          label: 'Discovery',      group: 'main' },
   { id: 'findings',   icon: AlertTriangle,   label: 'Findings',       group: 'main' },
-  { id: 'qday',       icon: Zap,             label: 'Q-Day Simulator',group: 'quantum' },
-  { id: 'attackmap',  icon: Network,         label: 'Attack Graph',   group: 'quantum' },
-  { id: 'ai',         icon: Bot,             label: 'AI Advisor',     group: 'quantum' },
+  { id: 'attackmap',  icon: Network,         label: 'Crypto Twin',    group: 'quantum' },
+  { id: 'qday',       icon: Zap,             label: 'Q-Day',          group: 'quantum' },
+  { id: 'agility',    icon: BarChart3,       label: 'Agility',        group: 'quantum' },
   { id: 'migration',  icon: Map,             label: 'Migration',      group: 'planning' },
-  { id: 'agility',    icon: BarChart3,       label: 'Crypto Agility', group: 'planning' },
+  { id: 'ai',         icon: Bot,             label: 'AI Advisor',     group: 'planning' },
   { id: 'reports',    icon: FileText,        label: 'Reports',        group: 'planning' },
 ];
 
 const GROUP_LABELS: Record<string, string> = {
-  main: 'Core Platform',
-  quantum: 'Quantum Analysis',
-  planning: 'Migration & Governance',
+  main: 'Core',
+  quantum: 'Analysis',
+  planning: 'Actions',
 };
 
 export function Sidebar() {
@@ -40,21 +35,15 @@ export function Sidebar() {
   const groups = ['main', 'quantum', 'planning'];
 
   return (
-    <aside className={`sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
+    <aside className="sidebar">
       {/* Logo */}
       <div className="sidebar-logo">
         <div className="logo-icon">
-          <Shield size={20} />
+          <Shield size={16} />
         </div>
-        {!sidebarCollapsed && (
-          <div className="logo-text">
-            <span className="logo-name">QuantumGuard</span>
-            <span className="logo-tag">AI</span>
-          </div>
-        )}
-        <button className="sidebar-toggle" onClick={toggleSidebar} title="Toggle sidebar">
-          {sidebarCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-        </button>
+        <div className="logo-text">
+          <span className="logo-name">QuantumGuard</span>
+        </div>
       </div>
 
       {/* Nav Groups */}
@@ -63,9 +52,7 @@ export function Sidebar() {
           const items = NAV_ITEMS.filter(i => i.group === group);
           return (
             <div key={group} className="nav-group">
-              {!sidebarCollapsed && (
-                <span className="nav-group-label">{GROUP_LABELS[group]}</span>
-              )}
+              <span className="nav-group-label">{GROUP_LABELS[group]}</span>
               {items.map(item => {
                 const Icon = item.icon;
                 const isActive = currentPage === item.id;
@@ -75,11 +62,11 @@ export function Sidebar() {
                     key={item.id}
                     className={`nav-item ${isActive ? 'active' : ''} ${isDisabled ? 'disabled' : ''}`}
                     onClick={() => !isDisabled && setCurrentPage(item.id)}
-                    title={sidebarCollapsed ? item.label : undefined}
+                    title={item.label}
                   >
                     <Icon size={16} className="nav-icon" />
-                    {!sidebarCollapsed && <span className="nav-label">{item.label}</span>}
-                    {isActive && !sidebarCollapsed && <div className="nav-active-dot" />}
+                    <span className="nav-label">{item.label}</span>
+                    {isActive && <div className="nav-active-dot" />}
                   </button>
                 );
               })}
@@ -88,15 +75,15 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* Bottom Settings item */}
+      {/* Bottom Settings */}
       <div className="sidebar-bottom">
         <button
           className={`nav-item ${currentPage === 'settings' ? 'active' : ''}`}
           onClick={() => setCurrentPage('settings')}
-          title={sidebarCollapsed ? 'Settings' : undefined}
+          title="Settings"
         >
           <Settings size={16} />
-          {!sidebarCollapsed && <span className="nav-label">Settings</span>}
+          <span className="nav-label">Settings</span>
         </button>
       </div>
     </aside>

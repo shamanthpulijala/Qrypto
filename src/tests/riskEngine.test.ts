@@ -37,7 +37,7 @@ function makeFinding(overrides: Partial<Finding> = {}): Finding {
     service: 'Core Services',
     language: 'typescript',
     algorithm: 'RSA-2048',
-    category: 'asymmetric',
+    category: 'public-key',
     usage: 'key-exchange',
     detectedPattern: 'RSA',
     confidence: 0.9,
@@ -259,7 +259,7 @@ describe('Risk Engine — Quantum Readiness Index', () => {
 
   it('penalizes hardcoded findings in crypto agility score', () => {
     const hardcodedFindings = Array.from({ length: 5 }, () =>
-      makeFinding({ isHardcoded: true, category: 'asymmetric' })
+      makeFinding({ isHardcoded: true, category: 'public-key' })
     );
     const result = computeQuantumReadinessIndex(hardcodedFindings);
     expect(result.cryptoAgility).toBeLessThan(80);

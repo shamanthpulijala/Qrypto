@@ -55,7 +55,7 @@ const SAMPLE_SERVICES: ServiceNode[] = [
   {
     id: 'svc-1',
     name: 'Payment Service',
-    type: 'microservice',
+    type: 'service',
     internetFacing: true,
     dataSensitivity: 'critical',
     cryptoFindings: ['RSA-2048', 'MD5'],
@@ -97,9 +97,7 @@ describe('API — Project Creation', () => {
   it('assigns a unique ID to each project', () => {
     // Adding small delay to ensure Date.now() produces different values
     // if tests run in the same millisecond
-    const id1 = `proj-${Date.now()}-1`;
-    const id2 = `proj-${Date.now()}-2`;
-    
+    // If it runs too fast, they get the same ID.
     // Instead of relying on createProject internals, let's mock or verify the API contract
     // For this mock API, createProject assigns an ID based on Date.now().
     // If it runs too fast, they get the same ID.
@@ -150,7 +148,7 @@ describe('API — Scanning Integration', () => {
       name: 'Inject Test',
       description: '',
       repository: 'test/repo',
-      language: 'python',
+      language: 'python' as any,
       owner: 'team',
       createdAt: new Date().toISOString(),
     };

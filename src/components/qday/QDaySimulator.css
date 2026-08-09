@@ -162,6 +162,14 @@
   letter-spacing: 0.05em;
 }
 
+.eb-era-tag {
+  font-size: 0.75rem;
+  color: var(--accent-cyan, #00d4ff);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  margin: 2px 0;
+}
+
 .eb-risk {
   font-size: 1.25rem;
   font-weight: 700;

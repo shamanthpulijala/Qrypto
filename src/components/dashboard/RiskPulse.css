@@ -1,0 +1,62 @@
+/* QuantumGuard AI — Risk Pulse §33 */
+
+.risk-pulse-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+}
+
+.rp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.rp-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rp-stream {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.rp-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  position: relative;
+  padding-left: 14px;
+}
+
+.rp-bullet {
+  position: absolute;
+  left: 0;
+  top: 5px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.rp-bullet.critical { background: #ef4444; box-shadow: 0 0 8px rgba(239, 68, 68, 0.5); }
+.rp-bullet.warning { background: #f97316; }
+.rp-bullet.info { background: #00d4ff; }
+.rp-bullet.success { background: #22c55e; }
+
+.rp-time {
+  font-size: 0.65rem;
+  font-family: var(--font-mono);
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}

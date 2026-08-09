@@ -27,7 +27,7 @@ export function AIAdvisor() {
         {
           id: 'system-1',
           role: 'assistant',
-          content: `Hello. I am the QuantumGuard AI Consultant. I have analyzed the cryptographic inventory for **${assessment.organization}**.\n\nI can help you understand your quantum exposure, prioritize your migration, or generate specific code remediation examples. How can I assist you today?`,
+          content: `Hello. I am the Qrypto AI Consultant. I have analyzed the cryptographic inventory for **${assessment.organization}**.\n\nI can help you understand your quantum exposure, prioritize your migration, or generate specific code remediation examples. How can I assist you today?`,
         }
       ]);
     }

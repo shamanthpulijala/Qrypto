@@ -6,7 +6,7 @@
 import type { Finding, Language, AlgorithmCategory, QuantumStatus, Severity, ClassicalStatus } from '../types';
 import { computeRiskScore } from './riskEngine';
 
-import { ALL_PATTERNS } from './detectors';
+import { ALL_PATTERNS, type CryptoPattern } from './detectors';
 
 const PATTERNS = ALL_PATTERNS;
 
@@ -123,8 +123,7 @@ export function scanFile(file: ScanFile): Finding[] {
   for (const pattern of PATTERNS) {
     // Skip language-specific patterns for wrong language
     if (pattern.languages && language !== 'unknown' && !pattern.languages.includes(language)) {
-      // still apply if unknown
-      if (language !== 'unknown') continue;
+      continue;
     }
 
     pattern.regex.lastIndex = 0;
