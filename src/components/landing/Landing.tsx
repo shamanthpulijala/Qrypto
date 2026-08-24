@@ -110,6 +110,13 @@ export function Landing() {
   const accuracyRef = useFadeIn();
 
   // ── File processing ──
+  interface FileEntry {
+    path: string;
+    content: string;
+    zipFile?: File;
+    projectName?: string;
+  }
+
   const processZip = useCallback(async (file: File): Promise<FileEntry[]> => {
     if (file.size > MAX_ZIP_SIZE) throw new Error(`ZIP file too large (max 50 MB). Got ${(file.size / 1024 / 1024).toFixed(1)} MB.`);
     const zip = await JSZip.loadAsync(file);
@@ -125,6 +132,10 @@ export function Landing() {
     });
     await Promise.all(jobs);
     if (entries.length === 0) throw new Error('No supported source files found in ZIP.');
+    if (entries.length > 0) {
+      entries[0].zipFile = file;
+      entries[0].projectName = file.name.replace(/\.zip$/i, '');
+    }
     return entries;
   }, []);
 

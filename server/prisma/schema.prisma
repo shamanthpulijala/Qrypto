@@ -1,0 +1,145 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  passwordHash  String
+  name          String
+  role          Role     @default(ANALYST)
+  createdAt     DateTime @default(now())
+  scans         Scan[]
+  auditLogs     AuditLog[]
+}
+
+enum Role {
+  ADMIN
+  ANALYST
+  DEVELOPER
+  EXECUTIVE
+}
+
+model Scan {
+  id            String      @id @default(uuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id])
+  projectName   String
+  repository    String?
+  status        ScanStatus  @default(QUEUED)
+  progress      Int         @default(0)
+  filesScanned  Int         @default(0)
+  linesScanned  Int         @default(0)
+  errorMessage  String?
+  startedAt     DateTime    @default(now())
+  completedAt   DateTime?
+  readinessScore Int?
+  findings      Finding[]
+  services      Service[]
+  migrationTasks MigrationTask[]
+  @@index([userId])
+}
+
+enum ScanStatus {
+  QUEUED
+  RUNNING
+  COMPLETE
+  ERROR
+}
+
+model Finding {
+  id                String   @id @default(uuid())
+  scanId            String
+  scan              Scan     @relation(fields: [scanId], references: [id])
+  file              String
+  line              Int
+  algorithm         String
+  keySize           Int?
+  category          String
+  usage             String
+  detectedPattern   String
+  confidence        Float
+  quantumStatus     String
+  classicalStatus   String
+  severity          String
+  riskScore         Int
+  riskBreakdown     Json
+  service           String
+  language          String
+  internetFacing    Boolean
+  dataSensitivity   String
+  dataLifetimeYears Int
+  isCryptoAgile     Boolean
+  isHardcoded       Boolean
+  remediationStatus String   @default("open")
+  recommendedAlgo   String?
+  migrationStrategy String?
+  tags              String[]
+  evidence          Json?    // detection layers, matched text, AST node info
+  detectedAt        DateTime @default(now())
+  statusHistory     FindingStatusChange[]
+  @@index([scanId])
+  @@index([severity])
+}
+
+model FindingStatusChange {
+  id        String   @id @default(uuid())
+  findingId String
+  finding   Finding  @relation(fields: [findingId], references: [id])
+  oldStatus String
+  newStatus String
+  changedBy String
+  reason    String?
+  changedAt DateTime @default(now())
+}
+
+model Service {
+  id              String @id @default(uuid())
+  scanId          String
+  scan            Scan   @relation(fields: [scanId], references: [id])
+  name            String
+  type            String
+  internetFacing  Boolean
+  dataSensitivity String
+  riskScore       Int
+  findingIds      String[]
+  dependencies    String[]
+}
+
+model MigrationTask {
+  id                String @id @default(uuid())
+  scanId            String
+  scan              Scan   @relation(fields: [scanId], references: [id])
+  phase             Int
+  title             String
+  description       String
+  priority          String
+  effort            String
+  estimatedEffort   String
+  affectedServices  String[]
+  affectedFindings  String[]
+  reason            String
+  dependencies      String[]
+  status            String @default("todo")
+  tags              String[]
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  action    String
+  targetId  String?
+  metadata  Json?
+  timestamp DateTime @default(now())
+  @@index([userId])
+  @@index([action])
+}

@@ -1,6 +1,8 @@
 // ============================================================
-// QuantumGuard AI — Zustand Assessment Store
-// Real scan-only mode — no hardcoded demo data
+// QuantumGuard AI — Zustand Assessment Store (v2)
+// Dual-mode:
+//   - VITE_API_URL set → backend API (real persistence)
+//   - VITE_API_URL not set → in-browser pipeline (demo mode)
 // ============================================================
 
 import { create } from 'zustand';
@@ -10,6 +12,7 @@ import { computeCryptoAgilityScore } from '../engine/cryptoAgility';
 import { generateHNDLAssessments } from '../engine/hndlAnalyzer';
 import { generateMigrationRoadmap } from '../engine/migrationPlanner';
 import { injectDemoData } from '../api';
+import { scansApi, findingsApi, isApiConfigured } from '../api/client';
 
 // ─── Derive ServiceNodes from scan findings ─────────────────
 
@@ -99,7 +102,8 @@ interface AppState {
   updateTaskStatus: (id: string, status: MigrationTask['status']) => void;
   setTheme: (theme: 'dark' | 'light') => void;
   setFindings: (findings: Finding[]) => void;
-  startScan: (files: { path: string; content: string }[]) => Promise<void>;
+  startScan: (files: { path: string; content: string; zipFile?: File; projectName?: string }[]) => Promise<void>;
+  loadScan: (scanId: string) => Promise<void>;
   clearAssessment: () => void;
 }
 
@@ -236,12 +240,18 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
-  updateFindingStatus: (id, status) => set(s => ({
-    assessment: s.assessment ? {
-      ...s.assessment,
-      findings: s.assessment.findings.map(f => f.id === id ? { ...f, remediationStatus: status } : f),
-    } : null,
-  })),
+  updateFindingStatus: async (id, status) => {
+    // Update in backend if configured
+    if (isApiConfigured()) {
+      try { await findingsApi.updateStatus(id, status); } catch { /* non-fatal */ }
+    }
+    set(s => ({
+      assessment: s.assessment ? {
+        ...s.assessment,
+        findings: s.assessment.findings.map(f => f.id === id ? { ...f, remediationStatus: status } : f),
+      } : null,
+    }));
+  },
 
   updateTaskStatus: (id, status) => set(s => ({
     assessment: s.assessment ? {
@@ -269,20 +279,90 @@ export const useAppStore = create<AppState>((set, get) => ({
     currentPage: 'landing',
   }),
 
+  // ── startScan: dual-mode ──────────────────────────────────
   startScan: async (files) => {
+    set({ isScanning: true, scanProgress: 0, scanLog: ['Initializing...'], scanError: null });
+
+    // ── Mode A: Real backend ────────────────────────────────
+    if (isApiConfigured() && files[0]?.zipFile) {
+      try {
+        const zipFile = files[0].zipFile!;
+        const projectName = files[0].projectName || 'Uploaded Repository';
+
+        set(s => ({ scanLog: [...s.scanLog, 'Uploading repository to backend...'] }));
+        const { scanId } = await scansApi.create(zipFile, projectName);
+        set(s => ({ scanLog: [...s.scanLog, `Scan ${scanId} queued. Waiting for results...`] }));
+
+        const scanResult = await scansApi.pollUntilComplete(
+          scanId,
+          (scan) => {
+            set(s => ({
+              scanProgress: scan.progress,
+              scanLog: scan.status === 'RUNNING'
+                ? [...s.scanLog, `Progress: ${scan.progress}%`]
+                : s.scanLog,
+            }));
+          }
+        );
+
+        // Build Assessment from API result
+        const findings = scanResult.findings as unknown as Finding[];
+        const services = buildServicesFromFindings(findings);
+        const agility = computeCryptoAgilityScore(findings);
+        const hndl = generateHNDLAssessments(findings);
+        const readinessBreakdown = computeQuantumReadinessIndex(findings);
+
+        const assessment: Assessment = {
+          id: scanResult.id,
+          name: scanResult.projectName,
+          organization: 'Your Organization',
+          industry: 'Enterprise Technology',
+          createdAt: scanResult.startedAt,
+          scannedAt: scanResult.completedAt || new Date().toISOString(),
+          status: 'complete',
+          scanProgress: 100,
+          findings,
+          services,
+          migrationTasks: (scanResult.migrationTasks as unknown as MigrationTask[]) || [],
+          qDaySimulation: null,
+          hndlAssessments: hndl,
+          cryptoAgilityScore: agility,
+          quantumReadinessScore: scanResult.readinessScore ?? readinessBreakdown.overall,
+          chatHistory: [],
+          scannedFiles: [],
+          scanStats: {
+            filesScanned: scanResult.filesScanned,
+            linesScanned: scanResult.linesScanned,
+            findingsTotal: findings.length,
+            criticalCount: findings.filter(f => f.severity === 'critical').length,
+            highCount: findings.filter(f => f.severity === 'high').length,
+            mediumCount: findings.filter(f => f.severity === 'medium').length,
+            lowCount: findings.filter(f => f.severity === 'low' || f.severity === 'info').length,
+            vulnerableAlgorithms: findings.filter(f => f.quantumStatus === 'vulnerable').length,
+            secretsFound: findings.filter(f => f.category === 'secret').length,
+            affectedServices: new Set(findings.map(f => f.service)).size,
+          },
+        };
+
+        set({ isScanning: false, scanProgress: 100, assessment, readinessBreakdown, currentPage: 'dashboard' });
+        return;
+      } catch (err: any) {
+        set({ isScanning: false, scanError: err.message || 'Backend scan failed.' });
+        return;
+      }
+    }
+
+    // ── Mode B: In-browser pipeline (demo / no backend) ────
     try {
       const { runScanPipeline } = await import('../engine/pipeline');
-      set({ isScanning: true, scanProgress: 0, scanLog: ['Initializing scanning pipeline...'], scanError: null });
+      set(s => ({ scanLog: [...s.scanLog, 'Running in-browser scan pipeline...'] }));
 
       const pipelineFiles = files.map(f => ({ path: f.path, content: f.content }));
       const result = await runScanPipeline(pipelineFiles, {
         repository: 'uploaded/repo',
-        project: 'Uploaded Repository Scan',
+        project: files[0]?.projectName || 'Uploaded Repository Scan',
         onProgress: (_stage, progress, logMsg) => {
-          set(s => ({
-            scanProgress: progress,
-            scanLog: [...s.scanLog, logMsg],
-          }));
+          set(s => ({ scanProgress: progress, scanLog: [...s.scanLog, logMsg] }));
         },
       });
 
@@ -362,6 +442,60 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
     } catch (err: any) {
       set({ isScanning: false, scanError: err.message || 'An unexpected error occurred during the scan.' });
+    }
+  },
+
+  // ── loadScan: restore a past scan from the backend ────────
+  loadScan: async (scanId: string) => {
+    if (!isApiConfigured()) return;
+    set({ isScanning: true, scanProgress: 0, scanLog: [`Loading scan ${scanId}...`], scanError: null });
+    try {
+      const scanResult = await scansApi.get(scanId);
+      if (scanResult.status !== 'COMPLETE') {
+        throw new Error(`Scan is not complete yet (status: ${scanResult.status})`);
+      }
+
+      const findings = scanResult.findings as unknown as Finding[];
+      const services = buildServicesFromFindings(findings);
+      const agility = computeCryptoAgilityScore(findings);
+      const hndl = generateHNDLAssessments(findings);
+      const readinessBreakdown = computeQuantumReadinessIndex(findings);
+
+      const assessment: Assessment = {
+        id: scanResult.id,
+        name: scanResult.projectName,
+        organization: 'Your Organization',
+        industry: 'Enterprise Technology',
+        createdAt: scanResult.startedAt,
+        scannedAt: scanResult.completedAt || new Date().toISOString(),
+        status: 'complete',
+        scanProgress: 100,
+        findings,
+        services,
+        migrationTasks: (scanResult.migrationTasks as unknown as MigrationTask[]) || [],
+        qDaySimulation: null,
+        hndlAssessments: hndl,
+        cryptoAgilityScore: agility,
+        quantumReadinessScore: scanResult.readinessScore ?? readinessBreakdown.overall,
+        chatHistory: [],
+        scannedFiles: [],
+        scanStats: {
+          filesScanned: scanResult.filesScanned,
+          linesScanned: scanResult.linesScanned,
+          findingsTotal: findings.length,
+          criticalCount: findings.filter(f => f.severity === 'critical').length,
+          highCount: findings.filter(f => f.severity === 'high').length,
+          mediumCount: findings.filter(f => f.severity === 'medium').length,
+          lowCount: findings.filter(f => f.severity === 'low' || f.severity === 'info').length,
+          vulnerableAlgorithms: findings.filter(f => f.quantumStatus === 'vulnerable').length,
+          secretsFound: findings.filter(f => f.category === 'secret').length,
+          affectedServices: new Set(findings.map(f => f.service)).size,
+        },
+      };
+
+      set({ isScanning: false, scanProgress: 100, assessment, readinessBreakdown, currentPage: 'dashboard' });
+    } catch (err: any) {
+      set({ isScanning: false, scanError: err.message || 'Failed to load scan.' });
     }
   },
 }));
