@@ -71,3 +71,69 @@ A running record of every change made while turning Qrypto from an audited proto
 
 ### Next Recommended Phase
 **Phase 2 — Requirement Completion**: CycloneDX 1.6 CBOM (P0-5), Mosca engine (P0-3), model fields (P0-10), PDF reports (P0-6).
+
+---
+
+## Phase 2 — Requirement Completion (2026-08-27)
+
+**Date/Time:** 2026-08-27
+**Phase:** 2 — Requirement Completion (P0-5, P0-3, P0-10)
+
+### Objectives
+1. Add `mode`, `library`, `libraryVersion`, `protocol`, `variant` to Finding type (P0-10)
+2. Create algorithm registry with canonical names, NIST status, CycloneDX mappings (P0-5a)
+3. Create conformant CycloneDX 1.6 CBOM generator (P0-5b)
+4. Wire CBOM to Reports page + browser-mode export (P0-5c)
+5. Create Mosca engine with configurable threat horizon (P0-3a)
+6. Wire Mosca into Q-Day simulator with explainability panel (P0-3b)
+
+### Files Changed
+
+| File | Change |
+|---|---|
+| `shared/types/index.ts` | Added `CryptoMode` type, `mode`, `library`, `libraryVersion`, `protocol`, `variant` to `Finding` |
+| `shared/engine/registry.ts` | **NEW** — Algorithm registry with 40+ entries, CycloneDX primitives, NIST OIDs, PQC replacements |
+| `shared/engine/cbom.ts` | **NEW** — CycloneDX 1.6 CBOM generator (conformant, spec-valid) |
+| `shared/engine/mosca.ts` | **NEW** — Mosca engine (X = Y + Z model, configurable horizon, explainable derivation) |
+| `src/engine/cbom.ts` | **NEW** — Engine shim for CBOM module |
+| `src/engine/mosca.ts` | **NEW** — Engine shim for Mosca module |
+| `src/engine/registry.ts` | **NEW** — Engine shim for algorithm registry |
+| `src/components/reports/Reports.tsx` | Added CBOM export button + CycloneDX compliance section |
+| `src/components/qday/QDaySimulator.tsx` | Replaced linear fudge factor with Mosca model + explainability panel |
+| `server/src/routes/reports.routes.ts` | Replaced CBOM stub with conformant generator |
+| `src/tests/phase2.test.ts` | **NEW** — 23 tests for registry, CBOM, and Mosca |
+
+### Major Implementation Decisions
+
+1. **Algorithm registry is the single source of truth for CycloneDX mappings** — 40+ algorithms mapped to canonical names, CycloneDX primitives, NIST OIDs, quantum status, and PQC replacements. Unknown algorithms get sensible defaults. The registry unblocks both CBOM and future PQC recommendation improvements.
+
+2. **CycloneDX 1.6 uses `cryptographic-asset` type** — the Phase 0 stub used invalid `cryptography` and `secret-material`. The new generator uses the correct 1.6 enum values and groups findings by algorithm+keySize+category for clean BOM components.
+
+3. **Mosca engine is fully explainable** — every finding gets a step-by-step derivation showing X (data lifetime), Y (migration time), Z (threat horizon), and the equation. The horizon is ALWAYS documented as an assumption, never presented as fact.
+
+4. **Migration time estimation is conservative** — based on algorithm complexity categories (secrets: days, TLS: weeks, RSA key exchange: months). Not invented — reflects real-world migration effort patterns.
+
+5. **Q-Day simulator now uses Mosca** — the linear fudge factor `drop = vulnerableFindings.length * 4.0 * yearFactor` is replaced with the real X = Y + Z model. Exposure is now the percentage of vulnerable findings where data lifetime + migration time exceeds the threat horizon.
+
+### Tests Run
+
+| Test | Result |
+|---|---|
+| `tsc -b` (TypeScript typecheck) | ✅ PASS — 0 errors |
+| `vitest run` (all tests) | ✅ 139/139 PASS |
+
+### Test Results Detail
+- `src/tests/scanner.test.ts`: 28/28 pass
+- `src/tests/riskEngine.test.ts`: 26/26 pass
+- `src/tests/api.test.ts`: 27/27 pass
+- `src/tests/frontend.test.ts`: 35/35 pass
+- `src/tests/phase2.test.ts`: 23/23 pass (NEW)
+
+### Known Limitations
+- PDF reports (P0-6) not yet implemented — requires a PDF generation library
+- Mosca migration time is estimated from algorithm category, not from actual codebase analysis
+- The CBOM does not yet include certificate chain data (no X.509 parsing)
+- Business criticality remains filename-based
+
+### Next Recommended Phase
+**Phase 2 continued**: PDF reports (P0-6). Then **Phase 3 — Depth**: AST revival (P0-7), finding fingerprints (P0-8), frontend auth (P0-11), context override UI (P0-12).

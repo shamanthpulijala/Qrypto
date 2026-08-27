@@ -139,6 +139,8 @@ export interface RiskBreakdown {
   totalScore: number;           // 0-100 weighted
 }
 
+export type CryptoMode = 'ECB' | 'CBC' | 'GCM' | 'CTR' | 'CFB' | 'OFB' | 'CCM' | 'unknown' | '';
+
 export interface Finding {
   id: string;
   // Location
@@ -156,6 +158,12 @@ export interface Finding {
   usage: string;            // e.g. "key establishment", "digital signature", "password hashing"
   detectedPattern: string;  // exact matched code snippet (masked if secret)
   confidence: number;       // 0.0 - 1.0
+  // Classification (P0-10)
+  mode?: CryptoMode;        // cipher mode if detected (GCM, CBC, etc.)
+  library?: string;         // e.g. "cryptography", "crypto-js", "java.security"
+  libraryVersion?: string;  // e.g. "42.0.0" if extracted from manifest
+  protocol?: string;        // e.g. "TLS 1.3", "SSH", "IPsec"
+  variant?: string;         // e.g. "ML-KEM-768", "AES-256-GCM", "secp256r1"
   // Classification
   quantumStatus: QuantumStatus;
   classicalStatus: ClassicalStatus; // §10 — independent classical security posture

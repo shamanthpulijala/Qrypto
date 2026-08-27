@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '../../store/assessmentStore';
 import { scoreToColor } from '../../engine/riskEngine';
+import { generateCBOM, serializeCBOM } from '../../engine/cbom';
 import './Reports.css';
 
 // ─── NIST PQC Compliance Controls ─────────────────────────────
@@ -422,6 +423,20 @@ export function Reports() {
   const partialCount = controls.filter(c => c.status === 'partial').length;
   const nonCompliantCount = controls.filter(c => c.status === 'non-compliant').length;
 
+  const handleExportCBOM = () => {
+    const bom = generateCBOM(findings, { projectName: assessment.name, toolVersion: '2.0.0' });
+    const json = serializeCBOM(bom);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `cbom-${assessment.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setExportDone(true);
+    setTimeout(() => setExportDone(false), 3000);
+  };
+
   const handleExportJSON = () => {
     const report = {
       generatedAt: new Date().toISOString(),
@@ -480,6 +495,15 @@ export function Reports() {
           >
             <BookOpen size={15} />
             {view === 'technical' ? 'Hide Technical Report' : 'Generate Technical Report'}
+          </button>
+          <button
+            id="btn-export-cbom"
+            className="btn btn-ghost"
+            onClick={handleExportCBOM}
+            title="Export as CycloneDX 1.6 CBOM (Cryptographic Bill of Materials)"
+          >
+            <Cpu size={15} />
+            Export CBOM
           </button>
           <button
             id="btn-export-findings"
@@ -693,6 +717,34 @@ export function Reports() {
               </div>
             </div>
           )}
+
+          {/* CycloneDX CBOM Compliance */}
+          <div className="report-section">
+            <h3 className="section-heading">CycloneDX 1.6 CBOM Compliance</h3>
+            <div className="card" style={{ padding: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap' }}>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '2rem', fontWeight: 900, color: '#00d4ff', fontFamily: 'var(--font-mono)' }}>
+                    {topAlgos.length}
+                  </div>
+                  <div style={{ color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase' }}>Unique Algorithms</div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '2rem', fontWeight: 900, color: '#22c55e' }}>
+                    {findings.length}
+                  </div>
+                  <div style={{ color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase' }}>CBOM Components</div>
+                </div>
+                <div style={{ flex: 1, color: '#94a3b8', fontSize: '0.85rem' }}>
+                  <p>The Cryptographic Bill of Materials maps every detected algorithm to its CycloneDX 1.6 canonical representation,
+                    including NIST OIDs, quantum status, and migration recommendations.</p>
+                  <button className="btn btn-ghost btn-sm" onClick={handleExportCBOM} style={{ marginTop: '8px' }}>
+                    <Cpu size={14} /> Export CycloneDX CBOM (JSON)
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* Disclaimer */}
           <div className="report-disclaimer">

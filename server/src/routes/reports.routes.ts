@@ -1,13 +1,13 @@
 import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { authenticateToken } from '../middleware/auth';
+import { authenticateToken, canAccessResource, type Role } from '../middleware/auth';
 import { logAudit } from '../services/audit.service';
 
 const router = Router();
 const prisma = new PrismaClient();
 
 // Helper: verify scan ownership
-async function getScanOrFail(scanId: string, userId: string, role: string) {
+async function getScanOrFail(scanId: string, userId: string, role: Role) {
   const scan = await prisma.scan.findUnique({
     where: { id: scanId },
     include: {
@@ -16,7 +16,7 @@ async function getScanOrFail(scanId: string, userId: string, role: string) {
     },
   });
   if (!scan) return null;
-  if (scan.userId !== userId && role !== 'ADMIN') return null;
+  if (!canAccessResource({ userId, role }, scan.userId).allowed) return null;
   return scan;
 }
 
@@ -92,7 +92,7 @@ router.get('/:scanId/csv', authenticateToken, async (req, res) => {
   res.send([header, ...rows].join('\n'));
 });
 
-// GET /api/reports/:scanId/cbom — CycloneDX CBOM JSON (Phase 2 stub — full impl in Phase 2)
+// GET /api/reports/:scanId/cbom — CycloneDX 1.6 CBOM (conformant)
 router.get('/:scanId/cbom', authenticateToken, async (req, res) => {
   const scanId = req.params.scanId as string;
   const scan = await getScanOrFail(scanId, req.user!.userId, req.user!.role);
@@ -101,50 +101,47 @@ router.get('/:scanId/cbom', authenticateToken, async (req, res) => {
 
   await logAudit(req.user!.userId, 'report_generated', scanId, { format: 'cbom' });
 
-  // CycloneDX 1.6 CBOM format
-  const cbom = {
-    bomFormat: 'CycloneDX',
-    specVersion: '1.6',
-    version: 1,
-    metadata: {
-      timestamp: new Date().toISOString(),
-      tools: [{ name: 'Qrypto', version: '2.0.0', vendor: 'Qrypto' }],
-      component: { type: 'application', name: scan.projectName },
-    },
-    components: scan.findings.map((f, i) => ({
-      type: 'cryptography',
-      'bom-ref': `finding-${f.id}`,
-      name: f.algorithm,
-      version: f.keySize ? `${f.keySize}-bit` : 'unknown',
-      cryptoProperties: {
-        assetType: f.category === 'secret' ? 'secret-material' : 'algorithm',
-        algorithmProperties: {
-          primitive: f.category,
-          parameterSetIdentifier: f.keySize?.toString(),
-        },
-        oid: undefined,
-      },
-      evidence: {
-        occurrences: [{
-          location: `${f.file}#L${f.line}`,
-          line: f.line,
-          offset: 0,
-          symbol: f.algorithm,
-          additionalContext: f.detectedPattern,
-        }],
-      },
-      properties: [
-        { name: 'qrypto:quantumStatus', value: f.quantumStatus },
-        { name: 'qrypto:severity', value: f.severity },
-        { name: 'qrypto:riskScore', value: String(f.riskScore) },
-        { name: 'qrypto:remediationStatus', value: f.remediationStatus },
-        { name: 'qrypto:recommendedAlgorithm', value: f.recommendedAlgo ?? '' },
-      ],
-    })),
-  };
+  // Use the shared CBOM generator (single source of truth)
+  // Import dynamically to avoid issues with CommonJS/ESM interop
+  const { generateCBOM, serializeCBOM } = require('../../../shared/engine/cbom');
+  const findings = scan.findings.map((f: any) => ({
+    id: f.id,
+    file: f.file,
+    line: f.line,
+    repository: '',
+    project: scan.projectName,
+    service: f.service,
+    language: f.language,
+    algorithm: f.algorithm,
+    keySize: f.keySize,
+    category: f.category,
+    usage: f.usage,
+    detectedPattern: f.detectedPattern,
+    confidence: f.confidence,
+    quantumStatus: f.quantumStatus,
+    classicalStatus: f.classicalStatus,
+    severity: f.severity,
+    algorithmSeverity: f.severity,
+    severityRationale: '',
+    internetFacing: false,
+    dataSensitivity: 'medium',
+    dataLifetimeYears: 5,
+    isCryptoAgile: false,
+    isHardcoded: false,
+    riskScore: f.riskScore,
+    riskBreakdown: { algorithmRisk: 0, businessCriticality: 0, internetExposure: 0, dataLifetime: 0, dataSensitivity: 0, migrationDifficulty: 0, totalScore: 0 },
+    remediationStatus: f.remediationStatus,
+    migrationPriority: 0,
+    recommendedAlgorithm: f.recommendedAlgo,
+    migrationStrategy: f.migrationStrategy,
+    tags: [],
+    detectedAt: new Date().toISOString(),
+  }));
 
-  res.setHeader('Content-Disposition', `attachment; filename="cbom-${Date.now()}.json"`);
-  res.json(cbom);
+  const bom = generateCBOM(findings, { projectName: scan.projectName });
+  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Content-Disposition', `attachment; filename="cbom-${scan.projectName.replace(/\s+/g, '-')}-${Date.now()}.json"`);
+  res.send(serializeCBOM(bom));
 });
 
 export default router;
