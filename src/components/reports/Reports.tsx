@@ -22,6 +22,7 @@ import {
 import { useAppStore } from '../../store/assessmentStore';
 import { scoreToColor } from '../../engine/riskEngine';
 import { generateCBOM, serializeCBOM } from '../../engine/cbom';
+import { generatePDFReport } from '../../engine/pdfReport';
 import './Reports.css';
 
 // ─── NIST PQC Compliance Controls ─────────────────────────────
@@ -423,6 +424,37 @@ export function Reports() {
   const partialCount = controls.filter(c => c.status === 'partial').length;
   const nonCompliantCount = controls.filter(c => c.status === 'non-compliant').length;
 
+  const [pdfGenerating, setPdfGenerating] = useState(false);
+
+  const buildPDFData = () => ({
+    projectName: assessment.name,
+    organization: assessment.organization,
+    scannedAt: assessment.scannedAt ?? assessment.createdAt,
+    quantumReadinessScore,
+    findings,
+    migrationTasks,
+    cryptoAgilityScore,
+    hndlAssessments: assessment.hndlAssessments ?? [],
+    scanStats,
+  });
+
+  const handleExportPDF = async (type: 'executive' | 'technical') => {
+    setPdfGenerating(true);
+    try {
+      const blob = await generatePDFReport(buildPDFData(), type);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `qrypto-${type}-report-${assessment.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('PDF generation failed:', err);
+    } finally {
+      setPdfGenerating(false);
+    }
+  };
+
   const handleExportCBOM = () => {
     const bom = generateCBOM(findings, { projectName: assessment.name, toolVersion: '2.0.0' });
     const json = serializeCBOM(bom);
@@ -497,6 +529,26 @@ export function Reports() {
             {view === 'technical' ? 'Hide Technical Report' : 'Generate Technical Report'}
           </button>
           <button
+            id="btn-export-pdf-exec"
+            className="btn btn-ghost"
+            onClick={() => handleExportPDF('executive')}
+            disabled={pdfGenerating}
+            title="Download Executive PDF Report"
+          >
+            <FileText size={15} />
+            {pdfGenerating ? 'Generating...' : 'PDF Executive'}
+          </button>
+          <button
+            id="btn-export-pdf-tech"
+            className="btn btn-ghost"
+            onClick={() => handleExportPDF('technical')}
+            disabled={pdfGenerating}
+            title="Download Technical PDF Report"
+          >
+            <BookOpen size={15} />
+            {pdfGenerating ? 'Generating...' : 'PDF Technical'}
+          </button>
+          <button
             id="btn-export-cbom"
             className="btn btn-ghost"
             onClick={handleExportCBOM}
@@ -512,7 +564,7 @@ export function Reports() {
           >
             {exportDone
               ? <><CheckCircle2 size={15} /> Exported</>
-              : <><Download size={15} /> Export Findings</>}
+              : <><Download size={15} /> Export JSON</>}
           </button>
         </div>
       </div>

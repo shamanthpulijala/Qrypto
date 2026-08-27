@@ -130,10 +130,55 @@ A running record of every change made while turning Qrypto from an audited proto
 - `src/tests/phase2.test.ts`: 23/23 pass (NEW)
 
 ### Known Limitations
-- PDF reports (P0-6) not yet implemented — requires a PDF generation library
 - Mosca migration time is estimated from algorithm category, not from actual codebase analysis
 - The CBOM does not yet include certificate chain data (no X.509 parsing)
 - Business criticality remains filename-based
 
 ### Next Recommended Phase
-**Phase 2 continued**: PDF reports (P0-6). Then **Phase 3 — Depth**: AST revival (P0-7), finding fingerprints (P0-8), frontend auth (P0-11), context override UI (P0-12).
+**Phase 3 — Depth**: AST revival (P0-7), finding fingerprints (P0-8), frontend auth (P0-11), context override UI (P0-12).
+
+---
+
+## Phase 2 continued — PDF Reports (2026-08-27)
+
+**Date/Time:** 2026-08-27
+**Phase:** 2 — PDF Reports (P0-6)
+
+### Objectives
+1. Add browser-based PDF report generation (executive + technical)
+2. Wire PDF export to Reports page
+3. Add tests for PDF data pipeline
+
+### Files Changed
+
+| File | Change |
+|---|---|
+| `shared/engine/pdfReport.ts` | **NEW** — PDF report generator using jsPDF + jspdf-autotable |
+| `src/engine/pdfReport.ts` | **NEW** — Engine shim for PDF module |
+| `src/components/reports/Reports.tsx` | Added PDF export buttons (executive + technical), data builder |
+| `src/tests/pdfReport.test.ts` | **NEW** — 8 tests for PDF data pipeline |
+
+### Major Implementation Decisions
+
+1. **jsPDF + jspdf-autotable** — chosen for browser-native PDF generation without server dependency. Works in both in-browser and backend modes. autotable provides clean table rendering with per-cell color styling.
+
+2. **Two report types** — Executive (high-level: readiness score, scan stats, compliance, critical findings, migration roadmap) and Technical (adds full findings table with confidence derivation and evidence details).
+
+3. **Data pipeline testable without canvas** — PDF data preparation is separated from jsPDF rendering, allowing unit tests to verify structure and logic without a browser canvas.
+
+4. **Per-page footer** — every page includes the Qrypto version, generation date, page numbers, and the disclaimer that quantum risk assessments are estimates.
+
+### Tests Run
+
+| Test | Result |
+|---|---|
+| `tsc -b` (TypeScript typecheck) | ✅ PASS — 0 errors |
+| `vitest run` (all tests) | ✅ 147/147 PASS |
+
+### Test Results Detail
+- `src/tests/scanner.test.ts`: 28/28 pass
+- `src/tests/riskEngine.test.ts`: 26/26 pass
+- `src/tests/api.test.ts`: 27/27 pass
+- `src/tests/frontend.test.ts`: 35/35 pass
+- `src/tests/phase2.test.ts`: 23/23 pass
+- `src/tests/pdfReport.test.ts`: 8/8 pass (NEW)
