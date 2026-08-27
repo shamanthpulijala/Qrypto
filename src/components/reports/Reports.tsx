@@ -438,7 +438,7 @@ export function Reports() {
     scanStats,
   });
 
-  const handleExportPDF = async (type: 'executive' | 'technical') => {
+  const handleExportPDF = async (type: 'executive' | 'technical' | 'developer') => {
     setPdfGenerating(true);
     try {
       const blob = await generatePDFReport(buildPDFData(), type);
@@ -547,6 +547,16 @@ export function Reports() {
           >
             <BookOpen size={15} />
             {pdfGenerating ? 'Generating...' : 'PDF Technical'}
+          </button>
+          <button
+            id="btn-export-pdf-dev"
+            className="btn btn-ghost"
+            onClick={() => handleExportPDF('developer')}
+            disabled={pdfGenerating}
+            title="Download Developer Remediation PDF"
+          >
+            <BookOpen size={15} />
+            {pdfGenerating ? 'Generating...' : 'PDF Developer'}
           </button>
           <button
             id="btn-export-cbom"

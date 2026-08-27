@@ -3,9 +3,10 @@
 // Deterministic scanner — source of truth, no LLM involved
 // ============================================================
 
-import type { Finding, Language, AlgorithmCategory, QuantumStatus, Severity, ClassicalStatus } from '../types';
+import type { Finding, Language, AlgorithmCategory, QuantumStatus, Severity, ClassicalStatus, CryptoMode } from '../types';
 import { computeRiskScore } from './riskEngine';
 import { deriveAlgorithmSeverity, deriveEffectiveSeverity } from './severity';
+import { lookupAlgorithm } from './registry';
 
 import { ALL_PATTERNS, type CryptoPattern } from './detectors';
 
@@ -104,6 +105,99 @@ function isInCommentOrString(content: string, matchIndex: number): boolean {
 function isInTestOrVendorPath(filePath: string): boolean {
   const lower = filePath.toLowerCase();
   return /(?:test|tests|__tests__|spec|specs|mock|mocks|fixture|fixtures|vendor|node_modules|__mocks__|\.test\.|\.spec\.|generated|dist\/)/.test(lower);
+}
+
+// ─── P0-10: Field Detection Helpers ──────────────────────────
+// These extract mode, library, protocol, variant from the matched
+// pattern and file context. Only populated when evidence exists;
+// otherwise left undefined (never fabricated).
+
+/** Detect cipher mode (GCM, CBC, ECB, etc.) from matched pattern. */
+function detectMode(matchedText: string, algorithm: string): CryptoMode | undefined {
+  const upper = matchedText.toUpperCase();
+  if (upper.includes('GCM')) return 'GCM';
+  if (upper.includes('CBC')) return 'CBC';
+  if (upper.includes('ECB')) return 'ECB';
+  if (upper.includes('CTR')) return 'CTR';
+  if (upper.includes('CFB')) return 'CFB';
+  if (upper.includes('OFB')) return 'OFB';
+  if (upper.includes('CCM')) return 'CCM';
+  // Only return a mode if the algorithm is a cipher type
+  if (algorithm.toUpperCase().includes('AES') || algorithm.toUpperCase().includes('DES') ||
+      algorithm.toUpperCase().includes('RC4') || algorithm.toUpperCase().includes('CHACHA')) {
+    return undefined; // cipher detected but mode not found
+  }
+  return undefined;
+}
+
+/** Detect cryptographic library from import/dependency context. */
+function detectLibrary(matchedText: string, filePath: string): string | undefined {
+  const text = matchedText.toLowerCase();
+  const path = filePath.toLowerCase();
+
+  // Python libraries
+  if (text.includes('from cryptography') || text.includes('import cryptography')) return 'cryptography';
+  if (text.includes('from cryptography.hazmat')) return 'cryptography';
+  if (text.includes('pycryptodome') || text.includes('Crypto.Cipher') || text.includes('Crypto.Hash')) return 'pycryptodome';
+  if (text.includes('hashlib')) return 'hashlib';
+  if (text.includes('ssl')) return 'ssl';
+
+  // Node.js libraries
+  if (text.includes('require(') && text.includes('crypto')) return 'node:crypto';
+  if (text.includes('crypto.subtle')) return 'Web Crypto API';
+  if (text.includes('crypto-js')) return 'crypto-js';
+  if (text.includes('bcrypt')) return 'bcrypt';
+  if (text.includes('jsonwebtoken')) return 'jsonwebtoken';
+
+  // Java libraries
+  if (text.includes('javax.crypto')) return 'JCE';
+  if (text.includes('java.security')) return 'JCA';
+  if (text.includes('bouncycastle') || text.includes('org.bouncycastle')) return 'Bouncy Castle';
+
+  // Go libraries
+  if (text.includes('crypto/')) return 'Go crypto';
+  if (text.includes('tls')) return 'Go crypto/tls';
+
+  // File path hints
+  if (path.includes('nginx') || path.includes('apache')) return 'server-config';
+
+  return undefined;
+}
+
+/** Detect protocol version from matched pattern. */
+function detectProtocol(matchedText: string, category: AlgorithmCategory): string | undefined {
+  if (category !== 'tls') return undefined;
+  const upper = matchedText.toUpperCase();
+  if (upper.includes('TLS 1.3') || upper.includes('TLSV1_3') || upper.includes('TLSV13')) return 'TLS 1.3';
+  if (upper.includes('TLS 1.2') || upper.includes('TLSV1_2') || upper.includes('TLSV12')) return 'TLS 1.2';
+  if (upper.includes('TLS 1.1') || upper.includes('TLSV1_1') || upper.includes('TLSV11')) return 'TLS 1.1';
+  if (upper.includes('TLS 1.0') || upper.includes('TLSV1') || upper.includes('TLSV10')) return 'TLS 1.0';
+  if (upper.includes('SSLV3') || upper.includes('SSL 3')) return 'SSL 3.0';
+  if (upper.includes('SSLV2') || upper.includes('SSL 2')) return 'SSL 2.0';
+  return undefined;
+}
+
+/** Detect algorithm variant from key size and match context. */
+function detectVariant(algorithm: string, keySize: number | undefined, matchedText: string): string | undefined {
+  const upper = algorithm.toUpperCase();
+  // RSA variants by key size
+  if (upper.includes('RSA') && typeof keySize === 'number') return `RSA-${keySize}`;
+  // ECC curves
+  if (matchedText.toUpperCase().includes('P-256') || matchedText.toUpperCase().includes('SECP256R1')) return 'secp256r1';
+  if (matchedText.toUpperCase().includes('P-384') || matchedText.toUpperCase().includes('SECP384R1')) return 'secp384r1';
+  if (matchedText.toUpperCase().includes('P-521') || matchedText.toUpperCase().includes('SECP521R1')) return 'secp521r1';
+  if (matchedText.toUpperCase().includes('X25519')) return 'X25519';
+  if (matchedText.toUpperCase().includes('ED25519')) return 'Ed25519';
+  // AES variants
+  if (upper.includes('AES') && typeof keySize === 'number') return `AES-${keySize}`;
+  // ML-KEM variants
+  if (upper.includes('ML-KEM-768') || upper.includes('KYBER-768')) return 'ML-KEM-768';
+  if (upper.includes('ML-KEM-1024') || upper.includes('KYBER-1024')) return 'ML-KEM-1024';
+  if (upper.includes('ML-KEM-512') || upper.includes('KYBER-512')) return 'ML-KEM-512';
+  // ML-DSA variants
+  if (upper.includes('ML-DSA-65') || upper.includes('DILITHIUM-65')) return 'ML-DSA-65';
+  if (upper.includes('ML-DSA-87') || upper.includes('DILITHIUM-87')) return 'ML-DSA-87';
+  return undefined;
 }
 
 
@@ -318,6 +412,11 @@ export function scanFile(file: ScanFile): Finding[] {
         recommendedAlgorithm: getRecommendation(pattern.algorithm, pattern.category, pattern.usage),
         migrationStrategy: getMigrationStrategy(pattern.algorithm, pattern.category, pattern.usage),
         owner: undefined,
+        // P0-10: Classification fields — populated when evidence exists, undefined otherwise
+        mode: detectMode(detectedPattern, pattern.algorithm),
+        library: detectLibrary(detectedPattern, filePath),
+        protocol: detectProtocol(detectedPattern, pattern.category),
+        variant: detectVariant(pattern.algorithm, keySize, detectedPattern),
         tags: buildTags(pattern),
         detectedAt: new Date().toISOString(),
         evidence: {
@@ -353,42 +452,61 @@ export function scanFiles(files: ScanFile[]): Finding[] {
 
 // ─── Recommendation Engine ────────────────────────────────────
 
+/**
+ * Get PQC recommendation for an algorithm.
+ * Primary source: algorithm registry (canonical, maintained).
+ * Fallback: context-aware if/else for algorithms not in registry.
+ */
 function getRecommendation(algorithm: string, category: AlgorithmCategory, usage: string): string {
+  // 1. Try the registry first — it has the authoritative PQC replacement
+  const entry = lookupAlgorithm(algorithm);
+  if (entry.pqcReplacement) {
+    // Enhance with usage context where the registry is generic
+    const usageLower = usage.toLowerCase();
+    if (entry.pqcReplacement.includes('depending on usage') && usageLower) {
+      if (usageLower.includes('signature') || usageLower.includes('sign')) {
+        return `ML-DSA-65 (FIPS 204) for post-quantum digital signatures. ${entry.pqcReplacement}`;
+      }
+      if (usageLower.includes('key') || usageLower.includes('exchange') || usageLower.includes('encapsulat')) {
+        return `ML-KEM-768 (FIPS 203) for post-quantum key establishment. ${entry.pqcReplacement}`;
+      }
+    }
+    return entry.pqcReplacement;
+  }
+
+  // 2. Registry didn't have a replacement (e.g. unknown algo, or already adequate)
+  // Use context-aware fallback
   const alg = algorithm.toUpperCase();
   const usageLower = usage.toLowerCase();
 
-  if (alg === 'MD5') return 'SHA-256 or SHA-3-256 for non-security uses; Argon2 for password hashing';
-  if (alg === 'SHA-1') return 'SHA-256 or SHA-3-256';
-  if (alg === 'DES') return 'AES-256-GCM';
-  if (alg === '3DES') return 'AES-256-GCM';
-  if (alg === 'RC4') return 'ChaCha20-Poly1305 or AES-256-GCM';
-
-  if (alg.startsWith('RSA')) {
-    if (usageLower.includes('signature')) return 'ML-DSA (CRYSTALS-Dilithium) for post-quantum signatures';
-    if (usageLower.includes('key')) return 'ML-KEM (CRYSTALS-Kyber) for post-quantum key establishment; hybrid approach recommended during transition';
-    return 'ML-KEM for key encapsulation, ML-DSA for signatures — usage context determines exact strategy';
-  }
-  if (alg === 'ECDSA' || alg === 'DSA') return 'ML-DSA (CRYSTALS-Dilithium) or SLH-DSA for post-quantum digital signatures';
-  if (alg === 'ECDH') return 'ML-KEM (CRYSTALS-Kyber) for post-quantum key encapsulation; hybrid X25519+ML-KEM during transition';
-  if (alg === 'ECC') return 'ML-KEM (key exchange) or ML-DSA (signatures) depending on usage; evaluate hybrid approach';
-  if (alg === 'DH') return 'ML-KEM for post-quantum key establishment';
-
+  if (category === 'secret') return 'Use a secrets manager (HashiCorp Vault, AWS Secrets Manager, Azure Key Vault)';
   if (alg.includes('TLS 1.0') || alg.includes('TLS 1.1')) return 'TLS 1.3 (minimum TLS 1.2 with strong cipher suites)';
   if (alg.includes('SSL')) return 'TLS 1.3';
-  if (alg.includes('SHA1WITH')) return 'SHA256withECDSA or ML-DSA for post-quantum';
 
-  if (category === 'secret') return 'Use a secrets manager (HashiCorp Vault, AWS Secrets Manager, Azure Key Vault)';
+  // Unknown algorithm — be honest about insufficient information
+  if (entry.quantumStatus === 'unknown') {
+    return 'Insufficient context for a definitive PQC recommendation. Manual review required — classify the algorithm and evaluate quantum vulnerability before migration planning.';
+  }
 
   return 'Evaluate based on usage context and protocol constraints';
 }
 
 function getMigrationStrategy(algorithm: string, category: AlgorithmCategory, usage: string): string {
+  const entry = lookupAlgorithm(algorithm);
   const alg = algorithm.toUpperCase();
   const usageLower = usage.toLowerCase();
 
   if (category === 'secret') return 'Immediate rotation + secrets manager adoption';
   if (category === 'tls') return 'Protocol upgrade; enforce minimum TLS version in configuration';
-  if (alg === 'MD5' || alg === 'SHA-1') return 'Hash function replacement — typically low-risk refactor; check for protocol constraints';
+
+  // PQC algorithms — already migrated
+  if (entry.quantumStatus === 'quantum-resistant') return 'Already quantum-resistant. No migration needed.';
+
+  // Adequate algorithms — monitor only
+  if (entry.quantumStatus === 'adequate') return 'Classically adequate. Monitor for deprecation updates.';
+
+  // Unknown — be honest
+  if (entry.quantumStatus === 'unknown') return 'Algorithm not recognized. Manual classification required before migration planning.';
 
   if (alg.startsWith('RSA') || alg === 'ECC' || alg === 'ECDSA' || alg === 'ECDH' || alg === 'DH') {
     if (usageLower.includes('certificate')) return 'Plan certificate re-issuance with PQC or hybrid algorithm; coordinate with PKI team';
@@ -405,5 +523,8 @@ function buildTags(pattern: CryptoPattern): string[] {
   if (pattern.quantumStatus === 'quantum-resistant') tags.push('pqc');
   if (pattern.category === 'secret') tags.push('secret', 'hardcoded');
   if (['MD5', 'SHA-1', 'DES', '3DES', 'RC4'].includes(pattern.algorithm)) tags.push('deprecated');
+  // Flag algorithms not in the registry for manual review
+  const entry = lookupAlgorithm(pattern.algorithm);
+  if (entry.quantumStatus === 'unknown') tags.push('review-required');
   return tags;
 }

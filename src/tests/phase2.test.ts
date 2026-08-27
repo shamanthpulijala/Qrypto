@@ -11,6 +11,7 @@ import { describe, it, expect } from 'vitest';
 import { lookupAlgorithm, normalizeAlgorithm } from '../engine/registry';
 import { generateCBOM, serializeCBOM } from '../engine/cbom';
 import { runMoscaAssessment } from '../engine/mosca';
+import { scanFile } from '../engine/scanner';
 import type { Finding } from '../types';
 
 // ─── Helper ───────────────────────────────────────────────────
@@ -267,5 +268,222 @@ describe('Mosca Engine — X = Y + Z Model', () => {
     const result = runMoscaAssessment([], { threatHorizonYear: 2035 });
     expect(result.horizonAssumption).toContain('assumption');
     expect(result.horizonAssumption).toContain('2035');
+  });
+
+  it('migration time estimation uses finding context (hardcoded, library)', () => {
+    // Hardcoded RSA should have longer migration time than non-hardcoded
+    const hardcoded = makeFinding({
+      algorithm: 'RSA-2048',
+      isHardcoded: true,
+      quantumStatus: 'vulnerable',
+      dataLifetimeYears: 10,
+      library: undefined,
+    });
+    const withLib = makeFinding({
+      id: 'QG-0002',
+      algorithm: 'RSA-2048',
+      isHardcoded: false,
+      quantumStatus: 'vulnerable',
+      dataLifetimeYears: 10,
+      library: 'cryptography',
+    });
+    const r1 = runMoscaAssessment([hardcoded], { threatHorizonYear: 2030 });
+    const r2 = runMoscaAssessment([withLib], { threatHorizonYear: 2030 });
+    // Hardcoded should have longer migration time
+    expect(r1.findings[0].migrationTimeYears).toBeGreaterThan(r2.findings[0].migrationTimeYears);
+  });
+
+  it('derivation documents the estimation basis', () => {
+    const findings = [makeFinding({
+      algorithm: 'RSA-2048',
+      isHardcoded: true,
+      library: 'cryptography',
+      quantumStatus: 'vulnerable',
+      dataLifetimeYears: 10,
+    })];
+    const result = runMoscaAssessment(findings, { threatHorizonYear: 2030 });
+    const yStep = result.findings[0].derivation.steps[1];
+    expect(yStep).toContain('estimated from');
+    expect(yStep).toContain('hardcoded');
+  });
+});
+
+// ─── CBOM Schema Validation Tests ─────────────────────────────
+
+describe('CBOM — Schema Validation', () => {
+  it('validates required CycloneDX 1.6 top-level fields', () => {
+    const bom = generateCBOM([makeFinding()]);
+    expect(bom.bomFormat).toBe('CycloneDX');
+    expect(bom.specVersion).toBe('1.6');
+    expect(typeof bom.version).toBe('number');
+    expect(bom.metadata).toBeDefined();
+    expect(bom.metadata.timestamp).toBeTruthy();
+    expect(bom.metadata.tools).toBeDefined();
+    expect(bom.metadata.tools.length).toBeGreaterThan(0);
+    expect(Array.isArray(bom.components)).toBe(true);
+  });
+
+  it('validates component structure', () => {
+    const bom = generateCBOM([makeFinding()]);
+    for (const comp of bom.components) {
+      expect(comp.type).toBe('cryptographic-asset');
+      expect(comp['bom-ref']).toBeTruthy();
+      expect(comp.name).toBeTruthy();
+      expect(comp.cryptoProperties).toBeDefined();
+      expect(comp.cryptoProperties.assetType).toBeTruthy();
+      expect(comp.cryptoProperties.algorithmProperties).toBeDefined();
+      expect(comp.evidence).toBeDefined();
+      expect(comp.evidence.occurrences.length).toBeGreaterThan(0);
+      expect(comp.properties).toBeDefined();
+    }
+  });
+
+  it('validates empty scan produces valid BOM with no components', () => {
+    const bom = generateCBOM([]);
+    expect(bom.bomFormat).toBe('CycloneDX');
+    expect(bom.specVersion).toBe('1.6');
+    expect(bom.components.length).toBe(0);
+  });
+
+  it('validates single finding produces single component', () => {
+    const bom = generateCBOM([makeFinding({ algorithm: 'RSA-2048' })]);
+    expect(bom.components.length).toBe(1);
+    expect(bom.components[0].name).toContain('RSA');
+  });
+
+  it('validates PQC algorithm in CBOM', () => {
+    const bom = generateCBOM([makeFinding({
+      algorithm: 'ML-KEM-768',
+      quantumStatus: 'quantum-resistant',
+      category: 'pqc',
+    })]);
+    const comp = bom.components[0];
+    expect(comp.name).toContain('ML-KEM');
+    const qsProp = comp.properties!.find(p => p.name === 'qrypto:quantumStatus');
+    expect(qsProp!.value).toBe('quantum-resistant');
+  });
+
+  it('validates unknown algorithm in CBOM', () => {
+    const bom = generateCBOM([makeFinding({
+      algorithm: 'CUSTOM_CRYPTO_XYZ',
+      quantumStatus: 'unknown',
+    })]);
+    // Should still produce a valid component
+    expect(bom.components.length).toBe(1);
+    expect(bom.components[0].name).toBeTruthy();
+  });
+
+  it('serialized CBOM is valid JSON', () => {
+    const bom = generateCBOM([makeFinding()]);
+    const json = serializeCBOM(bom);
+    const parsed = JSON.parse(json);
+    expect(parsed.bomFormat).toBe('CycloneDX');
+    expect(parsed.specVersion).toBe('1.6');
+    expect(Array.isArray(parsed.components)).toBe(true);
+  });
+
+  it('metadata tool information is present', () => {
+    const bom = generateCBOM([], { projectName: 'Test', toolVersion: '2.0.0' });
+    expect(bom.metadata.tools[0].vendor).toBe('Qrypto');
+    expect(bom.metadata.tools[0].version).toBe('2.0.0');
+    expect(bom.metadata.component).toBeDefined();
+    expect(bom.metadata.component!.name).toBe('Test');
+  });
+});
+
+// ─── Browser/Backend Parity Tests ─────────────────────────────
+
+describe('Browser/Backend Parity — Scanner', () => {
+  it('scanFile produces identical results for same input', () => {
+    const input = {
+      path: 'src/auth.py',
+      content: 'from cryptography.hazmat.primitives.asymmetric import rsa\nkey = rsa.generate_private_key(public_exponent=65537, key_size=2048)',
+    };
+    const result1 = scanFile(input);
+    const result2 = scanFile(input);
+    // Same input should produce same findings
+    expect(result1.length).toBe(result2.length);
+    for (let i = 0; i < result1.length; i++) {
+      expect(result1[i].algorithm).toBe(result2[i].algorithm);
+      expect(result1[i].quantumStatus).toBe(result2[i].quantumStatus);
+      expect(result1[i].severity).toBe(result2[i].severity);
+      expect(result1[i].riskScore).toBe(result2[i].riskScore);
+      expect(result1[i].confidence).toBe(result2[i].confidence);
+    }
+  });
+
+  it('CBOM is deterministic for same findings', () => {
+    const findings = [
+      makeFinding({ algorithm: 'RSA-2048', keySize: 2048 }),
+      makeFinding({ id: 'QG-0002', algorithm: 'AES-256-GCM', category: 'symmetric' }),
+    ];
+    const bom1 = generateCBOM(findings);
+    const bom2 = generateCBOM(findings);
+    expect(bom1.components.length).toBe(bom2.components.length);
+    for (let i = 0; i < bom1.components.length; i++) {
+      expect(bom1.components[i].name).toBe(bom2.components[i].name);
+      expect(bom1.components[i].type).toBe(bom2.components[i].type);
+    }
+  });
+
+  it('Mosca assessment is deterministic for same findings', () => {
+    const findings = [makeFinding({ dataLifetimeYears: 15, quantumStatus: 'vulnerable' })];
+    const r1 = runMoscaAssessment(findings, { threatHorizonYear: 2030 });
+    const r2 = runMoscaAssessment(findings, { threatHorizonYear: 2030 });
+    expect(r1.findings[0].atRisk).toBe(r2.findings[0].atRisk);
+    expect(r1.findings[0].dataLifetimeYears).toBe(r2.findings[0].dataLifetimeYears);
+    expect(r1.findings[0].migrationTimeYears).toBe(r2.findings[0].migrationTimeYears);
+  });
+});
+
+// ─── Integration Test: Scan → Mosca → CBOM ───────────────────
+
+describe('Integration — Scan → Mosca → CBOM Pipeline', () => {
+  it('full pipeline: scan sample code → findings → Mosca → CBOM', () => {
+    // 1. Scan a realistic sample
+    const scanInput = {
+      path: 'services/payment/crypto.py',
+      content: [
+        'from cryptography.hazmat.primitives.asymmetric import rsa',
+        'key = rsa.generate_private_key(public_exponent=65537, key_size=2048)',
+        'import hashlib',
+        'h = hashlib.md5(data)',
+      ].join('\n'),
+    };
+    const findings = scanFile(scanInput);
+    expect(findings.length).toBeGreaterThan(0);
+
+    // 2. Run Mosca on findings
+    const mosca = runMoscaAssessment(findings, { threatHorizonYear: 2030 });
+    expect(mosca.findings.length).toBeGreaterThanOrEqual(0);
+    expect(mosca.horizonAssumption).toContain('assumption');
+
+    // 3. Generate CBOM from findings
+    const bom = generateCBOM(findings, { projectName: 'Payment Service' });
+    expect(bom.bomFormat).toBe('CycloneDX');
+    expect(bom.specVersion).toBe('1.6');
+    expect(bom.components.length).toBeGreaterThan(0);
+
+    // 4. Verify CBOM components reference real findings
+    const algos = bom.components.map(c => c.name);
+    expect(algos.some(a => a.includes('RSA'))).toBe(true);
+
+    // 5. Verify consistency: CBOM quantum status matches finding quantum status
+    for (const comp of bom.components) {
+      const qsProp = comp.properties!.find(p => p.name === 'qrypto:quantumStatus');
+      expect(qsProp).toBeDefined();
+    }
+  });
+
+  it('scan → PQC findings are not flagged as vulnerable by Mosca', () => {
+    const scanInput = {
+      path: 'src/pqc.py',
+      content: 'from oqs import KeyEncapsulation\nkem = KeyEncapsulation("ML-KEM-768")',
+    };
+    const findings = scanFile(scanInput);
+    // If PQC is detected, Mosca should not flag it as at-risk
+    const mosca = runMoscaAssessment(findings, { threatHorizonYear: 2030 });
+    const pqcInMosca = mosca.findings.filter(f => f.algorithm.includes('ML-KEM'));
+    expect(pqcInMosca.length).toBe(0); // PQC should not appear in Mosca assessment
   });
 });

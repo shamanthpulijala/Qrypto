@@ -11,6 +11,7 @@
 // ============================================================
 
 import type { Finding, MigrationTask, CryptoAgilityScore, HNDLAssessment } from '../types';
+import { runMoscaAssessment, type MoscaAssessment } from './mosca';
 
 // jsPDF is imported dynamically to avoid issues in Node test environments.
 // The caller must have jspdf installed.
@@ -88,7 +89,7 @@ const NIST_CONTROLS = [
 
 // ─── PDF Generator ────────────────────────────────────────────
 
-export type ReportType = 'executive' | 'technical';
+export type ReportType = 'executive' | 'technical' | 'developer';
 
 /**
  * Generate a PDF report. Must be called in a browser environment
@@ -367,10 +368,69 @@ export async function generatePDFReport(
   }
 
   // ═══════════════════════════════════════════════════════════
+  // MOSCA HNDL ASSESSMENT
+  // ═══════════════════════════════════════════════════════════
+
+  ensureSpace(40);
+  doc.setTextColor(...COLORS.text);
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Mosca HNDL Assessment (Harvest-Now-Decrypt-Later)', margin, yPos);
+  yPos += 6;
+
+  const mosca = runMoscaAssessment(data.findings, { threatHorizonYear: 2030 });
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'italic');
+  doc.setTextColor(...COLORS.textLight);
+  doc.text(mosca.horizonAssumption, margin, yPos, { maxWidth: contentWidth });
+  yPos += 10;
+
+  if (mosca.findings.length > 0) {
+    const moscaRows = mosca.findings.slice(0, 15).map(f => [
+      f.algorithm,
+      f.service,
+      `${f.dataLifetimeYears}y`,
+      `${f.migrationTimeYears.toFixed(1)}y`,
+      `${(f.dataLifetimeYears + f.migrationTimeYears).toFixed(1)}y`,
+      `${f.threatHorizonYears}y`,
+      f.marginYears > 0 ? `+${f.marginYears.toFixed(1)}y` : `${f.marginYears.toFixed(1)}y`,
+      f.riskLevel.toUpperCase(),
+    ]);
+
+    (doc as any).autoTable({
+      startY: yPos,
+      head: [['Algorithm', 'Service', 'Data Life (X)', 'Migration (Y)', 'X+Y', 'Horizon (Z)', 'Margin', 'Risk']],
+      body: moscaRows,
+      margin: { left: margin, right: margin },
+      styles: { fontSize: 7, cellPadding: 2 },
+      headStyles: { fillColor: COLORS.primary, textColor: COLORS.white, fontStyle: 'bold', fontSize: 7 },
+      alternateRowStyles: { fillColor: [245, 247, 250] },
+      columnStyles: {
+        7: { halign: 'center', fontStyle: 'bold' },
+      },
+      didParseCell: (hookData: any) => {
+        if (hookData.section === 'body' && hookData.column.index === 7) {
+          const val = hookData.cell.raw.toLowerCase();
+          if (val === 'critical') hookData.cell.styles.textColor = COLORS.critical;
+          else if (val === 'high') hookData.cell.styles.textColor = COLORS.high;
+          else if (val === 'medium') hookData.cell.styles.textColor = COLORS.medium;
+          else if (val === 'safe') hookData.cell.styles.textColor = COLORS.success;
+        }
+      },
+    });
+    yPos = (doc as any).lastAutoTable.finalY + 10;
+  } else {
+    doc.setFontSize(9);
+    doc.setTextColor(...COLORS.success);
+    doc.text('No quantum-vulnerable findings to assess.', margin, yPos);
+    yPos += 8;
+  }
+
+  // ═══════════════════════════════════════════════════════════
   // TECHNICAL REPORT: Full findings (continued pages)
   // ═══════════════════════════════════════════════════════════
 
-  if (type === 'technical') {
+  if (type === 'technical' || type === 'developer') {
     // Additional detailed findings
     ensureSpace(40);
     doc.setTextColor(...COLORS.text);
@@ -449,6 +509,45 @@ export async function generatePDFReport(
           yPos += 4;
         }
         yPos += 2;
+      }
+    }
+
+    // Developer remediation details (developer report only)
+    if (type === 'developer') {
+      ensureSpace(30);
+      doc.setTextColor(...COLORS.text);
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Developer Remediation Guide', margin, yPos);
+      yPos += 6;
+
+      for (const f of data.findings.filter(f => f.severity === 'critical' || f.severity === 'high').slice(0, 10)) {
+        ensureSpace(25);
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...severityColor(f.severity));
+        doc.text(`${f.id} — ${f.algorithm} (${f.category})`, margin, yPos);
+        yPos += 5;
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(...COLORS.text);
+        doc.text(`File: ${f.file}:${f.line}`, margin + 4, yPos);
+        yPos += 4;
+        doc.text(`Detected: ${f.detectedPattern}`, margin + 4, yPos);
+        yPos += 4;
+        if (f.recommendedAlgorithm) {
+          doc.text(`Replace with: ${f.recommendedAlgorithm}`, margin + 4, yPos);
+          yPos += 4;
+        }
+        if (f.migrationStrategy) {
+          doc.text(`Strategy: ${f.migrationStrategy}`, margin + 4, yPos);
+          yPos += 4;
+        }
+        if (f.mode) doc.text(`Mode: ${f.mode}`, margin + 4, yPos), yPos += 4;
+        if (f.library) doc.text(`Library: ${f.library}`, margin + 4, yPos), yPos += 4;
+        if (f.variant) doc.text(`Variant: ${f.variant}`, margin + 4, yPos), yPos += 4;
+        yPos += 3;
       }
     }
   }

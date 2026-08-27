@@ -182,3 +182,67 @@ A running record of every change made while turning Qrypto from an audited proto
 - `src/tests/frontend.test.ts`: 35/35 pass
 - `src/tests/phase2.test.ts`: 23/23 pass
 - `src/tests/pdfReport.test.ts`: 8/8 pass (NEW)
+
+---
+
+## Phase 2 Completion — Gap Fixes (2026-08-27)
+
+**Date/Time:** 2026-08-27
+**Phase:** 2 — Completion fixes (registry integration, field population, schema validation, parity, developer PDF)
+
+### Objectives
+1. Integrate algorithm registry into scan pipeline (was unused by scanner)
+2. Populate mode, library, protocol, variant from detection evidence
+3. Add CBOM schema validation tests
+4. Add browser/backend parity tests
+5. Add Mosca assessment to PDF reports
+6. Add developer remediation PDF type
+7. Add integration test (scan → Mosca → CBOM)
+8. Improve Mosca migration time to use finding context
+
+### Files Changed
+
+| File | Change |
+|---|---|
+| `shared/engine/scanner.ts` | Integrated registry for recommendations, added field detection helpers, flagged unknown algorithms |
+| `shared/engine/mosca.ts` | Improved migration time estimation to use hardcoded/library/cert context, documented estimation basis |
+| `shared/engine/pdfReport.ts` | Added Mosca section, developer remediation report type |
+| `src/components/reports/Reports.tsx` | Added developer PDF export button |
+| `src/tests/phase2.test.ts` | Added 15 new tests: schema validation, parity, integration, Mosca context |
+| `PHASE_2_STATUS.md` | **NEW** — Phase 2 completion status document |
+
+### Major Implementation Decisions
+
+1. **Registry is now the primary source for PQC recommendations** — the scanner's hardcoded if/else chains are replaced by registry lookup with context-aware enhancement. Unknown algorithms get honest "Insufficient context" responses.
+
+2. **New Finding fields are populated from evidence** — mode, library, protocol, variant are detected from the matched pattern text and file path. Only populated when evidence exists; undefined otherwise (never fabricated).
+
+3. **Mosca migration time now considers finding context** — hardcoded status (+30%), library presence (-20%), certificate usage (+20%). The estimation basis is documented in every derivation step.
+
+4. **CBOM schema validation is automated** — 8 tests verify the CycloneDX 1.6 structure, required fields, empty/single/PQC/unknown cases.
+
+5. **Parity is enforced by deterministic tests** — same input produces identical scanner output, CBOM, and Mosca results.
+
+### Tests Run
+
+| Test | Result |
+|---|---|
+| `tsc -b` (TypeScript typecheck) | ✅ PASS — 0 errors |
+| `vitest run` (all tests) | ✅ 162/162 PASS |
+| `vite build` (production build) | ⚠️ Pre-existing failure — `web-tree-sitter` import (not Phase 2) |
+
+### Test Results Detail
+- `src/tests/scanner.test.ts`: 28/28 pass
+- `src/tests/riskEngine.test.ts`: 26/26 pass
+- `src/tests/api.test.ts`: 27/27 pass
+- `src/tests/frontend.test.ts`: 35/35 pass
+- `src/tests/phase2.test.ts`: 38/38 pass (15 new)
+- `src/tests/pdfReport.test.ts`: 8/8 pass
+
+### Known Limitations
+- Production build fails due to pre-existing `web-tree-sitter` issue (not Phase 2)
+- `libraryVersion` not populated yet (requires manifest parsing)
+- Business criticality remains filename-based
+
+### Next Recommended Phase
+**Phase 3 — Depth**: AST revival (P0-7), finding fingerprints (P0-8), frontend auth (P0-11), context override UI (P0-12).

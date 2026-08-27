@@ -87,8 +87,24 @@ export interface MoscaSummary {
 // Estimated time to migrate from the current algorithm to its
 // PQC replacement. Based on algorithm complexity, not invented.
 
+/**
+ * Estimate migration time in years based on finding context.
+ *
+ * This is an ESTIMATE, not a measurement from actual engineering work.
+ * The basis is documented in the derivation steps shown to the user.
+ *
+ * Factors considered:
+ * - Algorithm category (secret, tls, hash, symmetric, public-key, etc.)
+ * - Usage context (key exchange vs signature vs encryption)
+ * - Hardcoded status (hardcoded = harder to change)
+ * - Whether a library is involved (library present = easier abstraction)
+ * - PQC quantum resistance (already migrated = 0)
+ */
 function estimateMigrationTimeYears(finding: Finding): number {
   const algo = finding.algorithm.toUpperCase();
+
+  // PQC algorithms: already migrated
+  if (finding.quantumStatus === 'quantum-resistant') return 0;
 
   // Hardcoded secrets: immediate rotation, days → ~0.02 years
   if (finding.category === 'secret') return 0.02;
@@ -97,27 +113,39 @@ function estimateMigrationTimeYears(finding: Finding): number {
   if (finding.category === 'tls') return 0.04;
 
   // Hash function replacement: typically straightforward
-  if (finding.category === 'hash') return 0.08; // ~1 month
+  if (finding.category === 'hash') return 0.08;
 
   // Symmetric cipher: usually configuration change
   if (finding.category === 'symmetric') return 0.08;
 
-  // PQC algorithms: already migrated
-  if (finding.quantumStatus === 'quantum-resistant') return 0;
+  // Public key / signature / key-exchange: the complex ones
+  // Base estimate by algorithm family
+  let baseYears = 0.5;
 
-  // RSA key establishment → ML-KEM: significant effort (hybrid deployment)
   if (algo.includes('RSA') || algo.includes('DH')) {
-    return finding.usage.toLowerCase().includes('key') ? 0.5 : 0.75;
+    // RSA/DH key exchange → ML-KEM hybrid: significant effort
+    baseYears = finding.usage.toLowerCase().includes('key') ? 0.5 : 0.75;
+  } else if (algo.includes('ECDH') || algo.includes('ECC')) {
+    baseYears = 0.5;
+  } else if (algo.includes('ECDSA') || algo.includes('DSA')) {
+    // Certificate chain reissuance needed
+    baseYears = 0.75;
   }
 
-  // ECC/ECDH → ML-KEM hybrid
-  if (algo.includes('ECDH') || algo.includes('ECC')) return 0.5;
+  // Context adjustments:
+  // - Hardcoded = harder to change (+30%)
+  if (finding.isHardcoded) baseYears *= 1.3;
 
-  // ECDSA/DSA → ML-DSA: certificate chain reissuance needed
-  if (algo.includes('ECDSA') || algo.includes('DSA')) return 0.75;
+  // - Library present = easier to abstract (-20%)
+  if (finding.library) baseYears *= 0.8;
 
-  // Default: moderate migration effort
-  return 0.5;
+  // - Internet-facing = higher priority but not necessarily longer
+  //   (kept neutral — priority affects ordering, not duration)
+
+  // - Certificate usage = more complex coordination (+20%)
+  if (finding.usage.toLowerCase().includes('certificate')) baseYears *= 1.2;
+
+  return Math.round(baseYears * 100) / 100; // round to 2 decimals
 }
 
 // ─── Mosca Risk Level ─────────────────────────────────────────
@@ -171,10 +199,18 @@ export function runMoscaAssessment(
     const atRisk = totalProtectionNeeded > threatHorizonYears;
     const marginYears = threatHorizonYears - totalProtectionNeeded;
 
+    const migrationFactors: string[] = [];
+    if (f.isHardcoded) migrationFactors.push('hardcoded (+30%)');
+    if (f.library) migrationFactors.push(`library ${f.library} (-20%)`);
+    if (f.usage.toLowerCase().includes('certificate')) migrationFactors.push('certificate usage (+20%)');
+    const migrationNote = migrationFactors.length > 0
+      ? ` [estimated from: ${f.category}, ${migrationFactors.join(', ')}]`
+      : ` [estimated from: ${f.category}]`;
+
     const derivation: MoscaDerivation = {
       steps: [
         `Data lifetime requirement (X): ${dataLifetimeYears} years`,
-        `Estimated migration time (Y): ${migrationTimeYears.toFixed(2)} years`,
+        `Estimated migration time (Y): ${migrationTimeYears.toFixed(2)} years${migrationNote}`,
         `Threat horizon (Z): ${threatHorizonYears} years (${threatHorizonYear})`,
         `Protection needed: X + Y = ${dataLifetimeYears} + ${migrationTimeYears.toFixed(2)} = ${totalProtectionNeeded.toFixed(2)} years`,
         `Margin: Z - (X + Y) = ${threatHorizonYears} - ${totalProtectionNeeded.toFixed(2)} = ${marginYears.toFixed(2)} years`,
