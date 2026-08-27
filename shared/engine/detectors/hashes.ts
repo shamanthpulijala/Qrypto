@@ -11,7 +11,7 @@ export const HASH_PATTERNS: CryptoPattern[] = [
 
   // MD5 — §14 sample: hashlib.md5(data)
   {
-    regex: /hashlib\.md5\s*\(|MD5|md5|MessageDigest\.getInstance\s*\(\s*[\"']MD5[\"']/gi,
+    regex: /hashlib\.md5\s*\(|crypto\.createHash\s*\(\s*[\"']md5[\"']|md5\.Sum\s*\(|MD5|MessageDigest\.getInstance\s*\(\s*[\"']MD5[\"']/gi,
     algorithm: 'MD5',
     category: 'hash',
     quantumStatus: 'classical-weak',
@@ -22,7 +22,7 @@ export const HASH_PATTERNS: CryptoPattern[] = [
 
   // SHA-1 — §14 sample: hashlib.sha1(data)
   {
-    regex: /hashlib\.sha1\s*\(|SHA-?1(?!\d)|SHA1(?!_)|[\"']SHA-1[\"']|[\"']SHA1[\"']|MessageDigest\.getInstance\s*\(\s*[\"']SHA-?1[\"']/gi,
+    regex: /hashlib\.sha1\s*\(|crypto\.createHash\s*\(\s*[\"']sha1[\"']|sha1\.Sum\s*\(|SHA-?1(?!\d)|SHA1(?!_)|[\"']SHA-1[\"']|[\"']SHA1[\"']|MessageDigest\.getInstance\s*\(\s*[\"']SHA-?1[\"']|crypto\.subtle\.digest\s*\(\s*[\"']SHA-1[\"']/gi,
     algorithm: 'SHA-1',
     category: 'hash',
     quantumStatus: 'classical-weak',
@@ -57,7 +57,7 @@ export const HASH_PATTERNS: CryptoPattern[] = [
 
   // SHA-256 — §14: adequate
   {
-    regex: /SHA-?256|[\"']SHA-256[\"']|[\"']SHA256[\"']|hashlib\.sha256/gi,
+    regex: /SHA-?256|[\"']SHA-256[\"']|[\"']SHA256[\"']|hashlib\.sha256|crypto\.createHash\s*\(\s*[\"']sha256[\"']|sha256\.Sum256|crypto\.subtle\.digest\s*\(\s*[\"']SHA-256[\"']/gi,
     algorithm: 'SHA-256',
     category: 'hash',
     quantumStatus: 'adequate',

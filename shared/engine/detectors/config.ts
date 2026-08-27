@@ -37,6 +37,7 @@ export function detectConfigWeaknesses(path: string, content: string): Finding[]
             dataLifetimeYears: 0,
             isCryptoAgile: false,
             isHardcoded: true,
+            contextSource: 'EXPLICIT', // from config file
             migrationPriority: 1,
             remediationStatus: 'open',
             recommendedAlgorithm: 'TLS 1.3 or TLS 1.2',
@@ -78,6 +79,7 @@ export function detectConfigWeaknesses(path: string, content: string): Finding[]
             dataLifetimeYears: 0,
             isCryptoAgile: false,
             isHardcoded: true,
+            contextSource: 'EXPLICIT', // from config file
             migrationPriority: 1,
             remediationStatus: 'open',
             recommendedAlgorithm: 'AESGCM or CHACHA20',

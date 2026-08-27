@@ -22,7 +22,11 @@ export const ECC_PATTERNS: CryptoPattern[] = [
   { regex: /secp256r1|prime256v1|secp384r1|P-256|P-384|P-521/gi, algorithm: 'ECC', category: 'public-key', quantumStatus: 'vulnerable', baseSeverity: 'high', usage: 'elliptic curve', confidence: 0.94 },
   { regex: /curve25519|ed25519|x25519/gi, algorithm: 'EdDSA/X25519', category: 'signature', quantumStatus: 'vulnerable', baseSeverity: 'medium', usage: 'elliptic curve signature/exchange', confidence: 0.92 },
   { regex: /EC\.generate_key|ec_key_new|EC_KEY_new/g, algorithm: 'ECC', category: 'public-key', quantumStatus: 'vulnerable', baseSeverity: 'high', usage: 'ECC key generation', confidence: 0.93 },
-  { regex: /ec\.generate_private_key\s*\(\s*ec\./gi, algorithm: 'ECC', category: 'public-key', quantumStatus: 'vulnerable', baseSeverity: 'high', usage: 'ECC key generation', languages: ['python'], confidence: 0.96 },
+  { regex: /ec\.generate_private_key\s*\(/gi, algorithm: 'ECC', category: 'public-key', quantumStatus: 'vulnerable', baseSeverity: 'high', usage: 'ECC key generation', languages: ['python'], confidence: 0.96 },
+  // Go ECDSA
+  { regex: /ecdsa\.GenerateKey\s*\(/g, algorithm: 'ECDSA', category: 'signature', quantumStatus: 'vulnerable', baseSeverity: 'high', usage: 'ECDSA key generation', languages: ['go'], confidence: 0.96 },
+  // Web Crypto ECDSA
+  { regex: /ECDSA|P-256|P-384|P-521/g, algorithm: 'ECDSA', category: 'signature', quantumStatus: 'vulnerable', baseSeverity: 'high', usage: 'ECDSA', confidence: 0.90 },
 
   // DH / DSA
   { regex: /[\"']DH[\"']/g, algorithm: 'DH', category: 'key-exchange', quantumStatus: 'vulnerable', baseSeverity: 'high', usage: 'Diffie-Hellman key exchange', confidence: 0.90 },

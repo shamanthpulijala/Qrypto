@@ -1,0 +1,139 @@
+# ============================================================
+# Qrypto — CI Pipeline
+#
+# Runs on every push and pull request:
+# 1. Typecheck
+# 2. Unit tests
+# 3. Production build
+# 4. Qrypto self-scan (dogfooding)
+#
+# The Qrypto scan step uses the CLI to scan the repository itself
+# and fails if critical or high findings exceed the policy threshold.
+# ============================================================
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ── Typecheck + Tests ──────────────────────────────────────
+  check:
+    name: Typecheck & Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18, 20]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript typecheck
+        run: npx tsc -b
+
+      - name: Run tests
+        run: npm test
+
+  # ── Production Build ───────────────────────────────────────
+  build:
+    name: Production Build
+    runs-on: ubuntu-latest
+    needs: check
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 7
+
+  # ── Qrypto Self-Scan (Dogfooding) ─────────────────────────
+  scan:
+    name: Qrypto Security Scan
+    runs-on: ubuntu-latest
+    needs: check
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Install CLI dependencies
+        run: cd packages/cli && npm install
+
+      - name: Run Qrypto scan on shared/engine
+        run: |
+          cd packages/cli
+          npx tsx src/index.ts scan ../../shared/engine \
+            --format text \
+            --fail-on high \
+            --repository qrypto
+
+      - name: Run Qrypto scan on server (JSON output)
+        run: |
+          cd packages/cli
+          npx tsx src/index.ts scan ../../server/src \
+            --format json \
+            --output /tmp/server-scan.json \
+            --repository qrypto-server
+          echo "Server scan complete. Findings written to /tmp/server-scan.json"
+
+  # ── Docker Build Validation ────────────────────────────────
+  docker:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    needs: check
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Validate Dockerfile syntax
+        run: docker build --check .
+
+      - name: Build Docker image (dry run)
+        run: docker build --target backend -t qrypto:test .
+        # Note: full build requires backend dependencies; this validates Dockerfile syntax
+        # In production, use docker compose build
+        continue-on-error: true

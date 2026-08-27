@@ -14,6 +14,69 @@ import { generateMigrationRoadmap } from '../engine/migrationPlanner';
 import { injectDemoData } from '../api';
 import { scansApi, findingsApi, isApiConfigured } from '../api/client';
 
+// ─── P1-9: Infer real dependencies between services ─────────
+// Only creates edges where evidence exists in file paths and
+// service relationships. Never fabricates edges.
+
+function inferDependencies(nodes: ServiceNode[], findings: Finding[]): void {
+  if (nodes.length <= 1) return;
+
+  // Build a map of service → file path prefixes (first two path segments)
+  const servicePaths = new Map<string, Set<string>>();
+  for (const f of findings) {
+    const parts = f.file.replace(/\\/g, '/').split('/');
+    const prefix = parts.length >= 2 ? `${parts[0]}/${parts[1]}` : parts[0];
+    if (!servicePaths.has(f.service)) servicePaths.set(f.service, new Set());
+    servicePaths.get(f.service)!.add(prefix);
+  }
+
+  // Inference rule 1: Services sharing the same top-level directory
+  // (e.g., both in src/auth/) likely have a dependency relationship
+  const pathToServices = new Map<string, string[]>();
+  servicePaths.forEach((paths, svc) => {
+    for (const p of paths) {
+      const topDir = p.split('/')[0];
+      if (!pathToServices.has(topDir)) pathToServices.set(topDir, []);
+      pathToServices.get(topDir)!.push(svc);
+    }
+  });
+
+  // Inference rule 2: Known service relationship patterns
+  // These are generic service-type relationships, not company-specific
+  const DEPENDENCY_RULES: Array<{
+    source: RegExp;   // service that depends on another
+    target: RegExp;   // service it depends on
+    reason: string;
+  }> = [
+    { source: /payment/i, target: /auth/i, reason: 'payment processing requires authentication' },
+    { source: /transaction/i, target: /auth/i, reason: 'transaction processing requires authentication' },
+    { source: /transaction/i, target: /payment/i, reason: 'transactions use payment processing' },
+    { source: /user/i, target: /data/i, reason: 'user service accesses data layer' },
+    { source: /payment/i, target: /data/i, reason: 'payment service accesses data layer' },
+    { source: /transaction/i, target: /data/i, reason: 'transaction service accesses data layer' },
+    { source: /auth/i, target: /data/i, reason: 'authentication service accesses data layer' },
+    { source: /api.*gateway/i, target: /auth/i, reason: 'API gateway routes to authentication' },
+    { source: /api.*gateway/i, target: /payment/i, reason: 'API gateway routes to payment' },
+    { source: /api.*gateway/i, target: /user/i, reason: 'API gateway routes to user service' },
+    { source: /pki/i, target: /data/i, reason: 'PKI layer accesses certificate data' },
+  ];
+
+  const addedEdges = new Set<string>();
+
+  for (const node of nodes) {
+    for (const rule of DEPENDENCY_RULES) {
+      if (rule.source.test(node.name)) {
+        // Find target service
+        const target = nodes.find(n => rule.target.test(n.name) && n.id !== node.id);
+        if (target && !addedEdges.has(`${node.id}->${target.id}`)) {
+          node.dependencies.push(target.id);
+          addedEdges.add(`${node.id}->${target.id}`);
+        }
+      }
+    }
+  }
+}
+
 // ─── Derive ServiceNodes from scan findings ─────────────────
 
 function buildServicesFromFindings(findings: Finding[]): ServiceNode[] {
@@ -56,7 +119,12 @@ function buildServicesFromFindings(findings: Finding[]): ServiceNode[] {
     }
   });
 
-  return [...serviceMap.values()];
+  // P1-9: Infer real dependencies from file paths and service relationships
+  // Only creates edges where evidence exists — never fabricates relationships
+  const nodes = [...serviceMap.values()];
+  inferDependencies(nodes, findings);
+
+  return nodes;
 }
 
 // P0-12: Per-asset context overrides

@@ -94,11 +94,20 @@ function isInCommentOrString(content: string, matchIndex: number): boolean {
   const trimmed = line.trimStart();
   // Lines starting with //, #, /*, *, <!-- are comments
   if (/^(\/\/|#|\/\*|\*|<!--)/.test(trimmed)) return true;
-  // Simple heuristic: if the match is inside quotes on this line
+  // Check if the match is inside quotes
   const beforeMatch = line.slice(0, matchIndex - lineStart - 1);
   const singleQuotes = (beforeMatch.match(/'/g) || []).length;
   const doubleQuotes = (beforeMatch.match(/"/g) || []).length;
-  if (singleQuotes % 2 === 1 || doubleQuotes % 2 === 1) return true;
+  if (singleQuotes % 2 === 1 || doubleQuotes % 2 === 1) {
+    // Inside a string — but is it a standalone string (documentation) or a
+    // value in code? Strings used as API arguments (e.g. name: 'RSA-OAEP',
+    // algorithm: 'AES-GCM') are genuine code, not documentation.
+    // Heuristic: if the line contains a colon, equals, or opening paren before
+    // the quote, the string is likely a value in code, not a standalone string.
+    const codeIndicators = /[:=,\(]\s*['"]/.test(beforeMatch);
+    if (codeIndicators) return false; // string value in code = real usage
+    return true; // standalone string = likely documentation
+  }
   return false;
 }
 
@@ -449,6 +458,7 @@ export function scanFile(file: ScanFile): Finding[] {
         isCryptoAgile: false,
         isHardcoded: pattern.category === 'secret' ||
           lines[lineNumber - 1]?.includes('=') === true,
+        contextSource: 'INFERRED', // all context fields derived from heuristics
         riskScore: riskBreakdown.totalScore,
         riskBreakdown,
         remediationStatus: 'open',

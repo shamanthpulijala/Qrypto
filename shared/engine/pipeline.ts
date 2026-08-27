@@ -14,6 +14,7 @@ import { scanFile, scanFiles, type ScanFile } from './scanner';
 import { initAstParser, enrichWithAst } from './detectors/ast';
 import { detectDependencies } from './detectors/dependencies';
 import { detectConfigWeaknesses } from './detectors/config';
+import { extractCertificates, createCertificateFindings } from './x509';
 
 import { computeQuantumReadinessIndex } from './riskEngine';
 
@@ -139,27 +140,22 @@ function extract(files: PipelineFile[]): PipelineFile[] {
  * - Same file + algorithm + exact pattern = duplicate
  */
 function deduplicate(findings: Finding[]): Finding[] {
-  const seen = new Map<string, Finding>();
+  // Group by file + algorithm + rounded line (bucket by 3)
+  const buckets = new Map<string, Finding[]>();
 
   for (const f of findings) {
-    // Key: file + algorithm + rounded line (bucket by 3)
     const lineKey = `${f.file}:${f.algorithm}:${Math.floor(f.line / 3)}`;
-    // Key: file + algorithm + exact pattern
-    const patternKey = `${f.file}:${f.algorithm}:${f.detectedPattern.slice(0, 40)}`;
-
-    if (!seen.has(lineKey) && !seen.has(patternKey)) {
-      seen.set(lineKey, f);
-      seen.set(patternKey, f);
-    }
+    if (!buckets.has(lineKey)) buckets.set(lineKey, []);
+    buckets.get(lineKey)!.push(f);
   }
 
-  // Return unique findings (deduplicated by lineKey)
+  // From each bucket, keep the finding with highest confidence
+  // (prefer code matches over comment matches)
   const unique = new Map<string, Finding>();
-  for (const f of findings) {
-    const lineKey = `${f.file}:${f.algorithm}:${Math.floor(f.line / 3)}`;
-    if (seen.get(lineKey) === f) {
-      unique.set(f.id, f);
-    }
+  for (const [, group] of buckets) {
+    group.sort((a, b) => b.confidence - a.confidence);
+    const best = group[0];
+    unique.set(best.id, best);
   }
 
   return [...unique.values()];
@@ -245,6 +241,15 @@ export async function runScanPipeline(
     // Add config findings
     const configFindings = detectConfigWeaknesses(scanFileObjects[i].path, scanFileObjects[i].content);
     fileFindings.push(...configFindings);
+
+    // Add certificate findings (X.509 parsing)
+    const certs = extractCertificates(scanFileObjects[i].content, scanFileObjects[i].path);
+    if (certs.length > 0) {
+      const certFindings = createCertificateFindings(
+        certs, scanFileObjects[i].path, opts.repository ?? 'uploaded', opts.project ?? 'Unknown'
+      );
+      fileFindings.push(...certFindings as Finding[]);
+    }
 
     // Enrich findings with AST context
     await enrichWithAst(scanFileObjects[i].path, scanFileObjects[i].content, fileFindings);

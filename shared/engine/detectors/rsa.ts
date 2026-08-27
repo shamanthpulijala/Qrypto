@@ -30,4 +30,8 @@ export const RSA_PATTERNS: CryptoPattern[] = [
   { regex: /crypto\.createSign\s*\(\s*[\"']RSA-/g, algorithm: 'RSA', category: 'signature', quantumStatus: 'vulnerable', baseSeverity: 'high', usage: 'digital signature', languages: ['javascript', 'typescript'], confidence: 0.97 },
   { regex: /rsa\.encrypt|rsa\.decrypt|rsa\.sign|rsa\.verify/gi, algorithm: 'RSA', category: 'public-key', quantumStatus: 'vulnerable', baseSeverity: 'high', usage: 'public-key operation', confidence: 0.93 },
   { regex: /rsa\.generate_private_key\s*\([\s\S]*?\)/g, algorithm: 'RSA', category: 'public-key', quantumStatus: 'vulnerable', baseSeverity: 'high', usage: 'key generation', languages: ['python'], confidence: 0.96 },
+  // Go RSA
+  { regex: /rsa\.GenerateKey\s*\(/g, algorithm: 'RSA', category: 'public-key', quantumStatus: 'vulnerable', baseSeverity: 'high', usage: 'key generation', languages: ['go'], confidence: 0.96 },
+  // Web Crypto RSA
+  { regex: /RSA-OAEP|RSA-PSS|RSAES/g, algorithm: 'RSA', category: 'public-key', quantumStatus: 'vulnerable', baseSeverity: 'high', usage: 'public-key cryptography', confidence: 0.95 },
 ];

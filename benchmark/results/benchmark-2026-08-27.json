@@ -1,0 +1,399 @@
+{
+  "timestamp": "2026-08-27T10:43:49.981Z",
+  "corpus": {
+    "files": 5,
+    "expectedLabels": 29
+  },
+  "scan": {
+    "findingsTotal": 40,
+    "executionMs": 135
+  },
+  "metrics": {
+    "truePositives": 29,
+    "falseNegatives": 0,
+    "falsePositives": 11,
+    "precision": 0.725,
+    "recall": 1,
+    "f1": 0.841
+  },
+  "matched": [
+    {
+      "expected": {
+        "file": "python_crypto.py",
+        "algorithm": "RSA",
+        "category": "public-key",
+        "quantumStatus": "vulnerable"
+      },
+      "detected": {
+        "id": "QG-0049",
+        "algorithm": "RSA",
+        "severity": "high"
+      }
+    },
+    {
+      "expected": {
+        "file": "python_crypto.py",
+        "algorithm": "ECC",
+        "category": "public-key",
+        "quantumStatus": "vulnerable"
+      },
+      "detected": {
+        "id": "QG-0050",
+        "algorithm": "ECC",
+        "severity": "high"
+      }
+    },
+    {
+      "expected": {
+        "file": "python_crypto.py",
+        "algorithm": "AES",
+        "category": "symmetric",
+        "quantumStatus": "adequate"
+      },
+      "detected": {
+        "id": "QG-0059",
+        "algorithm": "AES-256",
+        "severity": "info"
+      }
+    },
+    {
+      "expected": {
+        "file": "python_crypto.py",
+        "algorithm": "SHA-256",
+        "category": "hash",
+        "quantumStatus": "adequate"
+      },
+      "detected": {
+        "id": "QG-0057",
+        "algorithm": "SHA-256",
+        "severity": "info"
+      }
+    },
+    {
+      "expected": {
+        "file": "python_crypto.py",
+        "algorithm": "SHA-1",
+        "category": "hash",
+        "quantumStatus": "classical-weak"
+      },
+      "detected": {
+        "id": "QG-0055",
+        "algorithm": "SHA-1",
+        "severity": "high"
+      }
+    },
+    {
+      "expected": {
+        "file": "python_crypto.py",
+        "algorithm": "MD5",
+        "category": "hash",
+        "quantumStatus": "classical-weak"
+      },
+      "detected": {
+        "id": "QG-0053",
+        "algorithm": "MD5",
+        "severity": "critical"
+      }
+    },
+    {
+      "expected": {
+        "file": "js_crypto.js",
+        "algorithm": "RSA",
+        "category": "public-key",
+        "quantumStatus": "vulnerable"
+      },
+      "detected": {
+        "id": "QG-0034",
+        "algorithm": "RSA",
+        "severity": "high"
+      }
+    },
+    {
+      "expected": {
+        "file": "js_crypto.js",
+        "algorithm": "RSA",
+        "category": "signature",
+        "quantumStatus": "vulnerable"
+      },
+      "detected": {
+        "id": "QG-0035",
+        "algorithm": "RSA",
+        "severity": "high"
+      }
+    },
+    {
+      "expected": {
+        "file": "js_crypto.js",
+        "algorithm": "AES",
+        "category": "symmetric",
+        "quantumStatus": "adequate"
+      },
+      "detected": {
+        "id": "QG-0045",
+        "algorithm": "AES-256",
+        "severity": "info"
+      }
+    },
+    {
+      "expected": {
+        "file": "js_crypto.js",
+        "algorithm": "SHA-256",
+        "category": "hash",
+        "quantumStatus": "adequate"
+      },
+      "detected": {
+        "id": "QG-0041",
+        "algorithm": "SHA-256",
+        "severity": "info"
+      }
+    },
+    {
+      "expected": {
+        "file": "js_crypto.js",
+        "algorithm": "SHA-1",
+        "category": "hash",
+        "quantumStatus": "classical-weak"
+      },
+      "detected": {
+        "id": "QG-0039",
+        "algorithm": "SHA-1",
+        "severity": "high"
+      }
+    },
+    {
+      "expected": {
+        "file": "js_crypto.js",
+        "algorithm": "MD5",
+        "category": "hash",
+        "quantumStatus": "classical-weak"
+      },
+      "detected": {
+        "id": "QG-0037",
+        "algorithm": "MD5",
+        "severity": "critical"
+      }
+    },
+    {
+      "expected": {
+        "file": "java_crypto.java",
+        "algorithm": "RSA",
+        "category": "public-key",
+        "quantumStatus": "vulnerable"
+      },
+      "detected": {
+        "id": "QG-0019",
+        "algorithm": "RSA",
+        "severity": "high"
+      }
+    },
+    {
+      "expected": {
+        "file": "java_crypto.java",
+        "algorithm": "ECDSA",
+        "category": "signature",
+        "quantumStatus": "vulnerable"
+      },
+      "detected": {
+        "id": "QG-0020",
+        "algorithm": "ECDSA",
+        "severity": "high"
+      }
+    },
+    {
+      "expected": {
+        "file": "java_crypto.java",
+        "algorithm": "AES",
+        "category": "symmetric",
+        "quantumStatus": "adequate"
+      },
+      "detected": {
+        "id": "QG-0031",
+        "algorithm": "AES-256",
+        "severity": "info"
+      }
+    },
+    {
+      "expected": {
+        "file": "java_crypto.java",
+        "algorithm": "SHA-256",
+        "category": "hash",
+        "quantumStatus": "adequate"
+      },
+      "detected": {
+        "id": "QG-0026",
+        "algorithm": "SHA-256",
+        "severity": "info"
+      }
+    },
+    {
+      "expected": {
+        "file": "java_crypto.java",
+        "algorithm": "MD5",
+        "category": "hash",
+        "quantumStatus": "classical-weak"
+      },
+      "detected": {
+        "id": "QG-0023",
+        "algorithm": "MD5",
+        "severity": "critical"
+      }
+    },
+    {
+      "expected": {
+        "file": "java_crypto.java",
+        "algorithm": "DES",
+        "category": "symmetric",
+        "quantumStatus": "classical-weak"
+      },
+      "detected": {
+        "id": "QG-0032",
+        "algorithm": "3DES",
+        "severity": "high"
+      }
+    },
+    {
+      "expected": {
+        "file": "go/crypto.go",
+        "algorithm": "RSA",
+        "category": "public-key",
+        "quantumStatus": "vulnerable"
+      },
+      "detected": {
+        "id": "QG-0001",
+        "algorithm": "RSA",
+        "severity": "high"
+      }
+    },
+    {
+      "expected": {
+        "file": "go/crypto.go",
+        "algorithm": "ECDSA",
+        "category": "signature",
+        "quantumStatus": "vulnerable"
+      },
+      "detected": {
+        "id": "QG-0002",
+        "algorithm": "ECDSA",
+        "severity": "high"
+      }
+    },
+    {
+      "expected": {
+        "file": "go/crypto.go",
+        "algorithm": "AES",
+        "category": "symmetric",
+        "quantumStatus": "adequate"
+      },
+      "detected": {
+        "id": "QG-0018",
+        "algorithm": "AES-256",
+        "severity": "info"
+      }
+    },
+    {
+      "expected": {
+        "file": "go/crypto.go",
+        "algorithm": "SHA-256",
+        "category": "hash",
+        "quantumStatus": "adequate"
+      },
+      "detected": {
+        "id": "QG-0016",
+        "algorithm": "SHA-256",
+        "severity": "info"
+      }
+    },
+    {
+      "expected": {
+        "file": "go/crypto.go",
+        "algorithm": "SHA-1",
+        "category": "hash",
+        "quantumStatus": "classical-weak"
+      },
+      "detected": {
+        "id": "QG-0012",
+        "algorithm": "SHA-1",
+        "severity": "high"
+      }
+    },
+    {
+      "expected": {
+        "file": "go/crypto.go",
+        "algorithm": "MD5",
+        "category": "hash",
+        "quantumStatus": "classical-weak"
+      },
+      "detected": {
+        "id": "QG-0008",
+        "algorithm": "MD5",
+        "severity": "critical"
+      }
+    },
+    {
+      "expected": {
+        "file": "typescript/webcrypto.ts",
+        "algorithm": "RSA",
+        "category": "public-key",
+        "quantumStatus": "vulnerable"
+      },
+      "detected": {
+        "id": "QG-0060",
+        "algorithm": "RSA",
+        "severity": "high"
+      }
+    },
+    {
+      "expected": {
+        "file": "typescript/webcrypto.ts",
+        "algorithm": "ECDSA",
+        "category": "signature",
+        "quantumStatus": "vulnerable"
+      },
+      "detected": {
+        "id": "QG-0061",
+        "algorithm": "ECDSA",
+        "severity": "high"
+      }
+    },
+    {
+      "expected": {
+        "file": "typescript/webcrypto.ts",
+        "algorithm": "AES",
+        "category": "symmetric",
+        "quantumStatus": "adequate"
+      },
+      "detected": {
+        "id": "QG-0076",
+        "algorithm": "AES-256",
+        "severity": "info"
+      }
+    },
+    {
+      "expected": {
+        "file": "typescript/webcrypto.ts",
+        "algorithm": "SHA-256",
+        "category": "hash",
+        "quantumStatus": "adequate"
+      },
+      "detected": {
+        "id": "QG-0071",
+        "algorithm": "SHA-256",
+        "severity": "info"
+      }
+    },
+    {
+      "expected": {
+        "file": "typescript/webcrypto.ts",
+        "algorithm": "SHA-1",
+        "category": "hash",
+        "quantumStatus": "classical-weak"
+      },
+      "detected": {
+        "id": "QG-0069",
+        "algorithm": "SHA-1",
+        "severity": "high"
+      }
+    }
+  ],
+  "missed": []
+}

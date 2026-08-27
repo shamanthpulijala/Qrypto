@@ -187,6 +187,14 @@ export interface Finding {
   dataLifetimeYears: number; // estimated years data must remain confidential
   isCryptoAgile: boolean;
   isHardcoded: boolean;
+  /**
+   * How the context fields were derived.
+   * - INFERRED: from file path / service name heuristics
+   * - OVERRIDE: from analyst-supplied context override
+   * - EXPLICIT: from repository/project metadata or manifest
+   * - UNKNOWN: context could not be determined
+   */
+  contextSource?: 'INFERRED' | 'OVERRIDE' | 'EXPLICIT' | 'UNKNOWN';
   // Risk
   riskScore: number;         // 0-100
   riskBreakdown: RiskBreakdown;

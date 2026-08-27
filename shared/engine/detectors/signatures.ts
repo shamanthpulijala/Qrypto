@@ -11,7 +11,7 @@ export const SYMMETRIC_PATTERNS: CryptoPattern[] = [
 
   // AES-256 — §14 sample: healthy, should be classified as 'adequate'
   {
-    regex: /AES[_-]?256|AES\.new.*256|Cipher\.getInstance\s*\(\s*[\"']AES\/[^\"']*[\"']/gi,
+    regex: /AES[_-]?256|AES\.new.*256|Cipher\.getInstance\s*\(\s*[\"']AES\/[^\"']*[\"']|algorithms\.AES|crypto\.createCipheriv\s*\(\s*[\"']aes-256|aes\.NewCipher|crypto\.subtle\.encrypt\s*\(\s*\{[^}]*name:\s*[\"']AES/gi,
     algorithm: 'AES-256',
     category: 'symmetric',
     quantumStatus: 'adequate',

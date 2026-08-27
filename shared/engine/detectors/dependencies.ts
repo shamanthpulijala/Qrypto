@@ -50,6 +50,7 @@ export function detectDependencies(path: string, content: string): Finding[] {
             dataLifetimeYears: 0,
             isCryptoAgile: info.isPqcReady,
             isHardcoded: false,
+            contextSource: 'EXPLICIT', // from manifest file
             migrationPriority: info.severity === 'high' ? 1 : 2,
             remediationStatus: 'open',
             recommendedAlgorithm: info.recommendation,
@@ -94,6 +95,7 @@ export function detectDependencies(path: string, content: string): Finding[] {
             dataLifetimeYears: 0,
             isCryptoAgile: info.isPqcReady,
             isHardcoded: false,
+            contextSource: 'EXPLICIT', // from manifest file
             migrationPriority: info.severity === 'high' ? 1 : 2,
             remediationStatus: 'open',
             recommendedAlgorithm: info.recommendation,

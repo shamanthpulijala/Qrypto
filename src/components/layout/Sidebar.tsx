@@ -4,6 +4,7 @@
 // ============================================================
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Search, Network, AlertTriangle, Zap,
   Map, Bot, FileText, Shield, BarChart3, Settings, LogOut
@@ -30,9 +31,31 @@ const GROUP_LABELS: Record<string, string> = {
   planning: 'Actions',
 };
 
+const PAGE_ROUTES: Record<string, string> = {
+  dashboard: '/dashboard',
+  inventory: '/inventory',
+  findings: '/findings',
+  qday: '/qday',
+  attackmap: '/attackmap',
+  hndl: '/hndl',
+  migration: '/migration',
+  agility: '/agility',
+  ai: '/ai',
+  reports: '/reports',
+  compliance: '/compliance',
+  settings: '/settings',
+};
+
 export function Sidebar() {
   const { currentPage, setCurrentPage, sidebarCollapsed, toggleSidebar, assessment } = useAppStore();
   const { user, logout } = useAuthStore();
+  const navigate = useNavigate();
+
+  const navigateTo = (pageId: string) => {
+    setCurrentPage(pageId);
+    const route = PAGE_ROUTES[pageId];
+    if (route) navigate(route);
+  };
 
   const groups = ['main', 'quantum', 'planning'];
 
@@ -68,7 +91,7 @@ export function Sidebar() {
                   <button
                     key={item.id}
                     className={`nav-item ${isActive ? 'active' : ''} ${isDisabled ? 'disabled' : ''}`}
-                    onClick={() => !isDisabled && setCurrentPage(item.id)}
+                    onClick={() => !isDisabled && navigateTo(item.id)}
                     title={item.label}
                   >
                     <Icon size={16} className="nav-icon" />
@@ -86,7 +109,7 @@ export function Sidebar() {
       <div className="sidebar-bottom">
         <button
           className={`nav-item ${currentPage === 'settings' ? 'active' : ''}`}
-          onClick={() => setCurrentPage('settings')}
+          onClick={() => navigateTo('settings')}
           title="Settings"
         >
           <Settings size={16} />

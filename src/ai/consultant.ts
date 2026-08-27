@@ -64,7 +64,7 @@ export function getDeterministicFallbackGuidance(question: string, assessment: A
     if (paymentVulns.length > 0) {
       const topPayment = paymentVulns[0];
       citedFindings.push(topPayment.id);
-      answer += `2. **NovaBank Payment Service Key Establishment** [${topPayment.id}]\n`;
+      answer += `2. **${topPayment.service} Key Establishment** [${topPayment.id}]\n`;
       answer += `   - **Detected**: ${topPayment.algorithm} in \`${topPayment.file}:${topPayment.line}\`\n`;
       answer += `   - **Recommendation**: Evaluate hybrid X25519 + ML-KEM-768 key encapsulation.\n\n`;
     }

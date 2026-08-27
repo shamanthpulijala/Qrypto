@@ -1,4 +1,5 @@
 import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Sidebar } from './components/layout/Sidebar';
 import { Topbar } from './components/layout/Topbar';
 import { Landing } from './components/landing/Landing';
@@ -19,6 +20,52 @@ import { CommandPalette } from './components/common/CommandPalette';
 import { LoginModal } from './components/auth/LoginModal';
 import { useAppStore } from './store/assessmentStore';
 import { useAuthStore } from './store/authStore';
+
+// ─── P1-14: Route ↔ Store sync ─────────────────────────────
+// Maps URL paths to the store's currentPage values.
+// bidirectional: URL → store (on load/back-forward)
+//                store → URL (on sidebar click)
+
+const PAGE_ROUTES: Record<string, string> = {
+  dashboard: '/dashboard',
+  inventory: '/inventory',
+  findings: '/findings',
+  qday: '/qday',
+  attackmap: '/attackmap',
+  hndl: '/hndl',
+  migration: '/migration',
+  agility: '/agility',
+  ai: '/ai',
+  reports: '/reports',
+  compliance: '/compliance',
+  settings: '/settings',
+};
+
+const ROUTE_TO_PAGE: Record<string, string> = Object.fromEntries(
+  Object.entries(PAGE_ROUTES).map(([page, route]) => [route, page])
+);
+
+/**
+ * Syncs URL path with the Zustand store.
+ * On URL change (back/forward): updates store.
+ * On store change: does NOT navigate (sidebar handles that via useNavigate).
+ */
+function RouteSync() {
+  const location = useLocation();
+  const { currentPage, assessment } = useAppStore();
+
+  // On URL change → update store
+  React.useEffect(() => {
+    const page = ROUTE_TO_PAGE[location.pathname];
+    if (page && page !== currentPage) {
+      useAppStore.setState({ currentPage: page });
+    } else if (location.pathname === '/' && currentPage !== 'landing') {
+      useAppStore.setState({ currentPage: 'landing' });
+    }
+  }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return null;
+}
 
 function App() {
   const { currentPage, assessment, isScanning, scanError } = useAppStore();
@@ -127,4 +174,15 @@ function App() {
   );
 }
 
-export default App;
+// ─── P1-14: App with Router ─────────────────────────────────
+// BrowserRouter wraps the app so every page gets a real URL.
+// RouteSync keeps the Zustand store in sync with the URL.
+
+export default function AppWithRouter() {
+  return (
+    <BrowserRouter>
+      <RouteSync />
+      <App />
+    </BrowserRouter>
+  );
+}
