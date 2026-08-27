@@ -16,6 +16,8 @@ export interface RiskInput {
   service: string;
   keySize?: number;
   weights?: RiskWeights;
+  /** P0-12: Override business criticality (0-100) instead of using service name lookup */
+  businessCriticalityOverride?: number;
 }
 
 // ─── Component Scorers ─────────────────────────────────────────
@@ -118,7 +120,7 @@ export function computeRiskScore(input: RiskInput): RiskBreakdown {
   const weights = input.weights ?? DEFAULT_RISK_WEIGHTS;
 
   const algorithmRisk = algorithmRiskScore(input.quantumStatus, input.baseSeverity, input.keySize);
-  const businessCriticality = businessCriticalityScore(input.service, input.dataSensitivity);
+  const businessCriticality = input.businessCriticalityOverride ?? businessCriticalityScore(input.service, input.dataSensitivity);
   const internetExposure = internetExposureScore(input.internetFacing, input.service);
   const dataLifetime = dataLifetimeScore(input.dataLifetimeYears);
   const dataSensitivity = dataSensitivityScore(input.dataSensitivity);

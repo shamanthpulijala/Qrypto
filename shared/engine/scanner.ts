@@ -7,6 +7,7 @@ import type { Finding, Language, AlgorithmCategory, QuantumStatus, Severity, Cla
 import { computeRiskScore } from './riskEngine';
 import { deriveAlgorithmSeverity, deriveEffectiveSeverity } from './severity';
 import { lookupAlgorithm } from './registry';
+import { createHash } from 'crypto';
 
 import { ALL_PATTERNS, type CryptoPattern } from './detectors';
 
@@ -251,6 +252,40 @@ function generateId(): string {
   return `QG-${String(++findingCounter).padStart(4, '0')}`;
 }
 
+// ─── P0-8: Finding Fingerprint ─────────────────────────────
+// Fingerprint is deterministic and stable across rescans.
+// It deliberately excludes line numbers so inserting a line above
+// doesn't resurrect a suppressed finding.
+
+function generateFingerprint(
+  repository: string,
+  filePath: string,
+  algorithm: string,
+  usage: string,
+  detectedPattern: string
+): string {
+  // Normalize: lowercase, strip whitespace, normalize path separators
+  const norm = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').replace(/\\/g, '/').trim();
+  const normalizedPath = norm(filePath);
+  const normalizedPattern = norm(detectedPattern).slice(0, 80); // cap length
+  const normalizedRepo = norm(repository);
+  
+  const payload = `${normalizedRepo}:${normalizedPath}:${norm(algorithm)}:${norm(usage)}:${normalizedPattern}`;
+  
+  // Use Node crypto if available, fallback to simple hash for browser
+  if (typeof createHash === 'function') {
+    return createHash('sha256').update(payload).digest('hex').slice(0, 16);
+  }
+  // Browser fallback: simple string hash
+  let hash = 0;
+  for (let i = 0; i < payload.length; i++) {
+    const char = payload.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash |= 0;
+  }
+  return `fp-${Math.abs(hash).toString(16).padStart(8, '0')}`;
+}
+
 // ─── Context Inference ────────────────────────────────────────
 
 function inferService(filePath: string): string {
@@ -380,6 +415,15 @@ export function scanFile(file: ScanFile): Finding[] {
         dependencyCorroborated: false, // would need cross-file analysis
       });
 
+      const now = new Date().toISOString();
+      const fingerprint = generateFingerprint(
+        repository,
+        filePath,
+        pattern.algorithm,
+        pattern.usage,
+        detectedPattern
+      );
+
       const finding: Finding = {
         id: generateId(),
         file: filePath,
@@ -418,7 +462,11 @@ export function scanFile(file: ScanFile): Finding[] {
         protocol: detectProtocol(detectedPattern, pattern.category),
         variant: detectVariant(pattern.algorithm, keySize, detectedPattern),
         tags: buildTags(pattern),
-        detectedAt: new Date().toISOString(),
+        detectedAt: now,
+        // P0-8: Fingerprint and temporal tracking
+        fingerprint,
+        firstSeen: now,
+        lastSeen: now,
         evidence: {
           detectionLayers: ['regex'],
           matchedText: detectedPattern,

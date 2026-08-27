@@ -21,9 +21,18 @@ const TMP_DIR = path.join(__dirname, '../tmp');
 // ── Express app ───────────────────────────────────────────────
 const app = express();
 
+// Required for correct client IP resolution behind a reverse proxy. Without
+// it, req.ip is the proxy address and every client shares one rate-limit
+// bucket. Set TRUST_PROXY_HOPS to the number of proxies in front of the app.
+// Left at 0 (disabled) when directly exposed — trusting the header when there
+// is no proxy would let a client spoof its own IP via X-Forwarded-For.
+if (config.trustProxyHops > 0) {
+  app.set('trust proxy', config.trustProxyHops);
+}
+
 app.use(helmet());
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: config.frontendUrl,
   credentials: true,
 }));
 app.use(express.json({ limit: '10mb' }));

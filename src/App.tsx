@@ -16,10 +16,24 @@ import { Settings } from './components/settings/Settings';
 import { QuantumCursor } from './components/cursor/QuantumCursor';
 import { DashboardBackground } from './components/dashboard/DashboardBackground';
 import { CommandPalette } from './components/common/CommandPalette';
+import { LoginModal } from './components/auth/LoginModal';
 import { useAppStore } from './store/assessmentStore';
+import { useAuthStore } from './store/authStore';
 
 function App() {
   const { currentPage, assessment, isScanning, scanError } = useAppStore();
+  const { user } = useAuthStore();
+
+  // Auth gate: require login before accessing the app (except landing page)
+  if (!user && currentPage !== 'landing' && currentPage !== 'settings') {
+    return (
+      <>
+        <QuantumCursor />
+        <Landing />
+        <LoginModal />
+      </>
+    );
+  }
 
   const renderPage = () => {
     // Pages that don't require an assessment
@@ -93,7 +107,7 @@ function App() {
   };
 
   if (currentPage === 'landing') {
-    return <><QuantumCursor /><Landing /></>;
+    return <><QuantumCursor /><Landing /><LoginModal /></>;
   }
 
   return (
@@ -101,6 +115,7 @@ function App() {
       <QuantumCursor />
       <DashboardBackground />
       <CommandPalette />
+      <LoginModal />
       <Sidebar />
       <main className="main-content">
         <Topbar />

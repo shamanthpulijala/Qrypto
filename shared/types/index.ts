@@ -200,6 +200,16 @@ export interface Finding {
   tags: string[];
   cweId?: string;
   detectedAt: string; // ISO date
+  /**
+   * Stable fingerprint for this finding. Used for upsert on rescan so
+   * suppressions and triage state survive across scans. Generated from
+   * normalized path, algorithm, usage, and code context (not line numbers).
+   */
+  fingerprint?: string;
+  /** When this finding was first observed across all scans. */
+  firstSeen?: string;
+  /** When this finding was most recently observed. */
+  lastSeen?: string;
   evidence?: {
     detectionLayers: string[];
     matchedText: string;

@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
-import { authenticateToken } from '../middleware/auth';
+import { authenticateToken, canAccessResource } from '../middleware/auth';
 import { rateLimit } from '../middleware/rateLimit';
 import { upload } from '../services/upload.service';
 import { scanQueue } from '../workers/scan.worker';
@@ -111,7 +111,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
     });
 
     if (!scan) return res.status(404).json({ error: 'Scan not found' });
-    if (scan.userId !== req.user!.userId && req.user!.role !== 'ADMIN') {
+    if (!canAccessResource(req.user, scan.userId).allowed) {
       return res.status(403).json({ error: 'Access denied' });
     }
 

@@ -7,7 +7,7 @@
 
 import { create } from 'zustand';
 import type { Assessment, Finding, ChatMessage, MigrationTask, QDaySimulation, ServiceNode } from '../types';
-import { computeQuantumReadinessIndex } from '../engine/riskEngine';
+import { computeQuantumReadinessIndex, computeRiskScore } from '../engine/riskEngine';
 import { computeCryptoAgilityScore } from '../engine/cryptoAgility';
 import { generateHNDLAssessments } from '../engine/hndlAnalyzer';
 import { generateMigrationRoadmap } from '../engine/migrationPlanner';
@@ -59,6 +59,19 @@ function buildServicesFromFindings(findings: Finding[]): ServiceNode[] {
   return [...serviceMap.values()];
 }
 
+// P0-12: Per-asset context overrides
+export interface ContextOverride {
+  /** Finding fingerprint this override applies to, or '*' for all findings in a service */
+  fingerprint?: string;
+  /** Service name this override applies to */
+  service?: string;
+  /** Overridden values (undefined = use inference) */
+  internetFacing?: boolean;
+  dataSensitivity?: 'critical' | 'high' | 'medium' | 'low';
+  dataLifetimeYears?: number;
+  businessCriticality?: number; // 0-100
+}
+
 interface AppState {
   // Current assessment
   assessment: Assessment | null;
@@ -90,6 +103,9 @@ interface AppState {
   scanLog: string[];
   scanError: string | null;
 
+  // P0-12: Context overrides
+  contextOverrides: ContextOverride[];
+
   // Actions
   setCurrentPage: (page: string) => void;
   toggleSidebar: () => void;
@@ -105,6 +121,11 @@ interface AppState {
   startScan: (files: { path: string; content: string; zipFile?: File; projectName?: string }[]) => Promise<void>;
   loadScan: (scanId: string) => Promise<void>;
   clearAssessment: () => void;
+  // P0-12: Context override actions
+  setContextOverride: (override: ContextOverride) => void;
+  removeContextOverride: (fingerprintOrService: string) => void;
+  getContextOverride: (fingerprint: string, service: string) => ContextOverride | undefined;
+  recalculateFindingsWithContext: () => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -128,6 +149,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   scanProgress: 0,
   scanLog: [],
   scanError: null,
+  contextOverrides: [],
 
   setCurrentPage: (page) => set({ currentPage: page }),
 
@@ -277,6 +299,87 @@ export const useAppStore = create<AppState>((set, get) => ({
     qdayActive: false,
     scanError: null,
     currentPage: 'landing',
+    contextOverrides: [],
+  }),
+
+  // ── P0-12: Context Override Actions ──────────────────────
+  setContextOverride: (override) => set(s => {
+    const overrides = [...s.contextOverrides];
+    // Find existing override by fingerprint or service
+    const idx = overrides.findIndex(o => 
+      (override.fingerprint && o.fingerprint === override.fingerprint) ||
+      (override.service && o.service === override.service && !o.fingerprint)
+    );
+    if (idx >= 0) {
+      overrides[idx] = { ...overrides[idx], ...override };
+    } else {
+      overrides.push(override);
+    }
+    return { contextOverrides: overrides };
+  }),
+
+  removeContextOverride: (fingerprintOrService) => set(s => ({
+    contextOverrides: s.contextOverrides.filter(o => 
+      o.fingerprint !== fingerprintOrService && o.service !== fingerprintOrService
+    ),
+  })),
+
+  getContextOverride: (fingerprint, service) => {
+    const overrides = get().contextOverrides;
+    // Exact fingerprint match first
+    const fpMatch = overrides.find(o => o.fingerprint === fingerprint);
+    if (fpMatch) return fpMatch;
+    // Service-level override (no fingerprint)
+    return overrides.find(o => o.service === service && !o.fingerprint);
+  },
+
+  recalculateFindingsWithContext: () => set(s => {
+    if (!s.assessment) return {};
+    const { contextOverrides } = s;
+    
+    const updatedFindings = s.assessment.findings.map(f => {
+      // Find applicable override
+      const override = contextOverrides.find(o => 
+        (o.fingerprint && o.fingerprint === f.fingerprint) ||
+        (o.service === f.service && !o.fingerprint)
+      );
+      
+      if (!override) return f;
+      
+      // Apply overrides to finding context
+      const internetFacing = override.internetFacing ?? f.internetFacing;
+      const dataSensitivity = override.dataSensitivity ?? f.dataSensitivity;
+      const dataLifetimeYears = override.dataLifetimeYears ?? f.dataLifetimeYears;
+      
+      // Recalculate risk with overridden context
+      const riskBreakdown = computeRiskScore({
+        quantumStatus: f.quantumStatus,
+        baseSeverity: f.algorithmSeverity,
+        internetFacing,
+        dataSensitivity,
+        dataLifetimeYears,
+        isHardcoded: f.isHardcoded,
+        service: f.service,
+        businessCriticalityOverride: override.businessCriticality,
+      });
+      
+      return {
+        ...f,
+        internetFacing,
+        dataSensitivity,
+        dataLifetimeYears,
+        riskScore: riskBreakdown.totalScore,
+        riskBreakdown,
+        severityRationale: f.severityRationale + (override ? ' [context overridden]' : ''),
+      };
+    });
+    
+    const readinessBreakdown = computeQuantumReadinessIndex(updatedFindings);
+    
+    return {
+      assessment: { ...s.assessment, findings: updatedFindings },
+      readinessBreakdown,
+    };
   }),
 
   // ── startScan: dual-mode ──────────────────────────────────

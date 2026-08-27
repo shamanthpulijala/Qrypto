@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { authenticateToken } from '../middleware/auth';
+import { authenticateToken, canAccessResource } from '../middleware/auth';
 import { logAudit } from '../services/audit.service';
 
 const router = Router();
@@ -22,7 +22,7 @@ router.get('/scan/:scanId', authenticateToken, async (req, res) => {
 
     const scan = await prisma.scan.findUnique({ where: { id: scanId } });
     if (!scan) return res.status(404).json({ error: 'Scan not found' });
-    if (scan.userId !== req.user!.userId && req.user!.role !== 'ADMIN') {
+    if (!canAccessResource(req.user, scan.userId).allowed) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -61,7 +61,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
     if (!finding) return res.status(404).json({ error: 'Finding not found' });
 
     const scan = await prisma.scan.findUnique({ where: { id: finding.scanId } });
-    if (!scan || (scan.userId !== req.user!.userId && req.user!.role !== 'ADMIN')) {
+    if (!scan || !canAccessResource(req.user, scan.userId).allowed) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -85,7 +85,7 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
     if (!finding) return res.status(404).json({ error: 'Finding not found' });
 
     const scan = await prisma.scan.findUnique({ where: { id: finding.scanId } });
-    if (!scan || (scan.userId !== req.user!.userId && req.user!.role !== 'ADMIN')) {
+    if (!scan || !canAccessResource(req.user, scan.userId).allowed) {
       return res.status(403).json({ error: 'Access denied' });
     }
 

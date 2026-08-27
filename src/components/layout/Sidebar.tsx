@@ -6,9 +6,10 @@
 import React from 'react';
 import {
   LayoutDashboard, Search, Network, AlertTriangle, Zap,
-  Map, Bot, FileText, Shield, BarChart3, Settings
+  Map, Bot, FileText, Shield, BarChart3, Settings, LogOut
 } from 'lucide-react';
 import { useAppStore } from '../../store/assessmentStore';
+import { useAuthStore } from '../../store/authStore';
 import './Sidebar.css';
 
 const NAV_ITEMS = [
@@ -31,8 +32,14 @@ const GROUP_LABELS: Record<string, string> = {
 
 export function Sidebar() {
   const { currentPage, setCurrentPage, sidebarCollapsed, toggleSidebar, assessment } = useAppStore();
+  const { user, logout } = useAuthStore();
 
   const groups = ['main', 'quantum', 'planning'];
+
+  // Role-based access: certain features require specific roles
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'Security Lead';
+  const isCISO = user?.role === 'CISO' || user?.role === 'EXECUTIVE';
+  const canAccessReports = isAdmin || isCISO || user?.role === 'ANALYST' || user?.role === 'Security Analyst';
 
   return (
     <aside className="sidebar">
@@ -75,7 +82,7 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* Bottom Settings */}
+      {/* Bottom Settings + Logout */}
       <div className="sidebar-bottom">
         <button
           className={`nav-item ${currentPage === 'settings' ? 'active' : ''}`}
@@ -85,6 +92,16 @@ export function Sidebar() {
           <Settings size={16} />
           <span className="nav-label">Settings</span>
         </button>
+        {user && (
+          <button
+            className="nav-item"
+            onClick={logout}
+            title="Sign out"
+          >
+            <LogOut size={16} />
+            <span className="nav-label">Sign Out</span>
+          </button>
+        )}
       </div>
     </aside>
   );

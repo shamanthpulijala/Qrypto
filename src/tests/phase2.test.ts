@@ -330,10 +330,10 @@ describe('CBOM — Schema Validation', () => {
       expect(comp['bom-ref']).toBeTruthy();
       expect(comp.name).toBeTruthy();
       expect(comp.cryptoProperties).toBeDefined();
-      expect(comp.cryptoProperties.assetType).toBeTruthy();
-      expect(comp.cryptoProperties.algorithmProperties).toBeDefined();
+      expect(comp.cryptoProperties!.assetType).toBeTruthy();
+      expect(comp.cryptoProperties!.algorithmProperties).toBeDefined();
       expect(comp.evidence).toBeDefined();
-      expect(comp.evidence.occurrences.length).toBeGreaterThan(0);
+      expect(comp.evidence!.occurrences.length).toBeGreaterThan(0);
       expect(comp.properties).toBeDefined();
     }
   });
