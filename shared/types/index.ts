@@ -159,7 +159,20 @@ export interface Finding {
   // Classification
   quantumStatus: QuantumStatus;
   classicalStatus: ClassicalStatus; // §10 — independent classical security posture
+  /**
+   * Intrinsic severity of the primitive and its parameters, independent of
+   * where it was found. The same algorithm always reports the same value here.
+   * See shared/engine/severity.ts for the model and its invariants.
+   */
+  algorithmSeverity: Severity;
+  /**
+   * Effective severity for display and sorting: algorithmSeverity adjusted by
+   * bounded deployment context. Never below algorithmSeverity, and never
+   * escalated for quantum-resistant primitives.
+   */
   severity: Severity;
+  /** Human-readable derivation of `severity`, so the value is auditable. */
+  severityRationale: string;
   // Context
   internetFacing: boolean;
   dataSensitivity: 'critical' | 'high' | 'medium' | 'low';

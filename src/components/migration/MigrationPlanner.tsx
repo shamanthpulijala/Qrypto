@@ -85,20 +85,20 @@ export function MigrationPlanner() {
         </div>
       </div>
 
-      {/* System Transformation §40 */}
+      {/* Migration Progress Summary — derived from actual task data */}
       <div className="card mb-4" style={{ background: 'var(--glass-bg)', padding: '1.25rem' }}>
         <div style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.08em', color: 'var(--accent-violet)', marginBottom: '0.75rem' }}>
-          SYSTEM ALGORITHM TRANSFORMATION (RSA-2048 → HYBRID → ML-KEM)
+          MIGRATION PROGRESS SUMMARY
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontFamily: 'var(--font-mono)' }}>
-            <span style={{ color: '#ef4444' }}>RSA-2048 (Legacy)</span>
-            <span style={{ color: '#eab308' }}>HYBRID MODE</span>
-            <span style={{ color: '#22c55e' }}>ML-KEM FIPS 203</span>
+            <span style={{ color: '#ef4444' }}>Open ({totalTasks - doneTasks - inProgressTasks})</span>
+            <span style={{ color: '#eab308' }}>In Progress ({inProgressTasks})</span>
+            <span style={{ color: '#22c55e' }}>Completed ({doneTasks})</span>
           </div>
           <div style={{ height: '8px', background: 'var(--border-subtle)', borderRadius: 'var(--radius-full)', overflow: 'hidden', display: 'flex' }}>
-            <div style={{ width: `${Math.max(10, 100 - progressPercent)}%`, background: '#ef4444', transition: 'width 0.8s ease' }} />
-            <div style={{ width: `${inProgressTasks > 0 ? 25 : 10}%`, background: '#eab308', transition: 'width 0.8s ease' }} />
+            <div style={{ width: `${totalTasks > 0 ? ((totalTasks - doneTasks - inProgressTasks) / totalTasks) * 100 : 100}%`, background: '#ef4444', transition: 'width 0.8s ease' }} />
+            <div style={{ width: `${totalTasks > 0 ? (inProgressTasks / totalTasks) * 100 : 0}%`, background: '#eab308', transition: 'width 0.8s ease' }} />
             <div style={{ width: `${progressPercent}%`, background: '#22c55e', transition: 'width 0.8s ease' }} />
           </div>
         </div>

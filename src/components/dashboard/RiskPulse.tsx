@@ -1,6 +1,6 @@
 // ============================================================
 // QuantumGuard AI — Risk Pulse Component §33
-// Real-time activity stream of cryptographic events
+// Activity stream derived from actual scan findings
 // ============================================================
 
 import React from 'react';
@@ -13,12 +13,48 @@ export function RiskPulse() {
 
   if (!assessment) return null;
 
-  const events = [
-    { type: 'critical', text: 'RSA-2048 certificate discovered in payment gateway', time: '2m ago' },
-    { type: 'warning', text: 'TLS 1.2 legacy configuration detected in auth-service', time: '14m ago' },
-    { type: 'info', text: 'AES-256-GCM verified as quantum-resistant symmetric cipher', time: '1h ago' },
-    { type: 'success', text: 'ML-KEM (FIPS 203) hybrid migration target assigned', time: '3h ago' },
-  ];
+  // Derive events from actual findings instead of fabricating them
+  const events: { type: string; text: string; time: string }[] = [];
+
+  // Critical findings first
+  const critical = assessment.findings.filter(f => f.severity === 'critical');
+  critical.slice(0, 2).forEach(f => {
+    events.push({
+      type: 'critical',
+      text: `${f.algorithm} detected in ${f.service} (${f.file}:${f.line})`,
+      time: f.detectedAt ? new Date(f.detectedAt).toLocaleTimeString() : 'just now',
+    });
+  });
+
+  // High-severity findings
+  const high = assessment.findings.filter(f => f.severity === 'high');
+  high.slice(0, 2).forEach(f => {
+    events.push({
+      type: 'warning',
+      text: `${f.algorithm} quantum-vulnerable in ${f.service}`,
+      time: f.detectedAt ? new Date(f.detectedAt).toLocaleTimeString() : 'just now',
+    });
+  });
+
+  // PQC/adequate findings (positive signal)
+  const safe = assessment.findings.filter(f => f.quantumStatus === 'quantum-resistant' || f.quantumStatus === 'adequate');
+  if (safe.length > 0) {
+    events.push({
+      type: 'success',
+      text: `${safe.length} quantum-safe algorithm(s) verified in inventory`,
+      time: 'scan complete',
+    });
+  }
+
+  // Summary event
+  events.push({
+    type: 'info',
+    text: `Scan complete: ${assessment.findings.length} findings across ${assessment.scanStats?.affectedServices || 0} services`,
+    time: 'just now',
+  });
+
+  // Cap at 5 events
+  const displayEvents = events.slice(0, 5);
 
   return (
     <div className="risk-pulse-card">
@@ -29,7 +65,7 @@ export function RiskPulse() {
       </div>
 
       <div className="rp-stream">
-        {events.map((e, idx) => (
+        {displayEvents.map((e, idx) => (
           <div key={idx} className="rp-item">
             <span className={`rp-bullet ${e.type}`} />
             <div>
@@ -38,6 +74,15 @@ export function RiskPulse() {
             </div>
           </div>
         ))}
+        {displayEvents.length === 0 && (
+          <div className="rp-item">
+            <span className="rp-bullet info" />
+            <div>
+              <div style={{ color: 'var(--text-primary)' }}>No findings detected</div>
+              <div className="rp-time">scan complete</div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

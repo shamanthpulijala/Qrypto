@@ -44,10 +44,11 @@ function algorithmRiskScore(quantumStatus: QuantumStatus, baseSeverity: Severity
   return Math.round(base);
 }
 
-/** Business criticality: 0–100 based on service role */
+/** Business criticality: 0–100 based on inferred service role */
 function businessCriticalityScore(service: string, dataSensitivity: 'critical' | 'high' | 'medium' | 'low'): number {
+  // Generic service criticality mapping — no demo-company-specific names.
+  // Scores reflect the *type* of service, not a particular vendor's product.
   const serviceScores: Record<string, number> = {
-    // FinTech Corp services
     'Payment Service': 100,
     'Authentication Service': 95,
     'Transaction Service': 90,
@@ -59,20 +60,12 @@ function businessCriticalityScore(service: string, dataSensitivity: 'critical' |
     'Core Services': 65,
     'Configuration': 60,
     'Test Suite': 10,
-    // NovaBank services (§15)
-    'Customer API': 95,
-    'NovaBank Payment Service': 100,
-    'Authentication': 95,
-    'Mobile Backend': 80,
-    'Legacy Banking Service': 90,
-    'Document Storage': 75,
-    'Internal Admin Portal': 70,
-    'NovaBank API Gateway': 85,
-    'Certificate Infrastructure': 85,
+    'Web Server': 75,
+    'App': 60,
   };
   const serviceScore = serviceScores[service] ?? 60;
   const sensitivityMultiplier = { critical: 1.0, high: 0.85, medium: 0.70, low: 0.50 };
-  return Math.round(serviceScore * sensitivityMultiplier[dataSensitivity]);
+  return Math.round(serviceScore * (sensitivityMultiplier[dataSensitivity] ?? 0.70));
 }
 
 

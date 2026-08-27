@@ -41,29 +41,35 @@ const DISCOVERY_NODES = [
 ];
 
 // ─── Risk model factors §14 ──────────────────────────────────
+// These show the model's weight distribution — the fill bar represents
+// the relative weight of each factor, not a measured value.
 const RISK_FACTORS = [
-  { name: 'Quantum Vulnerability', weight: '30%', fill: 85, color: '#ef4444' },
-  { name: 'Business Criticality', weight: '20%', fill: 70, color: '#f97316' },
-  { name: 'Internet Exposure', weight: '15%', fill: 60, color: '#eab308' },
-  { name: 'Confidentiality Lifetime', weight: '15%', fill: 75, color: '#7c3aed' },
-  { name: 'Data Sensitivity', weight: '10%', fill: 65, color: '#00d4ff' },
-  { name: 'Migration Difficulty', weight: '10%', fill: 50, color: '#8b5cf6' },
+  { name: 'Quantum Vulnerability', weight: '30%', fill: 30, color: '#ef4444' },
+  { name: 'Business Criticality', weight: '20%', fill: 20, color: '#f97316' },
+  { name: 'Internet Exposure', weight: '15%', fill: 15, color: '#eab308' },
+  { name: 'Confidentiality Lifetime', weight: '15%', fill: 15, color: '#7c3aed' },
+  { name: 'Data Sensitivity', weight: '10%', fill: 10, color: '#00d4ff' },
+  { name: 'Migration Difficulty', weight: '10%', fill: 10, color: '#8b5cf6' },
 ];
 
 // ─── Migration transforms §18 ────────────────────────────────
+// These show recommended algorithm transitions, not measured progress.
 const MIGRATIONS = [
-  { from: 'RSA-2048', to: 'HYBRID ML-KEM', progress: 65 },
-  { from: 'ECDSA', to: 'ML-DSA (FIPS 204)', progress: 40 },
-  { from: 'TLS 1.0', to: 'TLS 1.3', progress: 80 },
-  { from: 'SHA-1', to: 'SHA-3-256', progress: 90 },
-  { from: 'HARDCODED KEYS', to: 'MANAGED VAULT', progress: 30 },
+  { from: 'RSA-2048', to: 'ML-KEM (FIPS 203) / Hybrid', nist: 'FIPS 203' },
+  { from: 'ECDSA / RSA Sig', to: 'ML-DSA (FIPS 204)', nist: 'FIPS 204' },
+  { from: 'TLS 1.0 / 1.1', to: 'TLS 1.3', nist: 'RFC 8446' },
+  { from: 'SHA-1', to: 'SHA-256 / SHA-3', nist: 'FIPS 180-4 / FIPS 202' },
+  { from: 'Hardcoded Keys', to: 'Managed Secrets Vault', nist: '—' },
 ];
 
 // ─── HNDL data categories §16 ────────────────────────────────
 const HNDL_CATEGORIES = ['Medical Records', 'Financial Records', 'Government Data', 'Source Code', 'Customer Data', 'Intellectual Property'];
-const HNDL_RISKS: Record<string, number> = {
-  'Medical Records': 98, 'Financial Records': 92, 'Government Data': 97,
-  'Source Code': 78, 'Customer Data': 88, 'Intellectual Property': 95,
+// HNDL risk is derived from data lifetime requirements.
+// These are illustrative ranges based on typical confidentiality periods,
+// not measured values from a specific scan.
+const HNDL_LIFETIME_YEARS: Record<string, number> = {
+  'Medical Records': 25, 'Financial Records': 15, 'Government Data': 25,
+  'Source Code': 10, 'Customer Data': 10, 'Intellectual Property': 20,
 };
 
 const SUPPORTED_EXT = ['.py', '.java', '.js', '.ts', '.jsx', '.tsx', '.go', '.yml', '.yaml', '.json', '.xml', '.sh', '.conf', '.env', '.properties', '.gradle', '.toml', '.tf'];
@@ -204,15 +210,14 @@ export function Landing() {
               }}>
                 EXPLORE Q-DAY <Zap size={16} />
               </button>
-            </div>
-            <div className="hero-stats">
+            </div>              <div className="hero-stats">
               <div className="hero-stat">
-                <span className="hero-stat-value">58+</span>
+                <span className="hero-stat-value">71</span>
                 <span className="hero-stat-label">Detection Patterns</span>
               </div>
               <div className="hero-stat">
                 <span className="hero-stat-value">8</span>
-                <span className="hero-stat-label">Languages</span>
+                <span className="hero-stat-label">File Types</span>
               </div>
               <div className="hero-stat">
                 <span className="hero-stat-value">FIPS 203–205</span>
@@ -313,12 +318,13 @@ export function Landing() {
         </div>
         <div className="hndl-result">
           <div>
-            <div className="hndl-risk-label">LONG-TERM CONFIDENTIALITY RISK</div>
-            <div className="hndl-risk-value">{HNDL_RISKS[selectedHndl]}%</div>
+            <div className="hndl-risk-label">CONFIDENTIALITY LIFETIME</div>
+            <div className="hndl-risk-value">{HNDL_LIFETIME_YEARS[selectedHndl]}+ years</div>
           </div>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-            {selectedHndl} with 20+ year confidentiality requirements face extreme HNDL risk.
-            Data intercepted today can be decrypted when CRQCs arrive.
+            {selectedHndl} typically requires {HNDL_LIFETIME_YEARS[selectedHndl]}+ years of confidentiality.
+            If protected by quantum-vulnerable algorithms (RSA, ECC), data intercepted today
+            may be decryptable when cryptographically relevant quantum computers arrive.
           </p>
         </div>
       </div>
@@ -338,9 +344,7 @@ export function Landing() {
               <span className="migration-from">{m.from}</span>
               <span className="migration-arrow">→</span>
               <span className="migration-to">{m.to}</span>
-              <div className="migration-bar">
-                <div className="migration-bar-fill" style={{ width: `${m.progress}%` }} />
-              </div>
+              <span className="migration-nist" style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>{m.nist}</span>
             </div>
           ))}
         </div>
@@ -452,7 +456,7 @@ export function Landing() {
                   </div>
                 )}
 
-                <p className="upload-disclaimer">Files are processed entirely in your browser — no code is sent to a server.</p>
+                <p className="upload-disclaimer">In browser-only mode, file contents are processed locally. When a backend is configured, scan metadata (file paths, line numbers, detected patterns) may be transmitted for persistence and reporting.</p>
               </div>
             </>
           )}
@@ -470,7 +474,7 @@ export function Landing() {
               quantum migration concerns (RSA, ECC, ECDH). It does not claim quantum computers can
               currently break RSA, or that PQC algorithms are mathematically guaranteed to be secure.
               Every recommendation is grounded in NIST-standardized PQC algorithms (ML-KEM FIPS 203,
-              ML-DSA FIPS 204, SLH-DSA FIPS 205). Your source code never leaves your browser.
+              ML-DSA FIPS 204, SLH-DSA FIPS 205). In browser-only mode, all processing is local.
             </p>
           </div>
         </div>

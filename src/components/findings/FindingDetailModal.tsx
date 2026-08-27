@@ -58,7 +58,7 @@ export function FindingDetailModal({ finding, onClose }: Props) {
 
   const getBusinessImpact = (f: Finding): string => {
     if (f.service.includes('Payment')) {
-      return `Potential compromise of payment transaction channels, PCI DSS non-compliance penalties (up to $100k/month), and retroactive exposure of stored financial records (data confidentiality requirement: ${f.dataLifetimeYears} years).`;
+      return `Potential compromise of payment transaction channels, PCI DSS non-compliance audit findings, and retroactive exposure of stored financial records (data confidentiality requirement: ${f.dataLifetimeYears} years).`;
     }
     if (f.service.includes('Auth')) {
       return `Impersonation risk for internal and customer identities. If authentication keys are compromised, adversaries could forge session tokens, bypass MFA, and gain persistent administrative access across all downstream systems.`;

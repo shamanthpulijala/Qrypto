@@ -54,11 +54,11 @@ export function Topbar() {
             </div>
           )}
 
-          {/* Live indicator */}
+          {/* Scan status indicator */}
           {assessment && (
             <div className="topbar-live">
               <span className="live-dot" />
-              <span className="live-text">LIVE ASSESSMENT</span>
+              <span className="live-text">SCAN COMPLETE</span>
             </div>
           )}
 

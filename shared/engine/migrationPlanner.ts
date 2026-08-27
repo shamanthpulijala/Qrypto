@@ -112,81 +112,45 @@ export function generateMigrationRoadmap(
   const pqcFindings = findings.filter(f => f.quantumStatus === 'quantum-resistant');
 
   // Case A: High Readiness / PQC-Migrated Repo (0 critical/vulnerable findings or mostly PQC)
+  // All tasks start as 'todo' with no fabricated owner. A freshly scanned repo must not
+  // contain tasks marked 'done' unless derived from actual persisted state.
   if (vulnerableFindings.length === 0 && weakFindings.length === 0 && secretFindings.length === 0) {
-    tasks.push({
-      id: taskId(),
-      phase: 1,
-      title: 'Maintain NIST PQC Compliance & Continuous Audit',
-      description: 'Continuous monitoring of active NIST ML-KEM (FIPS 203) and ML-DSA (FIPS 204) algorithms across all microservices.',
-      priority: 'low',
-      effort: 'days',
-      effortValue: 1,
-      estimatedEffort: '3 days',
-      affectedServices: services.map(s => s.name).slice(0, 3),
-      affectedFindings: pqcFindings.map(f => f.id).slice(0, 5),
-      reason: 'Architecture is verified PQC-compliant with 0 quantum-vulnerable primitives.',
-      dependencies: [],
-      owner: 'Lead Cryptographer',
-      dueDate: daysFromNow(7),
-      status: 'done',
-      tags: ['pqc-verified', 'compliance', 'fips-203'],
-    });
+    if (pqcFindings.length > 0) {
+      tasks.push({
+        id: taskId(),
+        phase: 1,
+        title: `Verify ${pqcFindings.length} PQC Algorithm(s) for Correct Configuration`,
+        description: `Audit the ${pqcFindings.length} detected post-quantum algorithm(s) to verify correct parameter sets and usage patterns.`,
+        priority: 'low',
+        effort: 'days',
+        effortValue: 1,
+        estimatedEffort: '1-3 days',
+        affectedServices: [...new Set(pqcFindings.map(f => f.service))],
+        affectedFindings: pqcFindings.map(f => f.id),
+        reason: 'Repository is PQC-compliant. Verify correct algorithm configuration to prevent misuse.',
+        dependencies: [],
+        dueDate: daysFromNow(14),
+        status: 'todo',
+        tags: ['pqc-verified', 'compliance'],
+      });
+    }
 
     tasks.push({
       id: taskId(),
       phase: 2,
-      title: 'Benchmark ML-KEM & ML-DSA Performance in Staging',
-      description: 'Run automated load testing on ML-KEM-768 key exchange latency and ML-DSA-65 signature sizes under high throughput.',
-      priority: 'low',
-      effort: 'weeks',
-      effortValue: 2,
-      estimatedEffort: '2 weeks',
-      affectedServices: services.map(s => s.name).slice(0, 4),
-      affectedFindings: pqcFindings.map(f => f.id).slice(0, 5),
-      reason: 'Validate post-quantum throughput and memory overhead under enterprise load.',
-      dependencies: ['MT-001'],
-      owner: 'Performance Engineering',
-      dueDate: daysFromNow(30),
-      status: 'in-progress',
-      tags: ['benchmarking', 'performance', 'pqc'],
-    });
-
-    tasks.push({
-      id: taskId(),
-      phase: 3,
-      title: 'Automate Cryptographic Bill of Materials (CBOM) in CI/CD',
-      description: 'Integrate automated Qrypto CBOM scanning into GitHub Actions / GitLab CI pipeline on every pull request.',
+      title: 'Establish Continuous Cryptographic Monitoring',
+      description: 'Set up automated scanning to detect regressions — new classical-vulnerable algorithms introduced in code changes.',
       priority: 'medium',
       effort: 'weeks',
       effortValue: 2,
-      estimatedEffort: '2 weeks',
-      affectedServices: services.map(s => s.name).slice(0, 4),
+      estimatedEffort: '1-2 weeks',
+      affectedServices: services.map(s => s.name).slice(0, 5),
       affectedFindings: [],
-      reason: 'Prevent regressions or accidental introduction of legacy RSA/ECC primitives in new code commits.',
-      dependencies: ['MT-002'],
-      owner: 'DevSecOps Team',
-      dueDate: daysFromNow(60),
+      reason: 'Prevent reintroduction of quantum-vulnerable or classically-weak algorithms.',
+      dependencies: [],
+      dueDate: daysFromNow(30),
       status: 'todo',
-      tags: ['cbom', 'cicd', 'automation'],
-    });
-
-    tasks.push({
-      id: taskId(),
-      phase: 4,
-      title: 'Annual Post-Quantum Cryptographic Agility Review',
-      description: 'Conduct annual audit of cryptographic abstraction layers to ensure readiness for future NIST PQC round updates.',
-      priority: 'low',
-      effort: 'months',
-      effortValue: 3,
-      estimatedEffort: '1 month',
-      affectedServices: services.map(s => s.name),
-      affectedFindings: [],
-      reason: 'Ensure enterprise crypto-agility remains high as cryptographic standards evolve.',
-      dependencies: ['MT-003'],
-      owner: 'Security Architecture Board',
-      dueDate: daysFromNow(120),
-      status: 'todo',
-      tags: ['crypto-agility', 'annual-audit'],
+      tags: ['monitoring', 'regression-prevention'],
     });
 
     return tasks;
@@ -211,7 +175,6 @@ export function generateMigrationRoadmap(
       affectedFindings: secretFindings.map(f => f.id),
       reason: 'Hardcoded secrets represent an immediate compromise vector.',
       dependencies: [],
-      owner: 'Security Engineering',
       dueDate: daysFromNow(3),
       status: 'todo',
       tags: ['secrets', 'immediate', 'credentials'],
@@ -237,9 +200,8 @@ export function generateMigrationRoadmap(
       affectedFindings: weakList.map(f => f.id),
       reason: 'Classically weak primitives are vulnerable to immediate collision or decryption attacks.',
       dependencies: [],
-      owner: 'Core Services Team',
       dueDate: daysFromNow(14),
-      status: 'in-progress',
+      status: 'todo',
       tags: ['legacy-crypto', 'deprecation', 'sha1-md5'],
     });
   }
@@ -264,7 +226,6 @@ export function generateMigrationRoadmap(
       affectedFindings: keyEstFindings.map(f => f.id),
       reason: 'Public key encryption and key exchange are vulnerable to Shor\'s algorithm (Harvest-Now-Decrypt-Later).',
       dependencies: tasks.length > 0 ? [tasks[0].id] : [],
-      owner: 'Cryptography Engineering',
       dueDate: daysFromNow(45),
       status: 'todo',
       tags: ['ml-kem', 'fips-203', 'hybrid-kem'],
@@ -291,7 +252,6 @@ export function generateMigrationRoadmap(
       affectedFindings: sigFindings.map(f => f.id),
       reason: 'Digital signatures must be post-quantum secure to prevent transaction forging.',
       dependencies: tasks.length > 0 ? [tasks[tasks.length - 1].id] : [],
-      owner: 'Security Architecture',
       dueDate: daysFromNow(75),
       status: 'todo',
       tags: ['ml-dsa', 'fips-204', 'signatures'],
@@ -312,7 +272,6 @@ export function generateMigrationRoadmap(
     affectedFindings: findings.filter(f => f.isHardcoded).map(f => f.id),
     reason: 'Centralized algorithm management ensures future PQC algorithm swaps require zero application code changes.',
     dependencies: tasks.length > 0 ? [tasks[tasks.length - 1].id] : [],
-    owner: 'Architecture Guild',
     dueDate: daysFromNow(120),
     status: 'todo',
     tags: ['crypto-agility', 'refactoring', 'architecture'],

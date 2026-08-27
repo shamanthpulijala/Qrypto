@@ -266,7 +266,8 @@ describe('Frontend — Migration page works', () => {
       expect(task).toHaveProperty('priority');
       expect(task).toHaveProperty('status');
       expect(task).toHaveProperty('estimatedEffort');
-      expect(task).toHaveProperty('owner');
+      // owner is optional — must not be fabricated for fresh scans
+      expect(task.owner === undefined || typeof task.owner === 'string').toBe(true);
     });
   });
 

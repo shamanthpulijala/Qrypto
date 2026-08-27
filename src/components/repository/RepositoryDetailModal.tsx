@@ -22,14 +22,16 @@ export function RepositoryDetailModal({ onClose }: Props) {
       return assessment.scannedFiles;
     }
 
-    // Fallback: group findings by file if scannedFiles wasn't stored
+    // Fallback: group findings by file if scannedFiles wasn't stored.
+    // Do NOT fabricate LOC/size — use the highest finding line as a
+    // minimum line count, and leave size as 0 (unknown) rather than inventing numbers.
     const fileMap = new Map<string, ScannedFileDetail>();
     assessment.findings.forEach(f => {
       if (!fileMap.has(f.file)) {
         fileMap.set(f.file, {
           path: f.file,
-          lineCount: Math.max(f.line + 10, 45),
-          sizeBytes: 1024 + (f.line * 30),
+          lineCount: f.line || 0,
+          sizeBytes: 0, // unknown — not fabricated
           language: f.language.toUpperCase(),
           findingsCount: 0,
           criticalCount: 0,

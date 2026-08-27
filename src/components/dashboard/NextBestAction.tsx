@@ -43,13 +43,17 @@ export function NextBestAction() {
         </div>
 
         <div>
-          <div className="nba-section-label">ESTIMATED IMPACT</div>
-          <div className="nba-impact-val">↓ 18% Exposure</div>
+          <div className="nba-section-label">RISK SCORE</div>
+          <div className="nba-impact-val" style={{ color: topFinding?.riskScore ? (topFinding.riskScore >= 60 ? '#ef4444' : '#f97316') : undefined }}>
+            {topFinding?.riskScore ?? '—'} / 100
+          </div>
         </div>
 
         <div>
-          <div className="nba-section-label">ESTIMATED EFFORT</div>
-          <div className="nba-effort-val">3 Weeks</div>
+          <div className="nba-section-label">PRIORITY</div>
+          <div className="nba-effort-val">
+            #{topFinding?.migrationPriority ?? '—'}
+          </div>
         </div>
       </div>
 

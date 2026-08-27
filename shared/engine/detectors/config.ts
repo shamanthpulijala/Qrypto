@@ -1,4 +1,4 @@
-import { Finding } from '../../types';
+import type { Finding } from '../../types';
 
 export function detectConfigWeaknesses(path: string, content: string): Finding[] {
   const findings: Finding[] = [];
@@ -25,7 +25,9 @@ export function detectConfigWeaknesses(path: string, content: string): Finding[]
             confidence: 0.95,
             quantumStatus: 'vulnerable',
             classicalStatus: 'weak',
+            algorithmSeverity: 'high',
             severity: 'high',
+            severityRationale: 'Deprecated TLS version detected in server configuration.',
             riskScore: 85,
             riskBreakdown: { algorithmRisk: 0, businessCriticality: 0, internetExposure: 0, dataLifetime: 0, dataSensitivity: 0, migrationDifficulty: 0, totalScore: 0 },
             service: 'Web Server',
@@ -64,7 +66,9 @@ export function detectConfigWeaknesses(path: string, content: string): Finding[]
             confidence: 0.95,
             quantumStatus: 'vulnerable',
             classicalStatus: 'broken',
+            algorithmSeverity: 'critical',
             severity: 'critical',
+            severityRationale: 'Broken cipher suite (RC4/3DES/DES) detected in server configuration.',
             riskScore: 95,
             riskBreakdown: { algorithmRisk: 0, businessCriticality: 0, internetExposure: 0, dataLifetime: 0, dataSensitivity: 0, migrationDifficulty: 0, totalScore: 0 },
             service: 'Web Server',

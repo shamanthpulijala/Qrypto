@@ -1,4 +1,4 @@
-import { Finding, AlgorithmCategory, QuantumStatus, ClassicalStatus, Severity, Language, RiskBreakdown } from '../../types';
+import type { Finding, AlgorithmCategory, QuantumStatus, ClassicalStatus, Severity, Language, RiskBreakdown } from '../../types';
 
 // Define known cryptographic dependencies
 const CRYPTO_DEPENDENCIES: Record<string, { name: string, isPqcReady: boolean, recommendation: string, category: AlgorithmCategory, severity: Severity, quantumStatus: QuantumStatus, classicalStatus: ClassicalStatus }> = {
@@ -38,7 +38,9 @@ export function detectDependencies(path: string, content: string): Finding[] {
             confidence: 0.99,
             quantumStatus: info.quantumStatus,
             classicalStatus: info.classicalStatus,
+            algorithmSeverity: info.severity,
             severity: info.severity,
+            severityRationale: `Dependency ${depName} detected in manifest.`,
             riskScore: info.severity === 'high' ? 85 : info.severity === 'medium' ? 65 : 30,
             riskBreakdown: { algorithmRisk: 0, businessCriticality: 0, internetExposure: 0, dataLifetime: 0, dataSensitivity: 0, migrationDifficulty: 0, totalScore: 0 },
             service: 'App',
@@ -80,7 +82,9 @@ export function detectDependencies(path: string, content: string): Finding[] {
             confidence: 0.99,
             quantumStatus: info.quantumStatus,
             classicalStatus: info.classicalStatus,
+            algorithmSeverity: info.severity,
             severity: info.severity,
+            severityRationale: `Dependency ${pkgName} detected in requirements manifest.`,
             riskScore: info.severity === 'high' ? 85 : info.severity === 'medium' ? 65 : 30,
             riskBreakdown: { algorithmRisk: 0, businessCriticality: 0, internetExposure: 0, dataLifetime: 0, dataSensitivity: 0, migrationDifficulty: 0, totalScore: 0 },
             service: 'App',

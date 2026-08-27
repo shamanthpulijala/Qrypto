@@ -5,10 +5,106 @@
 
 import type { Finding, Language, AlgorithmCategory, QuantumStatus, Severity, ClassicalStatus } from '../types';
 import { computeRiskScore } from './riskEngine';
+import { deriveAlgorithmSeverity, deriveEffectiveSeverity } from './severity';
 
 import { ALL_PATTERNS, type CryptoPattern } from './detectors';
 
 const PATTERNS = ALL_PATTERNS;
+
+// ─── P0-4: Computed Confidence ─────────────────────────────
+// Confidence is evidence-based, not a copy of the pattern constant.
+// The pattern.confidence serves as a *base* that reflects regex specificity;
+// then we add/subtract based on what evidence is available.
+//
+// Design: AST corroboration is structured so it can be added later when
+// the AST layer is revived, but we do NOT fake it now.
+
+interface ConfidenceInput {
+  /** Pattern-defined base confidence (regex specificity). */
+  baseConfidence: number;
+  /** Whether a key size was successfully extracted from the match. */
+  keySizeExtracted: boolean;
+  /** Whether the match is in a comment or string literal (heuristic). */
+  inCommentOrString: boolean;
+  /** Whether the file path looks like a test, vendor, fixture, or node_modules. */
+  inTestOrVendorPath: boolean;
+  /** Whether AST corroboration is available (currently false — AST is dead). */
+  astCorroborated: boolean;
+  /** Whether a corroborating dependency was found (e.g. package.json lists the crypto lib). */
+  dependencyCorroborated: boolean;
+}
+
+interface ConfidenceResult {
+  confidence: number;
+  derivation: string;
+}
+
+/**
+ * Compute confidence from available evidence, clamped to [0, 1].
+ * Every adjustment is documented in the derivation string so the value
+ * is auditable rather than merely asserted.
+ */
+function computeConfidence(input: ConfidenceInput): ConfidenceResult {
+  let score = input.baseConfidence;
+  const reasons: string[] = [`base ${input.baseConfidence.toFixed(2)} from pattern specificity`];
+
+  // Positive: key size extraction confirms this is a real cryptographic call,
+  // not just a coincidental string match.
+  if (input.keySizeExtracted) {
+    score += 0.05;
+    reasons.push('+0.05 key size extracted');
+  }
+
+  // Positive: AST corroboration (reserved for when AST layer is revived)
+  if (input.astCorroborated) {
+    score += 0.10;
+    reasons.push('+0.10 AST confirms valid code node');
+  }
+
+  // Positive: corroborating dependency present
+  if (input.dependencyCorroborated) {
+    score += 0.05;
+    reasons.push('+0.05 corroborating dependency found');
+  }
+
+  // Penalty: in a comment or string literal — likely documentation, not usage
+  if (input.inCommentOrString) {
+    score -= 0.30;
+    reasons.push('-0.30 in comment or string literal');
+  }
+
+  // Penalty: test/vendor/fixture/node_modules path — less likely to be production crypto
+  if (input.inTestOrVendorPath) {
+    score -= 0.20;
+    reasons.push('-0.20 in test/vendor/fixture path');
+  }
+
+  const confidence = Math.max(0, Math.min(1, Math.round(score * 100) / 100));
+  const derivation = reasons.join('; ') + '.';
+
+  return { confidence, derivation };
+}
+
+/** Heuristic: does this line look like a comment or string containing the match? */
+function isInCommentOrString(content: string, matchIndex: number): boolean {
+  const lineStart = content.lastIndexOf('\n', matchIndex);
+  const line = content.slice(lineStart + 1, matchIndex + 200).split('\n')[0];
+  const trimmed = line.trimStart();
+  // Lines starting with //, #, /*, *, <!-- are comments
+  if (/^(\/\/|#|\/\*|\*|<!--)/.test(trimmed)) return true;
+  // Simple heuristic: if the match is inside quotes on this line
+  const beforeMatch = line.slice(0, matchIndex - lineStart - 1);
+  const singleQuotes = (beforeMatch.match(/'/g) || []).length;
+  const doubleQuotes = (beforeMatch.match(/"/g) || []).length;
+  if (singleQuotes % 2 === 1 || doubleQuotes % 2 === 1) return true;
+  return false;
+}
+
+/** Heuristic: does the file path suggest a test, vendor, fixture, or generated file? */
+function isInTestOrVendorPath(filePath: string): boolean {
+  const lower = filePath.toLowerCase();
+  return /(?:test|tests|__tests__|spec|specs|mock|mocks|fixture|fixtures|vendor|node_modules|__mocks__|\.test\.|\.spec\.|generated|dist\/)/.test(lower);
+}
 
 
 // ─── Language Detection ──────────────────────────────────────
@@ -164,6 +260,32 @@ export function scanFile(file: ScanFile): Finding[] {
         service,
       });
 
+      // Severity is derived on two independent axes and never collapsed into
+      // the contextual risk score. See shared/engine/severity.ts.
+      const algorithmSeverity = deriveAlgorithmSeverity({
+        algorithm: pattern.algorithm,
+        quantumStatus: pattern.quantumStatus,
+        baseSeverity: pattern.baseSeverity,
+        keySize,
+        category: pattern.category,
+      });
+
+      const effective = deriveEffectiveSeverity({
+        algorithmSeverity: algorithmSeverity.severity,
+        quantumStatus: pattern.quantumStatus,
+        contextualRisk: riskBreakdown.totalScore,
+      });
+
+      // Compute confidence from evidence, not from pattern constant.
+      const confidenceResult = computeConfidence({
+        baseConfidence: pattern.confidence,
+        keySizeExtracted: typeof keySize === 'number' && keySize > 0,
+        inCommentOrString: isInCommentOrString(content, match.index),
+        inTestOrVendorPath: isInTestOrVendorPath(filePath),
+        astCorroborated: false, // AST layer is currently dead; do not fabricate
+        dependencyCorroborated: false, // would need cross-file analysis
+      });
+
       const finding: Finding = {
         id: generateId(),
         file: filePath,
@@ -177,13 +299,12 @@ export function scanFile(file: ScanFile): Finding[] {
         category: pattern.category,
         usage: pattern.usage,
         detectedPattern,
-        confidence: pattern.confidence,
+        confidence: confidenceResult.confidence,
         quantumStatus: pattern.quantumStatus,
         classicalStatus: deriveClassicalStatus(pattern.algorithm, pattern.quantumStatus, pattern.category),
-        severity: riskBreakdown.totalScore >= 80 ? 'critical' :
-                  riskBreakdown.totalScore >= 60 ? 'high' :
-                  riskBreakdown.totalScore >= 40 ? 'medium' :
-                  riskBreakdown.totalScore >= 20 ? 'low' : 'info',
+        algorithmSeverity: algorithmSeverity.severity,
+        severity: effective.severity,
+        severityRationale: `${algorithmSeverity.rationale}. ${effective.rationale}`,
         internetFacing,
         dataSensitivity,
         dataLifetimeYears,
@@ -199,6 +320,11 @@ export function scanFile(file: ScanFile): Finding[] {
         owner: undefined,
         tags: buildTags(pattern),
         detectedAt: new Date().toISOString(),
+        evidence: {
+          detectionLayers: ['regex'],
+          matchedText: detectedPattern,
+          confidenceDerivation: confidenceResult.derivation,
+        },
       };
 
 
