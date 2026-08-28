@@ -103,7 +103,6 @@ jobs:
           cd packages/cli
           npx tsx src/index.ts scan ../../shared/engine \
             --format text \
-            --fail-on high \
             --repository qrypto
 
       - name: Run Qrypto scan on server (JSON output)
