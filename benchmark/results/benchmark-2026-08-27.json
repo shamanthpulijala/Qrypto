@@ -1,12 +1,12 @@
 {
-  "timestamp": "2026-08-27T10:43:49.981Z",
+  "timestamp": "2026-08-27T18:27:09.276Z",
   "corpus": {
     "files": 5,
     "expectedLabels": 29
   },
   "scan": {
     "findingsTotal": 40,
-    "executionMs": 135
+    "executionMs": 212
   },
   "metrics": {
     "truePositives": 29,
@@ -389,7 +389,7 @@
         "quantumStatus": "classical-weak"
       },
       "detected": {
-        "id": "QG-0069",
+        "id": "QG-0070",
         "algorithm": "SHA-1",
         "severity": "high"
       }

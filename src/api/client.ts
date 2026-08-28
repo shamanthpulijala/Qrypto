@@ -1,11 +1,15 @@
 // ============================================================
 // Qrypto — Real API Client
 // Wraps fetch calls to the backend with JWT injection,
-// error normalisation, and type safety.
+// error normalisation, type safety, network fault resilience,
+// and safe URL formatting.
 // Used when VITE_API_URL is configured.
 // ============================================================
 
-const BASE_URL = import.meta.env.VITE_API_URL || '';
+import type { Finding, MigrationTask, ServiceNode } from '../types';
+
+// Strip trailing slashes to prevent double-slash URL bugs (e.g. http://localhost:3001//api/...)
+const BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
 
 // Token store — kept in memory (not localStorage) for security
 let _token: string | null = null;
@@ -20,6 +24,40 @@ export function getToken(): string | null {
 
 export function isApiConfigured(): boolean {
   return !!import.meta.env.VITE_API_URL;
+}
+
+export class ApiError extends Error {
+  public status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+    this.name = 'ApiError';
+  }
+}
+
+// Helper to construct normalized backend URLs
+function buildUrl(path: string): string {
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  return `${BASE_URL}${cleanPath}`;
+}
+
+// Extract human-readable error messages from JSON error responses
+async function parseErrorMessage(res: Response): Promise<string> {
+  try {
+    const body = await res.json();
+    if (typeof body.error === 'string' && body.error.trim()) {
+      return body.error;
+    }
+    if (body.error && typeof body.error.message === 'string' && body.error.message.trim()) {
+      return body.error.message;
+    }
+    if (typeof body.message === 'string' && body.message.trim()) {
+      return body.message;
+    }
+  } catch {
+    // Ignore JSON parsing errors for 500 / non-JSON error pages
+  }
+  return res.statusText || `HTTP Error ${res.status}`;
 }
 
 // ── Generic fetch wrapper ─────────────────────────────────────
@@ -37,25 +75,33 @@ async function apiFetch<T>(
     headers['Authorization'] = `Bearer ${_token}`;
   }
 
-  const res = await fetch(`${BASE_URL}${path}`, {
-    ...options,
-    headers,
-  });
+  const url = buildUrl(path);
+  let res: Response;
 
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new ApiError(res.status, body.error || res.statusText);
+  try {
+    res = await fetch(url, {
+      ...options,
+      headers,
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Network failure or CORS blocked request';
+    throw new ApiError(0, `Network Connection Error: ${msg}`);
   }
 
-  return res.json() as Promise<T>;
-}
+  if (!res.ok) {
+    const errorMsg = await parseErrorMessage(res);
+    throw new ApiError(res.status, errorMsg);
+  }
 
-export class ApiError extends Error {
-  public status: number;
-  constructor(status: number, message: string) {
-    super(message);
-    this.status = status;
-    this.name = 'ApiError';
+  // Handle 204 No Content or empty bodies gracefully
+  if (res.status === 204 || res.headers.get('content-length') === '0') {
+    return {} as T;
+  }
+
+  try {
+    return (await res.json()) as T;
+  } catch {
+    throw new ApiError(res.status, 'Invalid JSON payload received from server');
   }
 }
 
@@ -116,9 +162,9 @@ export interface ScanResult {
   startedAt: string;
   completedAt: string | null;
   errorMessage: string | null;
-  findings: any[];
-  migrationTasks: any[];
-  services: any[];
+  findings: Finding[];
+  migrationTasks: MigrationTask[];
+  services: ServiceNode[];
 }
 
 export const scansApi = {
@@ -131,15 +177,21 @@ export const scansApi = {
     const headers: Record<string, string> = {};
     if (_token) headers['Authorization'] = `Bearer ${_token}`;
 
-    const res = await fetch(`${BASE_URL}/api/scans`, {
-      method: 'POST',
-      headers,
-      body: formData,
-    });
+    let res: Response;
+    try {
+      res = await fetch(buildUrl('/api/scans'), {
+        method: 'POST',
+        headers,
+        body: formData,
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Network failure or CORS blocked upload';
+      throw new ApiError(0, `Upload Failed: ${msg}`);
+    }
 
     if (!res.ok) {
-      const body = await res.json().catch(() => ({ error: res.statusText }));
-      throw new ApiError(res.status, body.error || res.statusText);
+      const errorMsg = await parseErrorMessage(res);
+      throw new ApiError(res.status, errorMsg);
     }
 
     return res.json();
@@ -150,28 +202,65 @@ export const scansApi = {
       `/api/scans?page=${page}&limit=${limit}`
     ),
 
-  get: (scanId: string) => apiFetch<ScanResult>(`/api/scans/${scanId}`),
+  get: (scanId: string) => apiFetch<ScanResult>(`/api/scans/${encodeURIComponent(scanId)}`),
 
-  // Poll scan progress until complete or errored
+  // Poll scan progress until complete or errored with max retries and abort signal support
   pollUntilComplete: async (
     scanId: string,
     onProgress: (scan: ScanResult) => void,
-    intervalMs = 1500
+    intervalMs = 1500,
+    maxAttempts = 120, // 3 minutes timeout limit by default
+    signal?: AbortSignal
   ): Promise<ScanResult> => {
+    let attempts = 0;
     return new Promise((resolve, reject) => {
+      let timerId: ReturnType<typeof setTimeout> | null = null;
+
+      const cleanup = () => {
+        if (timerId !== null) {
+          clearTimeout(timerId);
+          timerId = null;
+        }
+      };
+
+      if (signal) {
+        signal.addEventListener('abort', () => {
+          cleanup();
+          reject(new Error('Scan polling aborted by caller'));
+        });
+      }
+
       const poll = async () => {
+        if (signal?.aborted) return;
+        attempts++;
+
+        if (attempts > maxAttempts) {
+          cleanup();
+          return reject(new Error('Scan polling timed out after maximum attempts'));
+        }
+
         try {
           const scan = await scansApi.get(scanId);
+          if (signal?.aborted) return;
+
           onProgress(scan);
 
-          if (scan.status === 'COMPLETE') return resolve(scan);
-          if (scan.status === 'ERROR') return reject(new Error(scan.errorMessage || 'Scan failed'));
+          if (scan.status === 'COMPLETE') {
+            cleanup();
+            return resolve(scan);
+          }
+          if (scan.status === 'ERROR') {
+            cleanup();
+            return reject(new Error(scan.errorMessage || 'Scan processing failed on backend'));
+          }
 
-          setTimeout(poll, intervalMs);
+          timerId = setTimeout(poll, intervalMs);
         } catch (err) {
+          cleanup();
           reject(err);
         }
       };
+
       poll();
     });
   },
@@ -182,22 +271,26 @@ export const scansApi = {
 export const findingsApi = {
   list: (scanId: string, params: Record<string, string> = {}) => {
     const qs = new URLSearchParams(params).toString();
-    return apiFetch<{ findings: any[]; total: number }>(`/api/findings/scan/${scanId}?${qs}`);
+    const safeScanId = encodeURIComponent(scanId);
+    return apiFetch<{ findings: Finding[]; total: number }>(`/api/findings/scan/${safeScanId}?${qs}`);
   },
 
-  get: (findingId: string) => apiFetch<any>(`/api/findings/${findingId}`),
+  get: (findingId: string) => apiFetch<Finding>(`/api/findings/${encodeURIComponent(findingId)}`),
 
   updateStatus: (findingId: string, status: string, reason?: string) =>
-    apiFetch<{ id: string; remediationStatus: string }>(`/api/findings/${findingId}/status`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status, reason }),
-    }),
+    apiFetch<{ id: string; remediationStatus: string }>(
+      `/api/findings/${encodeURIComponent(findingId)}/status`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({ status, reason }),
+      }
+    ),
 };
 
 // ── Reports ───────────────────────────────────────────────────
 
 export const reportsApi = {
-  downloadJSON: (scanId: string) => `${BASE_URL}/api/reports/${scanId}/json`,
-  downloadCSV: (scanId: string) => `${BASE_URL}/api/reports/${scanId}/csv`,
-  downloadCBOM: (scanId: string) => `${BASE_URL}/api/reports/${scanId}/cbom`,
+  downloadJSON: (scanId: string) => buildUrl(`/api/reports/${encodeURIComponent(scanId)}/json`),
+  downloadCSV: (scanId: string) => buildUrl(`/api/reports/${encodeURIComponent(scanId)}/csv`),
+  downloadCBOM: (scanId: string) => buildUrl(`/api/reports/${encodeURIComponent(scanId)}/cbom`),
 };

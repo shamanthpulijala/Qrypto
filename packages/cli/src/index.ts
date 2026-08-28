@@ -13,7 +13,7 @@
 // ============================================================
 
 import { Command } from 'commander';
-import { runScan } from './commands/scan.js';
+import { runScan } from './commands/scan';
 
 const VERSION = '1.0.0';
 

@@ -16,6 +16,12 @@ import { detectDependencies } from './detectors/dependencies';
 import { detectConfigWeaknesses } from './detectors/config';
 import { extractCertificates, createCertificateFindings } from './x509';
 
+// P1 Extension Detectors
+import { detectHardwareModules } from './detectors/hardware';
+import { detectCloudKms } from './detectors/cloudKms';
+import { detectContainerConfig } from './detectors/container';
+import { detectBinaryArtifacts } from './detectors/binary';
+
 import { computeQuantumReadinessIndex } from './riskEngine';
 
 // ─── Pipeline Types ─────────────────────────────────────────
@@ -72,6 +78,17 @@ const DEFAULT_EXTENSIONS = [
   '.py', '.java', '.js', '.ts', '.jsx', '.tsx', '.go',
   '.yml', '.yaml', '.json', '.xml', '.sh', '.conf',
   '.env', '.properties', '.gradle', '.toml', '.tf',
+  // P1: Container config files
+  '.dockerfile',
+  '.dll', '.so', '.dylib', '.exe', '.bin',
+  '.p11', '.pkcs11',
+  '.pem', '.key', '.crt', '.p12', '.pfx', '.jks',
+];
+
+// P1: Filename-based detection (for files without typical extensions)
+const EXTRA_FILENAMES = [
+  'dockerfile', 'docker-compose.yml', 'docker-compose.yaml',
+  'compose.yml', 'compose.yaml',
 ];
 
 // ─── Stage 1: Validate ──────────────────────────────────────
@@ -88,8 +105,11 @@ function validate(
   for (const f of files) {
     const lp = f.path.toLowerCase();
 
-    // Skip by extension
-    if (!exts.some(ext => lp.endsWith(ext))) {
+    // Skip by extension or filename
+    const baseName = lp.split('/').pop() || '';
+    const hasValidExt = exts.some(ext => lp.endsWith(ext));
+    const hasValidFilename = EXTRA_FILENAMES.some(name => baseName === name);
+    if (!hasValidExt && !hasValidFilename) {
       skipped.push(`${f.path} (unsupported extension)`);
       continue;
     }
@@ -99,14 +119,17 @@ function validate(
     if (size > maxSize) {
       skipped.push(`${f.path} (exceeds ${maxSize} byte limit)`);
       continue;
-    }
-
-    // Skip binary-looking content (heuristic: > 10% non-printable chars)
-    const nonPrintable = (f.content.match(/[\x00-\x08\x0B-\x0C\x0E-\x1F]/g) || []).length;
-    if (nonPrintable / f.content.length > 0.1) {
-      skipped.push(`${f.path} (appears binary)`);
-      continue;
-    }
+    }      // For binary files, keep them but mark them; for text files, check for binary content
+      const lp2 = f.path.toLowerCase();
+      const isBinaryFile = ['.dll', '.so', '.dylib', '.exe', '.bin'].some(ext => lp2.endsWith(ext));
+      if (!isBinaryFile) {
+        // Skip text files that look binary (heuristic: > 10% non-printable chars)
+        const nonPrintable = (f.content.match(/[\x00-\x08\x0B-\x0C\x0E-\x1F]/g) || []).length;
+        if (nonPrintable / f.content.length > 0.1) {
+          skipped.push(`${f.path} (appears binary)`);
+          continue;
+        }
+      }
 
     valid.push(f);
   }
@@ -250,6 +273,34 @@ export async function runScanPipeline(
       );
       fileFindings.push(...certFindings as Finding[]);
     }
+
+    // P1: Hardware module detection (HSM/PKCS#11/TPM)
+    const hwFindings = detectHardwareModules(
+      scanFileObjects[i].path, scanFileObjects[i].content,
+      opts.repository ?? 'uploaded', opts.project ?? 'Unknown'
+    );
+    fileFindings.push(...hwFindings);
+
+    // P1: Cloud KMS detection
+    const kmsFindings = detectCloudKms(
+      scanFileObjects[i].path, scanFileObjects[i].content,
+      opts.repository ?? 'uploaded', opts.project ?? 'Unknown'
+    );
+    fileFindings.push(...kmsFindings);
+
+    // P1: Container config detection (Dockerfile, compose)
+    const containerFindings = detectContainerConfig(
+      scanFileObjects[i].path, scanFileObjects[i].content,
+      opts.repository ?? 'uploaded', opts.project ?? 'Unknown'
+    );
+    fileFindings.push(...containerFindings);
+
+    // P1: Binary artifact detection (only for binary-like files)
+    const binFindings = detectBinaryArtifacts(
+      scanFileObjects[i].path, scanFileObjects[i].content,
+      opts.repository ?? 'uploaded', opts.project ?? 'Unknown'
+    );
+    fileFindings.push(...binFindings);
 
     // Enrich findings with AST context
     await enrichWithAst(scanFileObjects[i].path, scanFileObjects[i].content, fileFindings);

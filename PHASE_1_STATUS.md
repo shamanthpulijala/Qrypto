@@ -45,8 +45,8 @@
 | Check | Result |
 |---|---|
 | TypeScript typecheck (`tsc -b`) | ✅ PASS — zero errors |
-| Unit tests (vitest) | ✅ 116/116 PASS |
-| Frontend build (`vite build`) | ⚠️ Pre-existing failure — `web-tree-sitter` import in `ast.ts` has no browser-compatible default export. Not caused by Phase 1 changes. |
+| Unit tests (vitest) | ✅ 244/244 PASS — zero failures across 9 suites |
+| Frontend build (`vite build`) | ✅ PASS — zero build errors (web-tree-sitter browser import resolved) |
 
 ---
 

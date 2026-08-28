@@ -26,8 +26,13 @@ export function LoginModal() {
     setLoading(true);
     // Tiny delay for UX feel
     await new Promise(r => setTimeout(r, 400));
-    login(email, password);
+    const success = await login(email, password);
     setLoading(false);
+    // If login succeeded and we're in backend mode, the token is now set
+    // If it failed, loginError will show in the UI
+    if (success) {
+      closeLoginModal();
+    }
   };
 
   const fillDemo = (demoEmail: string, demoPassword: string) => {
@@ -108,9 +113,8 @@ export function LoginModal() {
             <span className="login-demo-title">Demo accounts</span>
             <div className="login-demo-accounts">
               {[
-                { label: 'Security Lead', email: 'admin@quantumguard.ai', pw: 'quantum2024' },
-                { label: 'Analyst', email: 'security@example.com', pw: 'password123' },
-                { label: 'CISO', email: 'ciso@example.com', pw: 'password123' },
+                { label: 'Demo User', email: 'demo@qrypto.dev', pw: 'DemoPassword123!' },
+                { label: 'Test User', email: 'test@qrypto.dev', pw: 'TestPassword123!' },
               ].map(a => (
                 <button
                   key={a.email}

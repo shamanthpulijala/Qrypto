@@ -65,6 +65,10 @@ function mapAssetType(category: string): string {
     case 'secret': return 'key-material';
     case 'certificate': return 'certificate';
     case 'tls': return 'protocol';
+    case 'hardware-module': return 'hardware';
+    case 'cloud-kms': return 'service';
+    case 'container-config': return 'configuration';
+    case 'binary-artifact': return 'binary';
     default: return 'algorithm';
   }
 }

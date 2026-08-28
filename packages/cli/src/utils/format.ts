@@ -2,8 +2,8 @@
 // Qrypto CLI — Output Formatters
 // ============================================================
 
-import type { Finding } from '../../../shared/types/index.js';
-import type { MoscaAssessment } from '../../../shared/engine/mosca.js';
+import type { Finding } from '../../../../shared/types/index';
+import type { MoscaAssessment } from '../../../../shared/engine/mosca';
 
 interface ScanOutput {
   scan: {

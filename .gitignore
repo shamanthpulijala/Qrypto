@@ -25,3 +25,12 @@ dist-ssr
 .env
 .env.*
 !.env.example
+
+# Shared engine build artifacts (type-checking only, no emit)
+shared/**/*.js
+shared/**/*.d.ts
+shared/**/*.d.ts.map
+shared/**/*.js.map
+
+# Benchmark results (generated)
+benchmark/results/

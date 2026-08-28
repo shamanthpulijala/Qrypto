@@ -31,8 +31,9 @@ export const startScanWorker = () => {
           data: { status: 'RUNNING', progress: 5 },
         });
 
-        // 2. Extract zip securely
+        // 2. Ensure extract directory exists, then extract zip securely
         await job.updateProgress(10);
+        fs.mkdirSync(extractDir, { recursive: true });
         let filePaths: string[] = [];
         try {
           filePaths = extractZipSecurely(zipPath, extractDir);

@@ -71,8 +71,8 @@ function App() {
   const { currentPage, assessment, isScanning, scanError } = useAppStore();
   const { user } = useAuthStore();
 
-  // Auth gate: require login before accessing the app (except landing page)
-  if (!user && currentPage !== 'landing' && currentPage !== 'settings') {
+  // Auth gate: require login before accessing protected pages unless an assessment or scan is active
+  if (!user && !assessment && !isScanning && currentPage !== 'landing' && currentPage !== 'settings') {
     return (
       <>
         <QuantumCursor />

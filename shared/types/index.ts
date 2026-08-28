@@ -13,7 +13,11 @@ export type AlgorithmCategory =
   | 'secret'
   | 'key-exchange'
   | 'certificate'
-  | 'pqc';
+  | 'pqc'
+  | 'hardware-module'   // P1: HSM/PKCS#11/TPM
+  | 'cloud-kms'         // P1: Cloud KMS services
+  | 'container-config'  // P1: Dockerfile/container configuration
+  | 'binary-artifact';  // P1: Binary crypto artifacts
 
 export type QuantumStatus =
   | 'vulnerable'       // RSA, ECC, ECDH, ECDSA, DH, DSA

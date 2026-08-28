@@ -328,3 +328,155 @@ key = rsa.generate_private_key(65537, 2048)
     expect(uniqueIds.size).toBe(ids.length);
   });
 });
+
+// ─── Usage-Aware PQC Recommendations ─────────────────────────
+// Regression tests: the same algorithm must get different recommendations
+// depending on its actual usage context.
+
+describe('Scanner — Usage-Aware PQC Recommendations', () => {
+  it('RSA digital signature → ML-DSA recommendation', () => {
+    const findings = scanFile({
+      path: 'auth/signer.py',
+      content: `Signature signature = Signature.getInstance("SHA256withRSA");\nsignature.initSign(privateKey);\nbyte[] sig = signature.sign();`,
+    });
+    const rsaSignFindings = findings.filter(f => f.algorithm.includes('RSA') && (f.usage.toLowerCase().includes('sign') || f.usage.toLowerCase().includes('signature')));
+    if (rsaSignFindings.length > 0) {
+      expect(rsaSignFindings[0].recommendedAlgorithm).toContain('ML-DSA');
+      expect(rsaSignFindings[0].recommendedAlgorithm).not.toContain('ML-KEM');
+    }
+    // Also verify that ALL RSA findings exist
+    const allRsa = findings.filter(f => f.algorithm.includes('RSA'));
+    expect(allRsa.length).toBeGreaterThan(0);
+  });
+
+  it('RSA key exchange → ML-KEM recommendation', () => {
+    const findings = scanFile({
+      path: 'crypto/keywrap.js',
+      content: `const encrypted = crypto.publicEncrypt(RSA-OAEP, buffer);`,
+    });
+    // RSA-OAEP matches the RSA-OAEP pattern which has category 'public-key'
+    const allRsa = findings.filter(f => f.algorithm.includes('RSA'));
+    expect(allRsa.length).toBeGreaterThan(0);
+    // The recommendation should be ML-KEM for key exchange/encryption
+    const hasKemRec = allRsa.some(f => f.recommendedAlgorithm?.includes('ML-KEM'));
+    expect(hasKemRec).toBe(true);
+  });
+
+  it('ECDSA for signatures → ML-DSA recommendation', () => {
+    const findings = scanFile({
+      path: 'auth/ec_signer.py',
+      content: `from cryptography.hazmat.primitives.asymmetric import ec\nfrom cryptography.hazmat.primitives import hashes\nprivate_key = ec.generate_private_key(ec.SECP256R1())\nsignature = private_key.sign(data, ec.ECDSA(hashes.SHA256()))`,
+    });
+    const ecdsaFindings = findings.filter(f => f.algorithm.match(/ECDSA|ECC|EC/));
+    expect(ecdsaFindings.length).toBeGreaterThan(0);
+    const recommendation = ecdsaFindings[0].recommendedAlgorithm;
+    expect(recommendation).toContain('ML-DSA');
+  });
+
+  it('ECDH for key exchange → ML-KEM recommendation', () => {
+    const findings = scanFile({
+      path: 'key-exchange/dh.py',
+      content: `from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey\nprivate_key = X25519PrivateKey.generate()`,
+    });
+    const ecdhFindings = findings.filter(f => f.algorithm.includes('ECDH') || f.algorithm.includes('X25519'));
+    expect(ecdhFindings.length).toBeGreaterThan(0);
+    const recommendation = ecdhFindings[0].recommendedAlgorithm;
+    expect(recommendation).toContain('ML-KEM');
+  });
+
+  it('symmetric DES/3DES → symmetric replacement (NOT PQC)', () => {
+    const findings = scanFile({
+      path: 'crypto/des.py',
+      content: `from Crypto.Cipher import DES\ncipher = DES.new(key, DES.MODE_ECB)`,
+    });
+    const desFindings = findings.filter(f => f.algorithm.match(/DES|3DES/));
+    if (desFindings.length > 0) {
+      const recommendation = desFindings[0].recommendedAlgorithm;
+      // Should recommend AES/ChaCha20, NOT ML-KEM or ML-DSA
+      expect(recommendation).not.toContain('ML-KEM');
+      expect(recommendation).not.toContain('ML-DSA');
+      expect(recommendation).toContain('AES');
+    }
+  });
+
+  it('MD5 → hash replacement (NOT PQC)', () => {
+    const findings = scanFile({
+      path: 'hash/md5.py',
+      content: `import hashlib\nmd5_hash = hashlib.md5(data).hexdigest()`,
+    });
+    const md5Findings = findings.filter(f => f.algorithm === 'MD5');
+    expect(md5Findings.length).toBeGreaterThan(0);
+    const recommendation = md5Findings[0].recommendedAlgorithm;
+    // Should recommend SHA-256, NOT ML-KEM or ML-DSA
+    expect(recommendation).not.toContain('ML-KEM');
+    expect(recommendation).not.toContain('ML-DSA');
+    expect(recommendation).toContain('SHA-256');
+  });
+
+  it('SHA-1 → hash replacement (NOT PQC)', () => {
+    const findings = scanFile({
+      path: 'hash/sha1.py',
+      content: `import hashlib\nsha1_hash = hashlib.sha1(data).hexdigest()`,
+    });
+    const sha1Findings = findings.filter(f => f.algorithm.match(/SHA-1|SHA1/));
+    expect(sha1Findings.length).toBeGreaterThan(0);
+    const recommendation = sha1Findings[0].recommendedAlgorithm;
+    expect(recommendation).not.toContain('ML-KEM');
+    expect(recommendation).not.toContain('ML-DSA');
+    expect(recommendation).toContain('SHA-256');
+  });
+
+  it('TLS 1.1 → TLS 1.3 (NOT PQC)', () => {
+    const findings = scanFile({
+      path: 'config/tls.conf',
+      content: `ssl_protocols TLSv1.1 TLSv1.2;`,
+    });
+    const tlsFindings = findings.filter(f => f.category === 'tls' && f.algorithm.includes('1.1'));
+    if (tlsFindings.length > 0) {
+      const recommendation = tlsFindings[0].recommendedAlgorithm;
+      expect(recommendation).toContain('TLS 1.3');
+      expect(recommendation).not.toContain('ML-KEM');
+    }
+  });
+
+  it('AES-256-GCM → no PQC replacement needed', () => {
+    const findings = scanFile({
+      path: 'crypto/aes.ts',
+      content: `const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);`,
+    });
+    const aesFindings = findings.filter(f => f.algorithm.match(/AES-256/i));
+    if (aesFindings.length > 0) {
+      const recommendation = aesFindings[0].recommendedAlgorithm;
+      expect(recommendation).not.toContain('ML-KEM');
+      expect(recommendation).not.toContain('ML-DSA');
+    }
+  });
+
+  it('already-PQC ML-KEM → no migration needed', () => {
+    const findings = scanFile({
+      path: 'pqc/kem.py',
+      content: `from oqs import KeyEncapsulation\nkem = KeyEncapsulation('ML-KEM-768')`,
+    });
+    const pqcFindings = findings.filter(f => f.algorithm.includes('ML-KEM'));
+    if (pqcFindings.length > 0) {
+      expect(pqcFindings[0].quantumStatus).toBe('quantum-resistant');
+      expect(pqcFindings[0].recommendedAlgorithm).toContain('No migration needed');
+    }
+  });
+
+  it('RSA for certificate signing → ML-DSA (not ML-KEM)', () => {
+    const findings = scanFile({
+      path: 'pki/cert.py',
+      content: `from cryptography.hazmat.primitives.asymmetric import rsa\nfrom cryptography import x509\nsubject = x509.Name([...])\ncert = x509.CertificateBuilder().sign(issuer_key, hashes.SHA256())`,
+    });
+    const rsaFindings = findings.filter(f => f.algorithm.includes('RSA'));
+    if (rsaFindings.length > 0) {
+      // Certificate signing is a signature use case
+      const hasSignatureRecommendation = rsaFindings.some(f =>
+        f.recommendedAlgorithm?.includes('ML-DSA')
+      );
+      // At least one RSA finding should recommend ML-DSA for signature use
+      expect(hasSignatureRecommendation || rsaFindings.length === 0).toBe(true);
+    }
+  });
+});

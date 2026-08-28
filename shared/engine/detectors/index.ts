@@ -12,6 +12,12 @@ import { SECRET_PATTERNS } from './secrets';
 import { CERTIFICATE_PATTERNS } from './certificates';
 import { PQC_PATTERNS } from './pqc';
 
+// P1 Extension Detectors (hardware, cloud, container, binary)
+export { detectHardwareModules } from './hardware';
+export { detectCloudKms } from './cloudKms';
+export { detectContainerConfig } from './container';
+export { detectBinaryArtifacts } from './binary';
+
 export type { CryptoPattern } from './rsa';
 
 /**

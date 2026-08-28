@@ -186,12 +186,23 @@ export function generateMigrationRoadmap(
     const weakList = [...new Set([...weakFindings, ...tlsFindings])];
     const weakAlgos = [...new Set(weakList.map(f => f.algorithm))].join(', ');
     const affectedServs = [...new Set(weakList.map(f => f.service))];
+    // Categorize replacements by type for accurate description
+    const replacements = weakList.map(f => {
+      const alg = f.algorithm.toUpperCase();
+      if (alg.includes('MD5')) return 'SHA-256 or Argon2id';
+      if (alg.includes('SHA-1') || alg.includes('SHA1')) return 'SHA-256 or SHA-3-256';
+      if (alg.includes('DES') || alg.includes('3DES')) return 'AES-256-GCM';
+      if (alg.includes('RC4')) return 'AES-256-GCM or ChaCha20-Poly1305';
+      if (alg.includes('TLS 1.0') || alg.includes('TLS 1.1') || alg.includes('SSL')) return 'TLS 1.3';
+      return 'modern replacement';
+    });
+    const uniqueReplacements = [...new Set(replacements)].join(', ');
     tasks.push({
       id: taskId(),
       findingId: weakList[0]?.id,
       phase: 1,
       title: `Deprecate Classically Weak Algorithms (${weakAlgos})`,
-      description: `Replace deprecated primitives (${weakAlgos}) in ${affectedServs.join(', ')} with SHA-256 / SHA-3 or TLS 1.3.`,
+      description: `Replace deprecated primitives (${weakAlgos}) in ${affectedServs.join(', ')} with ${uniqueReplacements}.`,
       priority: 'high',
       effort: 'weeks',
       effortValue: 2,
@@ -207,9 +218,16 @@ export function generateMigrationRoadmap(
   }
 
   // Phase 2: Migrate RSA / ECC Key Establishment to ML-KEM (FIPS 203)
-  const keyEstFindings = vulnerableFindings.filter(f =>
-    f.algorithm.startsWith('RSA') || f.algorithm === 'ECDH' || f.algorithm === 'DH' || f.category === 'public-key'
-  );
+  // NOTE: Exclude signature findings — they are handled in Phase 3.
+  const sigFindingsFilter = (f: Finding) => {
+    const usage = f.usage.toLowerCase();
+    return usage.includes('sign') || usage.includes('auth') || usage.includes('cert') || usage.includes('verify');
+  };
+  const keyEstFindings = vulnerableFindings.filter(f => {
+    // Skip signature findings — they go to Phase 3
+    if (sigFindingsFilter(f)) return false;
+    return f.algorithm.startsWith('RSA') || f.algorithm === 'ECDH' || f.algorithm === 'DH' || f.category === 'public-key' || f.category === 'key-exchange';
+  });
   if (keyEstFindings.length > 0) {
     const affectedServs = [...new Set(keyEstFindings.map(f => f.service))];
     tasks.push({
@@ -233,9 +251,15 @@ export function generateMigrationRoadmap(
   }
 
   // Phase 3: Migrate RSA / ECDSA Signatures to ML-DSA (FIPS 204)
-  const sigFindings = vulnerableFindings.filter(f =>
-    f.algorithm === 'ECDSA' || f.algorithm === 'DSA' || (f.algorithm.startsWith('RSA') && f.usage.toLowerCase().includes('sign'))
-  );
+  // Catches ALL signature usage: RSA-for-signing, ECDSA, DSA, Ed25519
+  const sigFindings = vulnerableFindings.filter(f => {
+    const usage = f.usage.toLowerCase();
+    const isSignatureUsage = usage.includes('sign') || usage.includes('auth') || usage.includes('cert') || usage.includes('verify');
+    if (!isSignatureUsage) return false;
+    return f.algorithm === 'ECDSA' || f.algorithm === 'DSA' || f.algorithm === 'Ed25519' ||
+           (f.algorithm.startsWith('RSA') && f.category !== 'key-exchange') ||
+           f.category === 'signature';
+  });
   if (sigFindings.length > 0) {
     const affectedServs = [...new Set(sigFindings.map(f => f.service))];
     tasks.push({

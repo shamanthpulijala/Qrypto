@@ -3,8 +3,8 @@
 // ============================================================
 
 import { describe, it, expect } from 'vitest';
-import { formatJson, formatCsv, formatText } from '../utils/format.js';
-import type { Finding } from '../../../../../shared/types/index.js';
+import { formatJson, formatCsv, formatText } from '../utils/format';
+import type { Finding } from '../../../../shared/types/index';
 
 // ─── Test Helpers ────────────────────────────────────────────
 

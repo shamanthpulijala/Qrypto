@@ -10,11 +10,11 @@
 
 import fs from 'fs';
 import path from 'path';
-import { runScanPipeline, type PipelineFile } from '../../../../shared/engine/pipeline.js';
-import { generateCBOM, serializeCBOM } from '../../../../shared/engine/cbom.js';
-import { runMoscaAssessment } from '../../../../shared/engine/mosca.js';
-import { computeQuantumReadinessIndex } from '../../../../shared/engine/riskEngine.js';
-import { formatJson, formatCsv, formatText } from '../utils/format.js';
+import { runScanPipeline, type PipelineFile } from '../../../../shared/engine/pipeline';
+import { generateCBOM, serializeCBOM } from '../../../../shared/engine/cbom';
+import { runMoscaAssessment } from '../../../../shared/engine/mosca';
+import { computeQuantumReadinessIndex } from '../../../../shared/engine/riskEngine';
+import { formatJson, formatCsv, formatText } from '../utils/format';
 
 // ─── Supported file extensions ───────────────────────────────
 
@@ -23,6 +23,13 @@ const SUPPORTED_EXTENSIONS = new Set([
   '.yml', '.yaml', '.json', '.xml', '.sh', '.conf',
   '.env', '.properties', '.gradle', '.toml', '.tf',
   '.pem', '.crt', '.key', '.der',
+  '.dockerfile', '.p11', '.pkcs11', '.p12', '.pfx', '.jks',
+]);
+
+// P1: Files matched by exact filename (not extension)
+const EXTRA_FILENAMES = new Set([
+  'dockerfile', 'docker-compose.yml', 'docker-compose.yaml',
+  'compose.yml', 'compose.yaml',
 ]);
 
 const MAX_FILE_SIZE = 1_000_000; // 1 MB
@@ -67,7 +74,8 @@ function discoverFiles(dirPath: string): PipelineFile[] {
         walk(fullPath);
       } else if (entry.isFile()) {
         const ext = path.extname(entry.name).toLowerCase();
-        if (!SUPPORTED_EXTENSIONS.has(ext)) continue;
+        const baseName = entry.name.toLowerCase();
+        if (!SUPPORTED_EXTENSIONS.has(ext) && !EXTRA_FILENAMES.has(baseName)) continue;
 
         try {
           const stat = fs.statSync(fullPath);

@@ -31,26 +31,20 @@ interface AuthState {
 }
 
 // ── Demo users (client-only fallback) ────────────────────────
+// These match the backend-registered users for seamless dual-mode auth.
 const DEMO_USERS: Record<string, { password: string; profile: UserProfile }> = {
-  'admin@quantumguard.ai': {
-    password: 'quantum2024',
+  'demo@qrypto.dev': {
+    password: 'DemoPassword123!',
     profile: {
-      name: 'Alex Rivera', email: 'admin@quantumguard.ai', role: 'Security Lead',
-      initials: 'AR', avatarColor: 'linear-gradient(135deg, #00d4ff, #8b5cf6)',
+      name: 'Demo User', email: 'demo@qrypto.dev', role: 'ANALYST',
+      initials: 'DU', avatarColor: 'linear-gradient(135deg, #22c55e, #14b8a6)',
     },
   },
-  'security@example.com': {
-    password: 'password123',
+  'test@qrypto.dev': {
+    password: 'TestPassword123!',
     profile: {
-      name: 'Sam Chen', email: 'security@example.com', role: 'Security Analyst',
-      initials: 'SC', avatarColor: 'linear-gradient(135deg, #22c55e, #14b8a6)',
-    },
-  },
-  'ciso@example.com': {
-    password: 'password123',
-    profile: {
-      name: 'Jordan Kim', email: 'ciso@example.com', role: 'CISO',
-      initials: 'JK', avatarColor: 'linear-gradient(135deg, #f97316, #ef4444)',
+      name: 'Test User', email: 'test@qrypto.dev', role: 'ANALYST',
+      initials: 'TU', avatarColor: 'linear-gradient(135deg, #3b82f6, #6366f1)',
     },
   },
 };

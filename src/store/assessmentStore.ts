@@ -518,8 +518,11 @@ export const useAppStore = create<AppState>((set, get) => ({
         set({ isScanning: false, scanProgress: 100, assessment, readinessBreakdown, currentPage: 'dashboard' });
         return;
       } catch (err: any) {
-        set({ isScanning: false, scanError: err.message || 'Backend scan failed.' });
-        return;
+        // Backend upload failed (e.g. not logged in, server error)
+        // Fall through to in-browser pipeline as fallback
+        console.warn('Backend scan failed, falling back to in-browser pipeline:', err.message);
+        set(s => ({ scanLog: [...s.scanLog, `Backend unavailable (${err.message}), using in-browser scan...`] }));
+        // Continue to Mode B below
       }
     }
 

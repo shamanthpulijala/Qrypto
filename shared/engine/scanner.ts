@@ -7,7 +7,7 @@ import type { Finding, Language, AlgorithmCategory, QuantumStatus, Severity, Cla
 import { computeRiskScore } from './riskEngine';
 import { deriveAlgorithmSeverity, deriveEffectiveSeverity } from './severity';
 import { lookupAlgorithm } from './registry';
-import { createHash } from 'crypto';
+
 
 import { ALL_PATTERNS, type CryptoPattern } from './detectors';
 
@@ -281,11 +281,7 @@ function generateFingerprint(
   
   const payload = `${normalizedRepo}:${normalizedPath}:${norm(algorithm)}:${norm(usage)}:${normalizedPattern}`;
   
-  // Use Node crypto if available, fallback to simple hash for browser
-  if (typeof createHash === 'function') {
-    return createHash('sha256').update(payload).digest('hex').slice(0, 16);
-  }
-  // Browser fallback: simple string hash
+  // Deterministic string hash (cross-platform, no dependencies)
   let hash = 0;
   for (let i = 0; i < payload.length; i++) {
     const char = payload.charCodeAt(i);
@@ -516,37 +512,86 @@ export function scanFiles(files: ScanFile[]): Finding[] {
  * Fallback: context-aware if/else for algorithms not in registry.
  */
 function getRecommendation(algorithm: string, category: AlgorithmCategory, usage: string): string {
-  // 1. Try the registry first — it has the authoritative PQC replacement
-  const entry = lookupAlgorithm(algorithm);
-  if (entry.pqcReplacement) {
-    // Enhance with usage context where the registry is generic
-    const usageLower = usage.toLowerCase();
-    if (entry.pqcReplacement.includes('depending on usage') && usageLower) {
-      if (usageLower.includes('signature') || usageLower.includes('sign')) {
-        return `ML-DSA-65 (FIPS 204) for post-quantum digital signatures. ${entry.pqcReplacement}`;
-      }
-      if (usageLower.includes('key') || usageLower.includes('exchange') || usageLower.includes('encapsulat')) {
-        return `ML-KEM-768 (FIPS 203) for post-quantum key establishment. ${entry.pqcReplacement}`;
-      }
-    }
-    return entry.pqcReplacement;
+  const usageLower = usage.toLowerCase();
+  const alg = algorithm.toUpperCase();
+
+  // 1. Context-specific recommendations based on category and usage
+  //    These take priority because they are derived from actual evidence.
+  if (category === 'secret') return 'Use a secrets manager (HashiCorp Vault, AWS Secrets Manager, Azure Key Vault)';
+  if (category === 'tls') {
+    if (alg.includes('TLS 1.0') || alg.includes('TLS 1.1') || alg.includes('SSL')) return 'TLS 1.3 (minimum TLS 1.2 with strong cipher suites)';
+    return 'Monitor for deprecation updates';
   }
 
-  // 2. Registry didn't have a replacement (e.g. unknown algo, or already adequate)
-  // Use context-aware fallback
-  const alg = algorithm.toUpperCase();
-  const usageLower = usage.toLowerCase();
+  // 2. Symmetric ciphers — NEVER recommend ML-KEM/ML-DSA for symmetric crypto
+  if (category === 'symmetric') {
+    if (alg.includes('DES') || alg.includes('3DES') || alg.includes('RC4')) {
+      return 'Replace with AES-256-GCM or ChaCha20-Poly1305';
+    }
+    return 'Classically adequate symmetric algorithm. Monitor for key size recommendations.';
+  }
 
-  if (category === 'secret') return 'Use a secrets manager (HashiCorp Vault, AWS Secrets Manager, Azure Key Vault)';
-  if (alg.includes('TLS 1.0') || alg.includes('TLS 1.1')) return 'TLS 1.3 (minimum TLS 1.2 with strong cipher suites)';
-  if (alg.includes('SSL')) return 'TLS 1.3';
+  // 3. Hash functions — replace with modern hashes, NOT PQC key exchange
+  if (category === 'hash') {
+    if (alg.includes('MD5')) return 'Replace with SHA-256 (integrity) or Argon2id (password hashing)';
+    if (alg.includes('SHA-1') || alg.includes('SHA1')) return 'Replace with SHA-256 or SHA-3-256';
+    return 'Classically adequate hash. Monitor for deprecation.';
+  }
 
-  // Unknown algorithm — be honest about insufficient information
+  // 4. Public-key / signature / key-exchange — usage-aware PQC recommendations
+  if (category === 'public-key' || category === 'signature' || category === 'key-exchange') {
+    // Usage-aware: check actual usage context to pick the right PQC replacement
+    const isSignature = usageLower.includes('sign') || usageLower.includes('auth') || usageLower.includes('cert') || usageLower.includes('verify');
+    const isKeyExchange = usageLower.includes('key') || usageLower.includes('exchange') || usageLower.includes('encapsulat') || usageLower.includes('encrypt') || usageLower.includes('wrap') || usageLower.includes('establish');
+
+    if (isSignature) {
+      // Signature usage → ML-DSA (FIPS 204)
+      if (alg.includes('ECDSA') || alg === 'DSA' || alg.includes('ED25519')) {
+        return 'ML-DSA-65 (FIPS 204) for post-quantum digital signatures';
+      }
+      if (alg.startsWith('RSA')) {
+        return 'ML-DSA-65 (FIPS 204) for post-quantum digital signatures';
+      }
+    }
+
+    if (isKeyExchange) {
+      // Key exchange / encapsulation usage → ML-KEM (FIPS 203)
+      if (alg.includes('ECDH') || alg === 'DH' || alg.includes('X25519')) {
+        return 'ML-KEM-768 (FIPS 203) for post-quantum key establishment';
+      }
+      if (alg.startsWith('RSA')) {
+        return 'ML-KEM-768 (FIPS 203) for post-quantum key establishment';
+      }
+    }
+
+    // Category-based fallback when usage context is ambiguous
+    if (category === 'signature') {
+      return 'ML-DSA-65 (FIPS 204) for post-quantum digital signatures';
+    }
+    if (category === 'key-exchange') {
+      return 'ML-KEM-768 (FIPS 203) for post-quantum key establishment';
+    }
+
+    // For public-key category without clear usage context, check registry
+    const entry = lookupAlgorithm(algorithm);
+    if (entry.pqcReplacement) {
+      return entry.pqcReplacement;
+    }
+
+    return 'Evaluate algorithm usage context and replace with appropriate NIST PQC standard (FIPS 203 for key exchange, FIPS 204 for signatures)';
+  }
+
+  // 5. PQC algorithms — already migrated
+  const entry = lookupAlgorithm(algorithm);
+  if (entry.quantumStatus === 'quantum-resistant') return 'Already quantum-resistant. No migration needed.';
+  if (entry.quantumStatus === 'adequate') return 'Classically adequate. Monitor for deprecation updates.';
+
+  // 6. Unknown algorithm — be honest
   if (entry.quantumStatus === 'unknown') {
     return 'Insufficient context for a definitive PQC recommendation. Manual review required — classify the algorithm and evaluate quantum vulnerability before migration planning.';
   }
 
-  return 'Evaluate based on usage context and protocol constraints';
+  return 'Evaluate algorithm usage context and replace with appropriate NIST PQC standard';
 }
 
 function getMigrationStrategy(algorithm: string, category: AlgorithmCategory, usage: string): string {

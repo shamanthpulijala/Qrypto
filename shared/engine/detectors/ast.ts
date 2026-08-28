@@ -41,37 +41,35 @@ export async function initAstParser(): Promise<boolean> {
       Language = Parser.Language;
     }
 
-    // Resolve the tree-sitter-wasms directory
+    // Resolve the WASM grammar directory.
+    // We support two packages:
+    //   1. @vscode/tree-sitter-wasm  (preferred — ships dylink.0 WASM files compatible with web-tree-sitter 0.26+)
+    //   2. tree-sitter-wasms         (legacy — ships dylink format, only works with older web-tree-sitter)
     const pathMod = await import('path');
     const fsMod = await import('fs');
     const candidates: string[] = [];
 
-    // Method 1: require.resolve (works in CJS and Vitest CJS mode)
+    // Method 1: require.resolve from web-tree-sitter location (works in CJS and Vitest CJS mode)
     try {
       const wtsFile = require.resolve('web-tree-sitter');
-      candidates.push(pathMod.default.join(pathMod.default.dirname(wtsFile), '..', 'tree-sitter-wasms', 'out'));
+      const wtsDir = pathMod.default.dirname(wtsFile);
+      // Try @vscode/tree-sitter-wasm first (sibling to web-tree-sitter in node_modules)
+      candidates.push(pathMod.default.join(wtsDir, '..', '@vscode', 'tree-sitter-wasm', 'wasm'));
+      // Then legacy tree-sitter-wasms
+      candidates.push(pathMod.default.join(wtsDir, '..', 'tree-sitter-wasms', 'out'));
     } catch { /* not available */ }
 
-    // Method 2: Walk up from the package.json directory
-    try {
-      // Find project root by walking up to find package.json
-      let dir = process.cwd();
+    // Method 2: Walk up from process.cwd() — check @vscode/tree-sitter-wasm first, then tree-sitter-wasms
+    let d = typeof process !== 'undefined' && typeof process.cwd === 'function' ? process.cwd() : '';
+    if (d) {
       for (let i = 0; i < 6; i++) {
-        if (fsMod.default.existsSync(pathMod.default.join(dir, 'package.json'))) {
-          candidates.push(pathMod.default.join(dir, 'node_modules', 'tree-sitter-wasms', 'out'));
-          break;
-        }
-        dir = pathMod.default.dirname(dir);
+        candidates.push(pathMod.default.join(d, 'node_modules', '@vscode', 'tree-sitter-wasm', 'wasm'));
+        candidates.push(pathMod.default.join(d, 'node_modules', 'tree-sitter-wasms', 'out'));
+        d = pathMod.default.dirname(d);
       }
-    } catch { /* not available */ }
-
-    // Method 3: Walk up from process.cwd()
-    let d = process.cwd();
-    for (let i = 0; i < 5; i++) {
-      candidates.push(pathMod.default.join(d, 'node_modules', 'tree-sitter-wasms', 'out'));
-      d = pathMod.default.dirname(d);
     }
 
+    // Test each candidate by checking for tree-sitter-javascript.wasm
     for (const c of candidates) {
       try {
         const testFile = pathMod.default.join(c, 'tree-sitter-javascript.wasm');
@@ -83,7 +81,7 @@ export async function initAstParser(): Promise<boolean> {
     }
 
     if (!WASMS_DIR) {
-      console.warn('tree-sitter-wasms directory not found — AST language loading will fail');
+      console.warn('tree-sitter WASM directory not found — install @vscode/tree-sitter-wasm for AST support');
     }
     parserInitialized = true;
     return true;
@@ -102,15 +100,16 @@ export function isAstAvailable(): boolean {
 }
 
 // Maps file extensions to their corresponding tree-sitter wasm paths
+// @vscode/tree-sitter-wasm uses hyphen-separated names (e.g. tree-sitter-c-sharp.wasm)
 export const LANG_WASM_MAP: Record<string, string> = {
   '.ts': 'tree-sitter-typescript.wasm',
-  '.tsx': 'tree-sitter-typescript.wasm',
+  '.tsx': 'tree-sitter-tsx.wasm',
   '.js': 'tree-sitter-javascript.wasm',
   '.jsx': 'tree-sitter-javascript.wasm',
   '.py': 'tree-sitter-python.wasm',
   '.java': 'tree-sitter-java.wasm',
   '.go': 'tree-sitter-go.wasm',
-  '.cs': 'tree-sitter-c_sharp.wasm',
+  '.cs': 'tree-sitter-c-sharp.wasm',
 };
 
 // Cache loaded languages to avoid reloading wasm files
@@ -124,29 +123,51 @@ async function loadLanguage(wasmFile: string): Promise<any> {
   const cached = grammarCache.get(wasmFile);
   if (cached) return cached;
 
+  const LangLoad = Language?.load;
+  if (!LangLoad) {
+    throw new Error('Language.load not available — cannot load WASM grammar');
+  }
+
   try {
-    let wasmPath: string;
-
-    // Determine runtime: prefer Node.js (file system) over browser (URL).
-    // In jsdom/Vitest, typeof window is 'object' but we still have Node.js fs.
     const isNode = typeof process !== 'undefined' && typeof process.versions?.node === 'string';
+
+    // Strategy 1: Load from file path (works when Language.load resolves paths natively)
     if (isNode && WASMS_DIR) {
-      // Node.js environment — use pre-resolved WASM dir from init
-      const pathMod = await import('path');
-      wasmPath = pathMod.default.join(WASMS_DIR, wasmFile);
-    } else {
-      // Browser fallback — the WASM files must be served statically
-      wasmPath = `/node_modules/tree-sitter-wasms/out/${wasmFile}`;
+      try {
+        const pathMod = await import('path');
+        const wasmPath = pathMod.default.join(WASMS_DIR, wasmFile);
+        const language = await LangLoad(wasmPath);
+        grammarCache.set(wasmFile, language);
+        return language;
+      } catch {
+        // Path-based load failed — fall through to buffer load
+      }
+
+      // Strategy 2: Read the file into a buffer and load from that.
+      // This is more robust on Windows where path resolution can fail
+      // in some runtimes (Vitest forks, ESM loaders, etc.).
+      try {
+        const fsMod = await import('fs');
+        const pathMod = await import('path');
+        const wasmPath = pathMod.default.join(WASMS_DIR, wasmFile);
+        const buf = fsMod.default.readFileSync(wasmPath);
+        const language = await LangLoad(buf);
+        grammarCache.set(wasmFile, language);
+        return language;
+      } catch {
+        // Buffer load also failed
+      }
     }
 
-    // Resolve Language.load — the class may be on the module or on Parser
-    const LangLoad = Language?.load || Parser?.Language?.load;
-    if (!LangLoad) {
-      throw new Error('Language.load not available — cannot load WASM grammar');
+    // Strategy 3: Browser — load from static URL
+    if (!isNode) {
+      const wasmUrl = `/node_modules/@vscode/tree-sitter-wasm/wasm/${wasmFile}`;
+      const language = await LangLoad(wasmUrl);
+      grammarCache.set(wasmFile, language);
+      return language;
     }
-    const language = await LangLoad(wasmPath);
-    grammarCache.set(wasmFile, language);
-    return language;
+
+    return null;
   } catch (error) {
     console.warn(`Failed to load language ${wasmFile}:`, error);
     return null;
@@ -180,17 +201,31 @@ function extractCallArguments(node: any): string[] {
 
 /**
  * Determine if a node is inside a comment or string literal.
+ * A string that is a function argument (e.g. crypto.generateKeyPairSync('RSA', ...))
+ * is legitimate code, NOT documentation — so we do NOT treat it as "in comment/string".
  */
-function isInCommentOrString(node: any): boolean {
+function isInCommentOrString(node: any, parent?: any): boolean {
   if (!node) return false;
   
   const nodeType = node.type?.toLowerCase() || '';
-  return (
-    nodeType.includes('comment') ||
-    nodeType.includes('string') ||
-    nodeType.includes('docstring') ||
-    nodeType.includes('template')
-  );
+  
+  // Comments are always documentation, not code
+  if (nodeType.includes('comment') || nodeType.includes('docstring')) {
+    return true;
+  }
+  
+  // String/template literals: check if this is a function argument (legitimate code)
+  if (nodeType.includes('string') || nodeType.includes('template')) {
+    // If the parent is a call expression or argument list, this is a string argument
+    // (e.g. crypto.createCipher('aes-256-gcm', ...)) — it's real code, not documentation
+    const parentType = parent?.type?.toLowerCase() || '';
+    if (parentType.includes('call') || parentType.includes('argument')) {
+      return false; // string argument in a function call = real usage
+    }
+    return true;
+  }
+  
+  return false;
 }
 
 /**
@@ -258,13 +293,31 @@ export async function enrichWithAst(
       let relevantNode: any = null;
       let parentContext: any = null;
 
+      // Score a node for "meaningfulness" — higher = more useful for confidence assessment.
+      // Punctuation tokens score 0; call expressions score highest.
+      const nodeScore = (n: any): number => {
+        const t = (n.type || '').toLowerCase();
+        if (t === 'call_expression' || t === 'function_call') return 5;
+        if (t === 'assignment' || t === 'variable_declarator') return 4;
+        if (t.includes('comment')) return 3; // meaningful for confidence
+        if (t.includes('string') || t.includes('template')) return 2;
+        if (t === ';' || t === ',' || t === '(' || t === ')' ||
+            t === '{' || t === '}' || t === '[' || t === ']' ||
+            t === ':' || t === '.') return 0; // punctuation — not useful
+        return 1; // identifiers, keywords, etc.
+      };
+
       const findNode = (node: any, parent?: any) => {
         const startRow = node.startPosition?.row ?? -1;
         const endRow = node.endPosition?.row ?? -1;
         
         if (startRow <= (finding.line! - 1) && endRow >= (finding.line! - 1)) {
-          relevantNode = node;
-          parentContext = parent;
+          // Only overwrite if the new node is at least as meaningful as the current one.
+          // This prevents punctuation tokens from winning over call expressions.
+          if (!relevantNode || nodeScore(node) >= nodeScore(relevantNode)) {
+            relevantNode = node;
+            parentContext = parent;
+          }
           // Continue searching for more specific (inner) nodes
           for (const child of node.children || []) {
             findNode(child, node);
@@ -278,13 +331,51 @@ export async function enrichWithAst(
         continue; // No node found at this line
       }
 
-      const nodeType = relevantNode.type || 'unknown';
-      const nodeText = (relevantNode.text || '').slice(0, 200);
-      const inComment = isInCommentOrString(relevantNode);
-      const contextType = getNodeContext(parentContext);
+      // If the innermost node is a string/template literal inside a function call's
+      // arguments, "promote" to the call expression for confidence assessment.
+      // A string like `'RSA'` in `crypto.generateKeyPairSync('RSA', ...)`
+      // is legitimate code, not documentation.
+      let effectiveNode = relevantNode;
+      let effectiveParent = parentContext;
+      const rawNodeType = relevantNode.type?.toLowerCase() || '';
+      if (rawNodeType.includes('string') || rawNodeType.includes('template') || rawNodeType.includes('string_fragment')) {
+        // Walk up the AST from relevantNode to find the nearest call_expression ancestor
+        const findAncestorCallExpr = (root: any, target: any, depth = 0): any => {
+          if (depth > 10) return null;
+          for (const child of root.children || []) {
+            if (child === target) {
+              // root is the parent of target — check if it's a call expression
+              return root;
+            }
+            const found = findAncestorCallExpr(child, target, depth + 1);
+            if (found) return found;
+          }
+          return null;
+        };
+        // Walk up: string_fragment → string → arguments → call_expression
+        let ancestor = findAncestorCallExpr(tree.rootNode, relevantNode);
+        while (ancestor) {
+          if (ancestor.type === 'call_expression' || ancestor.type === 'function_call') {
+            effectiveNode = ancestor;
+            effectiveParent = null;
+            break;
+          }
+          // Walk up one more level
+          const nextAncestor = findAncestorCallExpr(tree.rootNode, ancestor);
+          if (nextAncestor === ancestor) break; // reached root
+          ancestor = nextAncestor;
+        }
+      }
+
+      const nodeType = effectiveNode.type || 'unknown';
+      const nodeText = (effectiveNode.text || '').slice(0, 200);
+      const inComment = isInCommentOrString(effectiveNode, effectiveParent);
+      const contextType = getNodeContext(effectiveParent);
+      
+
       
       // Extract call arguments if this is a function call
-      const callArgs = extractCallArguments(relevantNode);
+      const callArgs = extractCallArguments(effectiveNode);
 
       // Update evidence with AST context
       finding.evidence = {
@@ -293,8 +384,8 @@ export async function enrichWithAst(
         astContext: {
           type: nodeType,
           text: nodeText,
-          start: relevantNode.startPosition,
-          end: relevantNode.endPosition,
+          start: effectiveNode.startPosition,
+          end: effectiveNode.endPosition,
           inComment,
           contextType,
           callArguments: callArgs.length > 0 ? callArgs : undefined,
@@ -309,7 +400,7 @@ export async function enrichWithAst(
         // Match is inside a comment or string - likely documentation, not usage
         finding.confidence = Math.max(0.1, finding.confidence - 0.3);
         finding.evidence.confidenceDerivation += 
-          ` -0.30 (match in ${relevantNode.type})`;
+          ` -0.30 (match in ${effectiveNode.type})`;
         // Mark as accepted risk since it's likely documentation
         if (finding.remediationStatus === 'open') {
           finding.remediationStatus = 'accepted-risk';
