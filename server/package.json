@@ -18,7 +18,7 @@
   "type": "commonjs",
   "dependencies": {
     "@prisma/client": "^5.22.0",
-    "adm-zip": "^0.5.16",
+    "adm-zip": "^0.6.0",
     "bcrypt": "^6.0.0",
     "bullmq": "^5.0.0",
     "cors": "^2.8.5",
