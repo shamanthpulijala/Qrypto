@@ -8,9 +8,9 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:ui": "vitest --ui"
+    "test": "vitest run --fileParallelism=false",
+    "test:watch": "vitest --fileParallelism=false",
+    "test:ui": "vitest --ui --fileParallelism=false"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

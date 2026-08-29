@@ -218,7 +218,7 @@ export function computeQuantumReadinessIndex(findings: Finding[]): {
   const weakTls = findings.filter(f => f.category === 'tls' && (f.quantumStatus === 'classical-weak')).length;
   const goodTls = findings.filter(f => f.category === 'tls' && f.quantumStatus === 'adequate').length;
   const tlsTotal = weakTls + goodTls;
-  const tlsPosture = tlsTotal === 0 ? 75 : Math.round((goodTls / tlsTotal) * 100);
+  const tlsPosture = tlsTotal === 0 ? 0 : Math.round((goodTls / tlsTotal) * 100);
 
   // Certificate posture
   const vulnCerts = findings.filter(f => (f.category === 'certificate' || f.algorithm.includes('SHA1withRSA')) && f.quantumStatus !== 'adequate').length;

@@ -95,7 +95,7 @@ const CLOUD_KMS_PATTERNS: CloudKmsPattern[] = [
     provider: 'Azure',
   },
   {
-    regex: /(?:createKey|encrypt|decrypt|sign|verify|wrapKey|unwrapKey)\s*\(\s*['"]([^'"]+)['"]\s*,\s*['"]RSA|EC|RSA-HSM|EC-HSM/g,
+    regex: /(?:KeyClient|CryptographyClient|vaultClient|keyVaultClient)\.(?:createKey|encrypt|decrypt|sign|verify|wrapKey|unwrapKey)\s*\(/g,
     algorithm: 'Azure Key Vault',
     category: 'public-key',
     usage: 'Azure Key Vault key operation',

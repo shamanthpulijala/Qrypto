@@ -108,14 +108,14 @@ export function Dashboard() {
 
   // Compute real orbital ring scores from findings data
   const totalFindings = findings.length || 1;
-  const discoveryScore = Math.round((scanStats.filesScanned > 0 ? Math.min(100, (findings.length / Math.max(1, scanStats.filesScanned)) * 100 + 30) : 0));
+  const discoveryScore = Math.round((scanStats.filesScanned > 0 ? Math.min(100, (findings.length / Math.max(1, scanStats.filesScanned)) * 100) : 0));
   const agilityScore = assessment.cryptoAgilityScore?.score ?? 0;
   const pqcOrSafe = findings.filter(f => f.quantumStatus === 'quantum-resistant' || f.quantumStatus === 'adequate' || f.remediationStatus === 'remediated').length;
   const migrationScore = Math.round((pqcOrSafe / totalFindings) * 100);
   const tlsCerts = findings.filter(f => f.category === 'tls' || f.category === 'certificate');
   const certScore = tlsCerts.length > 0
     ? Math.round((tlsCerts.filter(f => f.quantumStatus === 'adequate' || f.quantumStatus === 'quantum-resistant').length / tlsCerts.length) * 100)
-    : 75; // default when no TLS/cert findings
+    : 0; // Explicitly set to 0 when no certs instead of fabricating a 75
 
   return (
     <div className="dashboard animate-fade-in">

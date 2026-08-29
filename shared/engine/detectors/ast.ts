@@ -395,6 +395,28 @@ export async function enrichWithAst(
           'AST confirms presence within a valid code node.',
       };
 
+      // AES key size extraction
+      if (finding.algorithm === 'AES' && callArgs.length > 0) {
+        for (const arg of callArgs) {
+          // Look for byte strings like b"0123456789abcdef"
+          const byteMatch = arg.match(/^b?['"](.*)['"]$/);
+          if (byteMatch) {
+            const keyStr = byteMatch[1];
+            // Simplistic extraction: length of the string
+            if (keyStr.length === 16) {
+              finding.algorithm = 'AES-128';
+              finding.keySize = 128;
+            } else if (keyStr.length === 24) {
+              finding.algorithm = 'AES-192';
+              finding.keySize = 192;
+            } else if (keyStr.length === 32) {
+              finding.algorithm = 'AES-256';
+              finding.keySize = 256;
+            }
+          }
+        }
+      }
+
       // Adjust confidence based on AST evidence
       if (inComment) {
         // Match is inside a comment or string - likely documentation, not usage

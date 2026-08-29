@@ -9,9 +9,9 @@ import type { CryptoPattern } from './rsa';
 export const SYMMETRIC_PATTERNS: CryptoPattern[] = [
   // ── Healthy / Adequate ────────────────────────────────────
 
-  // AES-256 — §14 sample: healthy, should be classified as 'adequate'
+  // AES-256 — explicit mentions of 256
   {
-    regex: /AES[_-]?256|AES\.new.*256|Cipher\.getInstance\s*\(\s*[\"']AES\/[^\"']*[\"']|algorithms\.AES|crypto\.createCipheriv\s*\(\s*[\"']aes-256|aes\.NewCipher|crypto\.subtle\.encrypt\s*\(\s*\{[^}]*name:\s*[\"']AES/gi,
+    regex: /AES[_-]?256|AES\.new.*256|crypto\.createCipheriv\s*\(\s*[\"']aes-256/gi,
     algorithm: 'AES-256',
     category: 'symmetric',
     quantumStatus: 'adequate',
@@ -47,7 +47,7 @@ export const SYMMETRIC_PATTERNS: CryptoPattern[] = [
 
   // AES (generic)
   {
-    regex: /[\"']AES[\"'](?!-)/g,
+    regex: /[\"']AES[\"'](?!-)|Cipher\.getInstance\s*\(\s*[\"']AES\/[^\"']*[\"']|algorithms\.AES|aes\.NewCipher|crypto\.subtle\.encrypt\s*\(\s*\{[^}]*name:\s*[\"']AES/gi,
     algorithm: 'AES',
     category: 'symmetric',
     quantumStatus: 'adequate',

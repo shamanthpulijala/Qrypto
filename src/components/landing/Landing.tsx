@@ -4,12 +4,13 @@
 // ============================================================
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Shield, Zap, ArrowRight, Upload, FileCode2, AlertCircle, Eye, ChevronRight, Check } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Shield, Zap, ArrowRight, Upload, FileCode2, AlertCircle, Eye, Check } from 'lucide-react';
 import { useAppStore } from '../../store/assessmentStore';
 import JSZip from 'jszip';
-import { ENTERPRISE_SAMPLE_FILES } from '../../data/enterpriseSampleRepo';
-import { PQC_READY_SAMPLE_FILES } from '../../data/pqcReadySampleRepo';
+
 import { QuantumComputer } from './QuantumComputer';
+import { SCANNER_REGISTRY } from '../../../shared/engine/scannerRegistry';
 import './Landing.css';
 
 // ─── Crypto labels for §10 ────────────────────────────────────
@@ -40,17 +41,7 @@ const CRYPTO_LABELS = [
   },
 ];
 
-// ─── Discovery nodes §12 ──────────────────────────────────────
-const DISCOVERY_NODES = [
-  { icon: '🌐', label: 'Internet', algo: 'TLS' },
-  { icon: '☁️', label: 'Cloud', algo: 'AES' },
-  { icon: '📱', label: 'Applications', algo: 'RSA' },
-  { icon: '🔗', label: 'APIs', algo: 'ECDH' },
-  { icon: '🔐', label: 'Authentication', algo: 'ECDSA' },
-  { icon: '📜', label: 'Certificates', algo: 'SHA-256' },
-  { icon: '🗄️', label: 'Databases', algo: 'AES-256' },
-  { icon: '📦', label: 'Archives', algo: 'SHA-1' },
-];
+// Removed old DISCOVERY_NODES in favor of actual scanner capability registry
 
 // ─── Risk model factors §14 ──────────────────────────────────
 // These show the model's weight distribution — the fill bar represents
@@ -121,7 +112,8 @@ function useFadeIn() {
 
 // ─── Main Component ───────────────────────────────────────────
 export function Landing() {
-  const { startScan, isScanning, scanProgress, scanLog, scanError } = useAppStore();
+  const navigate = useNavigate();
+  const { startScan, isScanning, scanProgress, scanLog, scanError, setCurrentPage } = useAppStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropRef = useRef<HTMLDivElement>(null);
 
@@ -254,9 +246,8 @@ export function Landing() {
                 START ASSESSMENT <ArrowRight size={16} />
               </button>
               <button className="btn-hero-secondary" onClick={() => {
-                setFileSummary({ name: 'qrypto-enterprise-sample.zip', count: ENTERPRISE_SAMPLE_FILES.length });
-                setPendingFiles(ENTERPRISE_SAMPLE_FILES);
-                setTimeout(() => document.getElementById('upload-section')?.scrollIntoView({ behavior: 'smooth' }), 100);
+                setCurrentPage('qday');
+                navigate('/qday');
               }}>
                 EXPLORE Q-DAY <Zap size={16} />
               </button>
@@ -301,22 +292,40 @@ export function Landing() {
         </div>
       </section>
 
-      {/* ═══ DISCOVERY §12 ═══ */}
+      {/* ═══ AVAILABLE SCANNERS ═══ */}
       <div ref={discoveryRef} className="landing-section fade-in-section">
-        <div className="section-badge danger">THE CHALLENGE</div>
+        <div className="section-badge danger">AVAILABLE SCANNERS</div>
         <h2 className="section-title">
-          YOU CAN'T PROTECT<br />WHAT YOU CAN'T SEE.
+          KNOW EXACTLY<br />WHAT WE CAN SEE.
         </h2>
         <p className="section-desc">
-          Cryptographic dependencies are embedded across every layer of your infrastructure.
-          QuantumGuard maps them all — automatically.
+          QuantumGuard maps your cryptographic dependencies across multiple dimensions. Here is what is currently supported.
         </p>
-        <div className="discovery-grid">
-          {DISCOVERY_NODES.map(n => (
-            <div key={n.label} className="discovery-node">
-              <span className="discovery-node-icon">{n.icon}</span>
-              <span className="discovery-node-label">{n.label}</span>
-              <span className="discovery-node-algo">{n.algo}</span>
+        <div className="scanners-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px', marginTop: '40px' }}>
+          {SCANNER_REGISTRY.map(scanner => (
+            <div key={scanner.id} className="scanner-card" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', padding: '24px', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-primary)' }}>{scanner.name}</h3>
+                <span className={`scanner-status ${scanner.status.toLowerCase()}`} style={{ fontSize: '0.7rem', padding: '4px 8px', borderRadius: '4px', background: scanner.status === 'READY' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(234, 179, 8, 0.1)', color: scanner.status === 'READY' ? '#22c55e' : '#eab308' }}>
+                  {scanner.status}
+                </span>
+              </div>
+              <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>{scanner.description}</p>
+              
+              <div style={{ marginTop: 'auto' }}>
+                <div style={{ marginBottom: '12px' }}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', marginBottom: '4px' }}>Detects</div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{scanner.detects}</div>
+                </div>
+                <div style={{ marginBottom: '12px' }}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', marginBottom: '4px' }}>Does Not Detect</div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{scanner.doesNotDetect}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', marginBottom: '4px' }}>Method</div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{scanner.method}</div>
+                </div>
+              </div>
             </div>
           ))}
         </div>
@@ -489,24 +498,6 @@ export function Landing() {
                   {pendingFiles ? <><Zap size={16} /> Run Quantum Scan <ArrowRight size={16} /></> : <>Select Files to Begin</>}
                 </button>
 
-                {!pendingFiles && (
-                  <div className="sample-btns">
-                    <button
-                      className="load-sample-btn"
-                      onClick={() => { setFileSummary({ name: 'PQC-Ready Sample (85+ Score)', count: PQC_READY_SAMPLE_FILES.length }); setPendingFiles(PQC_READY_SAMPLE_FILES); }}
-                      style={{ color: '#22c55e', borderColor: 'rgba(34, 197, 94, 0.3)', background: 'rgba(34, 197, 94, 0.06)' }}
-                    >
-                      🛡️ Load PQC-Ready Sample (85+ Score)
-                    </button>
-                    <button
-                      className="load-sample-btn"
-                      onClick={() => { setFileSummary({ name: 'Vulnerable Enterprise Sample', count: ENTERPRISE_SAMPLE_FILES.length }); setPendingFiles(ENTERPRISE_SAMPLE_FILES); }}
-                      style={{ color: '#00d4ff', borderColor: 'rgba(0, 212, 255, 0.3)', background: 'rgba(0, 212, 255, 0.04)' }}
-                    >
-                      ⚡ Load Vulnerable Enterprise Sample
-                    </button>
-                  </div>
-                )}
 
                 <p className="upload-disclaimer">In browser-only mode, file contents are processed locally. When a backend is configured, scan metadata (file paths, line numbers, detected patterns) may be transmitted for persistence and reporting.</p>
               </div>

@@ -62,6 +62,11 @@ function RouteSync() {
     } else if (location.pathname === '/' && currentPage !== 'landing') {
       useAppStore.setState({ currentPage: 'landing' });
     }
+    
+    // Reset scroll to top on any route/page change
+    window.scrollTo(0, 0);
+    const pageContent = document.querySelector('.page-content');
+    if (pageContent) pageContent.scrollTo(0, 0);
   }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return null;
@@ -70,6 +75,13 @@ function RouteSync() {
 function App() {
   const { currentPage, assessment, isScanning, scanError } = useAppStore();
   const { user } = useAuthStore();
+
+  // Reset scroll to top whenever we navigate to a new page (covers store-driven navigation)
+  React.useEffect(() => {
+    window.scrollTo(0, 0);
+    const pageContent = document.querySelector('.page-content');
+    if (pageContent) pageContent.scrollTo(0, 0);
+  }, [currentPage]);
 
   // Auth gate: require login before accessing protected pages unless an assessment or scan is active
   if (!user && !assessment && !isScanning && currentPage !== 'landing' && currentPage !== 'settings') {
