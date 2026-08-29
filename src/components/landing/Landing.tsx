@@ -14,18 +14,30 @@ import './Landing.css';
 
 // ─── Crypto labels for §10 ────────────────────────────────────
 const CRYPTO_LABELS = [
-  { name: 'RSA-2048', status: 'QUANTUM VULNERABLE', cls: 'vulnerable', pos: { top: '12%', left: '5%' },
-    tooltip: 'RSA relies on integer factorization, which Shor\'s algorithm can solve in polynomial time on a quantum computer.' },
-  { name: 'ECC', status: 'QUANTUM VULNERABLE', cls: 'vulnerable', pos: { top: '25%', right: '3%' },
-    tooltip: 'Elliptic Curve Cryptography is broken by quantum computers using Shor\'s algorithm on the discrete logarithm problem.' },
-  { name: 'ECDH', status: 'QUANTUM VULNERABLE', cls: 'vulnerable', pos: { bottom: '30%', left: '2%' },
-    tooltip: 'ECDH key exchange is vulnerable to quantum attack. Migrate to ML-KEM (FIPS 203) for post-quantum key encapsulation.' },
-  { name: 'AES-256', status: 'STRONG', cls: 'strong', pos: { bottom: '15%', right: '8%' },
-    tooltip: 'AES-256 remains quantum-safe. Grover\'s algorithm only halves the effective key strength to 128-bit equivalent.' },
-  { name: 'ML-KEM', status: 'POST-QUANTUM', cls: 'pqc', pos: { top: '60%', left: '8%' },
-    tooltip: 'FIPS 203 (ML-KEM, formerly Kyber). NIST\'s primary post-quantum key encapsulation mechanism based on Module-LWE.' },
-  { name: 'TLS 1.2', status: 'MIGRATION REQUIRED', cls: 'migration', pos: { top: '45%', right: '2%' },
-    tooltip: 'TLS 1.2 is classically adequate but should be migrated to TLS 1.3 with PQC cipher suites for quantum safety.' },
+  {
+    name: 'RSA-2048', status: 'QUANTUM VULNERABLE', cls: 'vulnerable', pos: { top: '12%', left: '5%' },
+    tooltip: 'RSA relies on integer factorization, which Shor\'s algorithm can solve in polynomial time on a quantum computer.'
+  },
+  {
+    name: 'ECC', status: 'QUANTUM VULNERABLE', cls: 'vulnerable', pos: { top: '25%', right: '3%' },
+    tooltip: 'Elliptic Curve Cryptography is broken by quantum computers using Shor\'s algorithm on the discrete logarithm problem.'
+  },
+  {
+    name: 'ECDH', status: 'QUANTUM VULNERABLE', cls: 'vulnerable', pos: { bottom: '30%', left: '2%' },
+    tooltip: 'ECDH key exchange is vulnerable to quantum attack. Migrate to ML-KEM (FIPS 203) for post-quantum key encapsulation.'
+  },
+  {
+    name: 'AES-256', status: 'STRONG', cls: 'strong', pos: { bottom: '15%', right: '8%' },
+    tooltip: 'AES-256 remains quantum-safe. Grover\'s algorithm only halves the effective key strength to 128-bit equivalent.'
+  },
+  {
+    name: 'ML-KEM', status: 'POST-QUANTUM', cls: 'pqc', pos: { top: '60%', left: '8%' },
+    tooltip: 'FIPS 203 (ML-KEM, formerly Kyber). NIST\'s primary post-quantum key encapsulation mechanism based on Module-LWE.'
+  },
+  {
+    name: 'TLS 1.2', status: 'MIGRATION REQUIRED', cls: 'migration', pos: { top: '45%', right: '2%' },
+    tooltip: 'TLS 1.2 is classically adequate but should be migrated to TLS 1.3 with PQC cipher suites for quantum safety.'
+  },
 ];
 
 // ─── Discovery nodes §12 ──────────────────────────────────────
@@ -72,9 +84,22 @@ const HNDL_LIFETIME_YEARS: Record<string, number> = {
   'Source Code': 10, 'Customer Data': 10, 'Intellectual Property': 20,
 };
 
-const SUPPORTED_EXT = ['.py', '.java', '.js', '.ts', '.jsx', '.tsx', '.go', '.yml', '.yaml', '.json', '.xml', '.sh', '.conf', '.env', '.properties', '.gradle', '.toml', '.tf'];
-const MAX_ZIP_SIZE = 50 * 1024 * 1024;
+const SUPPORTED_EXT = ['.zip', '.py', '.java', '.js', '.ts', '.jsx', '.tsx', '.go', '.yml', '.yaml', '.json', '.xml', '.sh', '.conf', '.env', '.properties', '.gradle', '.toml', '.tf', '.pem', '.key', '.crt', '.p12', '.pfx', '.jks', '.dll', '.so', '.dylib', '.exe', '.bin', '.dockerfile'];
+const MAX_UPLOAD_SIZE = 500 * 1024 * 1024;
 const MAX_FILES = 2000;
+
+function formatFileSize(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0 MB';
+  const mb = bytes / (1024 * 1024);
+  return mb >= 1 ? `${mb.toFixed(1)} MB` : `${(bytes / 1024).toFixed(1)} KB`;
+}
+
+async function readFileText(file: File): Promise<string> {
+  const buffer = await file.arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+  const decoder = new TextDecoder('utf-8', { fatal: false });
+  return decoder.decode(bytes).replace(/\u0000/g, '');
+}
 
 interface FileEntry { path: string; content: string; }
 
@@ -124,7 +149,7 @@ export function Landing() {
   }
 
   const processZip = useCallback(async (file: File): Promise<FileEntry[]> => {
-    if (file.size > MAX_ZIP_SIZE) throw new Error(`ZIP file too large (max 50 MB). Got ${(file.size / 1024 / 1024).toFixed(1)} MB.`);
+    if (file.size > MAX_UPLOAD_SIZE) throw new Error(`ZIP file too large (max 500 MB). Got ${formatFileSize(file.size)}.`);
     const zip = await JSZip.loadAsync(file);
     const entries: FileEntry[] = [];
     const jobs: Promise<void>[] = [];
@@ -132,12 +157,14 @@ export function Landing() {
       if (zipEntry.dir) return;
       if (relativePath.includes('..')) return;
       const lower = relativePath.toLowerCase();
-      if (!SUPPORTED_EXT.some(ext => lower.endsWith(ext))) return;
+      const isContainerConfig = lower.includes('dockerfile') || lower.includes('compose');
+      const isSupported = SUPPORTED_EXT.some(ext => lower.endsWith(ext)) || isContainerConfig || !lower.includes('.') || lower.endsWith('.zip');
+      if (!isSupported) return;
       if (entries.length >= MAX_FILES) return;
-      jobs.push(zipEntry.async('string').then(content => { entries.push({ path: relativePath, content }); }).catch(() => {}));
+      jobs.push(zipEntry.async('string').then(content => { entries.push({ path: relativePath, content }); }).catch(() => { }));
     });
     await Promise.all(jobs);
-    if (entries.length === 0) throw new Error('No supported source files found in ZIP.');
+    if (entries.length === 0) throw new Error('No uploadable files were found in the ZIP.');
     if (entries.length > 0) {
       entries[0].zipFile = file;
       entries[0].projectName = file.name.replace(/\.zip$/i, '');
@@ -148,18 +175,41 @@ export function Landing() {
   const handleFiles = useCallback(async (fileList: FileList | null) => {
     if (!fileList || fileList.length === 0) return;
     setUploadError(null); setPendingFiles(null); setFileSummary(null);
-    const file = fileList[0];
+
     try {
-      let entries: FileEntry[];
-      if (file.name.endsWith('.zip')) { entries = await processZip(file); }
-      else {
-        const ext = '.' + file.name.split('.').pop()?.toLowerCase();
-        if (!SUPPORTED_EXT.includes(ext)) throw new Error(`Unsupported file type: ${ext}`);
-        entries = [{ path: file.name, content: await file.text() }];
+      const files = Array.from(fileList);
+      const allEntries: FileEntry[] = [];
+      let summaryName = files.length === 1 ? files[0].name : `${files.length} selected files`;
+
+      for (const file of files) {
+        if (file.size > MAX_UPLOAD_SIZE) {
+          throw new Error(`${file.name} exceeds the 500 MB upload limit.`);
+        }
+
+        let entries: FileEntry[];
+        if (file.name.toLowerCase().endsWith('.zip')) {
+          entries = await processZip(file);
+        } else {
+          const fileName = file.name.toLowerCase();
+          const ext = '.' + fileName.split('.').pop()?.toLowerCase();
+          const isApplicable = SUPPORTED_EXT.includes(ext) || fileName.includes('dockerfile') || fileName.includes('compose') || !ext || !fileName.includes('.');
+          if (!isApplicable) {
+            continue;
+          }
+          entries = [{ path: file.name, content: await readFileText(file) }];
+        }
+        allEntries.push(...entries);
       }
-      setFileSummary({ name: file.name, count: entries.length });
-      setPendingFiles(entries);
-    } catch (err: any) { setUploadError(err.message || 'Failed to read file.'); }
+
+      if (allEntries.length === 0) {
+        throw new Error('No uploadable files were found in the selected files.');
+      }
+
+      setFileSummary({ name: summaryName, count: allEntries.length });
+      setPendingFiles(allEntries);
+    } catch (err: any) {
+      setUploadError(err.message || 'Failed to read file.');
+    }
   }, [processZip]);
 
   const handleScan = useCallback(() => { if (pendingFiles) startScan(pendingFiles); }, [pendingFiles, startScan]);
@@ -404,8 +454,10 @@ export function Landing() {
                   onClick={() => !fileSummary && fileInputRef.current?.click()}
                 >
                   <input
-                    ref={fileInputRef} type="file"
-                    accept=".zip,.py,.java,.js,.ts,.jsx,.tsx,.go,.yml,.yaml,.json,.xml,.sh,.conf,.env,.toml,.tf"
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept=".zip,.tar,.gz,.tgz,.bz2,.xz,.7z,.rar,.py,.java,.js,.ts,.jsx,.tsx,.go,.rs,.c,.cpp,.h,.hpp,.cs,.rb,.php,.swift,.kt,.scala,.clj,.yml,.yaml,.json,.xml,.sh,.conf,.cfg,.ini,.env,.properties,.gradle,.toml,.tf,.pem,.key,.crt,.cer,.p12,.pfx,.jks,.dll,.so,.dylib,.exe,.bin,.obj,.o,.a,.class,.jar,.war,.ear,.txt,.md,.rst,.log,.csv,.sql,.dockerfile,.dockerignore,.zip,.*"
                     style={{ display: 'none' }}
                     onChange={e => handleFiles(e.target.files)}
                   />
@@ -425,7 +477,7 @@ export function Landing() {
                       <Upload size={32} className="dz-icon" />
                       <p className="dz-primary">Drop your ZIP or source file here</p>
                       <p className="dz-secondary">or <span className="dz-link">browse files</span></p>
-                      <p className="dz-hint">.zip, .py, .java, .js, .ts, .go, .yml, .json · Max 50 MB</p>
+                      <p className="dz-hint">Any source, config, archive, cert, or binary artifact · Max 500 MB per file</p>
                     </>
                   )}
                 </div>

@@ -535,6 +535,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       const result = await runScanPipeline(pipelineFiles, {
         repository: 'uploaded/repo',
         project: files[0]?.projectName || 'Uploaded Repository Scan',
+        maxFileSizeBytes: 500 * 1024 * 1024,
         onProgress: (_stage, progress, logMsg) => {
           set(s => ({ scanProgress: progress, scanLog: [...s.scanLog, logMsg] }));
         },

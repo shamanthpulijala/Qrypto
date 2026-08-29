@@ -11,11 +11,11 @@ if (!fs.existsSync(UPLOAD_DIR)) {
 }
 
 // ─── Security Limits ────────────────────────────────────────
-const MAX_FILE_SIZE = 50 * 1024 * 1024;       // 50 MB upload limit
+const MAX_FILE_SIZE = 500 * 1024 * 1024;       // 500 MB upload limit
 const MAX_ENTRIES = 10_000;                     // max zip entries
 const MAX_TOTAL_DECOMPRESSED = 500 * 1024 * 1024; // 500 MB aggregate decompressed
 const MAX_COMPRESSION_RATIO = 100;              // zip bomb defense
-const MAX_INDIVIDUAL_SIZE = 10 * 1024 * 1024;   // 10 MB per file after decompression
+const MAX_INDIVIDUAL_SIZE = 500 * 1024 * 1024; // 500 MB per file after decompression
 
 const ALLOWED_MIME_TYPES = new Set([
   'application/zip',

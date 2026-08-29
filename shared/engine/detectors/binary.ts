@@ -18,7 +18,7 @@ import { computeRiskScore } from '../riskEngine';
 import { deriveAlgorithmSeverity, deriveEffectiveSeverity } from '../severity';
 
 // ─── Safety Limits ──────────────────────────────────────────
-const MAX_BINARY_SIZE = 50 * 1024 * 1024;  // 50 MB max
+const MAX_BINARY_SIZE = 500 * 1024 * 1024;  // 500 MB max
 const MAX_STRINGS_SCANNED = 10000;          // max strings to process
 const MAX_STRING_LENGTH = 200;              // max individual string length
 const MIN_STRING_LENGTH = 4;                // minimum for meaningful detection

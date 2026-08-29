@@ -75,14 +75,15 @@ export interface PipelineStats {
 // ─── Supported Extensions ───────────────────────────────────
 
 const DEFAULT_EXTENSIONS = [
-  '.py', '.java', '.js', '.ts', '.jsx', '.tsx', '.go',
-  '.yml', '.yaml', '.json', '.xml', '.sh', '.conf',
-  '.env', '.properties', '.gradle', '.toml', '.tf',
-  // P1: Container config files
-  '.dockerfile',
-  '.dll', '.so', '.dylib', '.exe', '.bin',
-  '.p11', '.pkcs11',
-  '.pem', '.key', '.crt', '.p12', '.pfx', '.jks',
+  '.py', '.java', '.js', '.ts', '.jsx', '.tsx', '.go', '.rs', '.c', '.cpp', '.h', '.hpp', '.cs',
+  '.rb', '.php', '.swift', '.kt', '.scala', '.clj',
+  '.yml', '.yaml', '.json', '.xml', '.sh', '.conf', '.cfg', '.ini',
+  '.env', '.properties', '.gradle', '.toml', '.tf', '.lock',
+  '.dockerfile', '.dockerignore',
+  '.dll', '.so', '.dylib', '.exe', '.bin', '.obj', '.o', '.a', '.class', '.jar', '.war', '.ear',
+  '.p11', '.pkcs11', '.pem', '.key', '.crt', '.cer', '.p12', '.pfx', '.jks', '.der',
+  '.zip', '.tar', '.gz', '.tgz', '.bz2', '.xz', '.7z', '.rar',
+  '.txt', '.md', '.rst', '.log', '.csv', '.sql'
 ];
 
 // P1: Filename-based detection (for files without typical extensions)
@@ -97,7 +98,7 @@ function validate(
   files: PipelineFile[],
   opts: PipelineOptions
 ): { valid: PipelineFile[]; skipped: string[] } {
-  const maxSize = opts.maxFileSizeBytes ?? 1_000_000; // 1 MB default
+  const maxSize = opts.maxFileSizeBytes ?? 500 * 1024 * 1024; // 500 MB default to match upload limits
   const exts = opts.allowedExtensions ?? DEFAULT_EXTENSIONS;
   const valid: PipelineFile[] = [];
   const skipped: string[] = [];
@@ -105,11 +106,12 @@ function validate(
   for (const f of files) {
     const lp = f.path.toLowerCase();
 
-    // Skip by extension or filename
+    // Allow resources without a typical extension if they are clearly actionable files.
     const baseName = lp.split('/').pop() || '';
     const hasValidExt = exts.some(ext => lp.endsWith(ext));
     const hasValidFilename = EXTRA_FILENAMES.some(name => baseName === name);
-    if (!hasValidExt && !hasValidFilename) {
+    const hasNoKnownExtension = !baseName.includes('.') && baseName.length > 0;
+    if (!hasValidExt && !hasValidFilename && !hasNoKnownExtension) {
       skipped.push(`${f.path} (unsupported extension)`);
       continue;
     }
@@ -119,17 +121,17 @@ function validate(
     if (size > maxSize) {
       skipped.push(`${f.path} (exceeds ${maxSize} byte limit)`);
       continue;
-    }      // For binary files, keep them but mark them; for text files, check for binary content
-      const lp2 = f.path.toLowerCase();
-      const isBinaryFile = ['.dll', '.so', '.dylib', '.exe', '.bin'].some(ext => lp2.endsWith(ext));
-      if (!isBinaryFile) {
-        // Skip text files that look binary (heuristic: > 10% non-printable chars)
-        const nonPrintable = (f.content.match(/[\x00-\x08\x0B-\x0C\x0E-\x1F]/g) || []).length;
-        if (nonPrintable / f.content.length > 0.1) {
-          skipped.push(`${f.path} (appears binary)`);
-          continue;
-        }
+    }
+
+    const lp2 = f.path.toLowerCase();
+    const isBinaryFile = ['.dll', '.so', '.dylib', '.exe', '.bin', '.obj', '.o', '.a', '.class', '.jar', '.war', '.ear', '.pfx', '.p12', '.der'].some(ext => lp2.endsWith(ext));
+    if (!isBinaryFile && f.content.length > 0) {
+      const nonPrintable = (f.content.match(/[\x00-\x08\x0B-\x0C\x0E-\x1F]/g) || []).length;
+      if (nonPrintable / f.content.length > 0.1) {
+        skipped.push(`${f.path} (appears binary)`);
+        continue;
       }
+    }
 
     valid.push(f);
   }
