@@ -103,7 +103,11 @@ function RouteSync() {
 
 function App() {
   const { currentPage, assessment, isScanning, scanError } = useAppStore();
-  const { user } = useAuthStore();
+  const { user, isInitialized, initAuth } = useAuthStore();
+
+  React.useEffect(() => {
+    initAuth();
+  }, [initAuth]);
 
   // Reset scroll to top whenever we navigate to a new page (covers store-driven navigation)
   React.useEffect(() => {
@@ -111,6 +115,10 @@ function App() {
     const pageContent = document.querySelector('.page-content');
     if (pageContent) pageContent.scrollTo(0, 0);
   }, [currentPage]);
+
+  if (!isInitialized) {
+    return null; // Wait for Firebase auth to initialize
+  }
 
   // Auth gate: require login before accessing protected pages unless an assessment or scan is active
   if (!user && !assessment && !isScanning && currentPage !== 'landing' && currentPage !== 'settings') {
