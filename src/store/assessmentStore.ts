@@ -12,6 +12,8 @@ import { computeCryptoAgilityScore } from '../engine/cryptoAgility';
 import { generateHNDLAssessments } from '../engine/hndlAnalyzer';
 import { generateMigrationRoadmap } from '../engine/migrationPlanner';
 import { scansApi, findingsApi, isApiConfigured } from '../api/client';
+import { firebaseDb } from '../lib/firebaseDb';
+import { useAuthStore } from './authStore';
 
 // ─── P1-9: Infer real dependencies between services ─────────
 // Only creates edges where evidence exists in file paths and
@@ -330,16 +332,36 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   updateFindingStatus: async (id, status) => {
-    // Update in backend if configured
-    if (isApiConfigured()) {
-      try { await findingsApi.updateStatus(id, status); } catch { /* non-fatal */ }
+    // Log finding status change
+    const user = useAuthStore.getState().user;
+    if (user) {
+      firebaseDb.logAudit({
+        action: 'finding_status_changed',
+        targetId: id,
+        metadata: { newStatus: status },
+        userId: user.id || 'unknown',
+        userEmail: user.email,
+      }).catch(console.error);
     }
-    set(s => ({
-      assessment: s.assessment ? {
+
+    set(s => {
+      if (!s.assessment) return s;
+      const updatedFindings = s.assessment.findings.map(f => 
+        f.id === id ? { ...f, remediationStatus: status } : f
+      );
+      
+      const newAssessment = {
         ...s.assessment,
-        findings: s.assessment.findings.map(f => f.id === id ? { ...f, remediationStatus: status } : f),
-      } : null,
-    }));
+        findings: updatedFindings
+      };
+
+      // Background save to firebase if we have a scan ID
+      if (user && newAssessment.id && newAssessment.id.startsWith('scan-')) {
+        firebaseDb.updateScan(newAssessment.id, { findings: updatedFindings }).catch(console.error);
+      }
+
+      return { assessment: newAssessment };
+    });
   },
 
   updateTaskStatus: (id, status) => set(s => ({
@@ -534,16 +556,37 @@ export const useAppStore = create<AppState>((set, get) => ({
       const result = await runScanPipeline(pipelineFiles, {
         repository: 'uploaded/repo',
         project: files[0]?.projectName || 'Uploaded Repository Scan',
-        maxFileSizeBytes: 500 * 1024 * 1024,
+        maxFileSizeBytes: 5000 * 1024 * 1024, // 5GB
         onProgress: (_stage, progress, logMsg) => {
           set(s => ({ scanProgress: progress, scanLog: [...s.scanLog, logMsg] }));
         },
       });
 
-      const services = buildServicesFromFindings(result.findings);
-      const agility = computeCryptoAgilityScore(result.findings);
-      const hndl = generateHNDLAssessments(result.findings);
-      const tasks = generateMigrationRoadmap(result.findings, services);
+      // ── Live AWS KMS scan (runs if credentials are set in Settings) ──
+      let liveKmsFindings: import('../types').Finding[] = [];
+      const awsKeyId = sessionStorage.getItem('qg_aws_access_key_id');
+      const awsSecret = sessionStorage.getItem('qg_aws_secret_access_key');
+      const awsRegion = sessionStorage.getItem('qg_aws_region') || 'us-east-1';
+      if (awsKeyId && awsSecret) {
+        try {
+          set(s => ({ scanLog: [...s.scanLog, `☁️ Polling live AWS KMS (${awsRegion})...`] }));
+          const { detectLiveKms } = await import('../../shared/engine/detectors/liveKms');
+          liveKmsFindings = await detectLiveKms(
+            { accessKeyId: awsKeyId, secretAccessKey: awsSecret, region: awsRegion },
+            files[0]?.projectName || 'Uploaded Repository Scan'
+          );
+          set(s => ({ scanLog: [...s.scanLog, `☁️ AWS KMS scan complete: ${liveKmsFindings.length} key(s) found.`] }));
+        } catch (kmsErr: any) {
+          set(s => ({ scanLog: [...s.scanLog, `⚠️ AWS KMS scan failed: ${kmsErr.message}`] }));
+        }
+      }
+
+      const allFindings = [...result.findings, ...liveKmsFindings];
+
+      const services = buildServicesFromFindings(allFindings);
+      const agility = computeCryptoAgilityScore(allFindings);
+      const hndl = generateHNDLAssessments(allFindings);
+      const tasks = generateMigrationRoadmap(allFindings, services);
 
       const scannedFiles = pipelineFiles.map(f => {
         const lineCount = f.content.split('\n').length;
@@ -581,7 +624,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         scannedAt: new Date().toISOString(),
         status: 'complete',
         scanProgress: 100,
-        findings: result.findings,
+        findings: allFindings,
         services,
         migrationTasks: tasks,
         qDaySimulation: null,
@@ -593,21 +636,40 @@ export const useAppStore = create<AppState>((set, get) => ({
         scanStats: {
           filesScanned: result.stats.filesScanned,
           linesScanned: result.stats.linesScanned,
-          findingsTotal: result.findings.length,
-          criticalCount: result.findings.filter(f => f.severity === 'critical').length,
-          highCount: result.findings.filter(f => f.severity === 'high').length,
-          mediumCount: result.findings.filter(f => f.severity === 'medium').length,
-          lowCount: result.findings.filter(f => f.severity === 'low' || f.severity === 'info').length,
-          vulnerableAlgorithms: result.findings.filter(f => f.quantumStatus === 'vulnerable').length,
-          secretsFound: result.findings.filter(f => f.category === 'secret').length,
-          affectedServices: new Set(result.findings.map(f => f.service)).size,
+          findingsTotal: allFindings.length,
+          criticalCount: allFindings.filter(f => f.severity === 'critical').length,
+          highCount: allFindings.filter(f => f.severity === 'high').length,
+          mediumCount: allFindings.filter(f => f.severity === 'medium').length,
+          lowCount: allFindings.filter(f => f.severity === 'low' || f.severity === 'info').length,
+          vulnerableAlgorithms: allFindings.filter(f => f.quantumStatus === 'vulnerable').length,
+          secretsFound: allFindings.filter(f => f.category === 'secret').length,
+          affectedServices: new Set(allFindings.map(f => f.service)).size,
         },
       };
 
-      if (result.errors && result.errors.length > 0) {
-        set({ isScanning: false, scanProgress: 100, assessment, readinessBreakdown: result.readinessIndex, scanError: `Scan completed with warnings: ${result.errors.join(', ')}` });
+      const readinessIndex = computeQuantumReadinessIndex(allFindings);
+
+      // Save to Firebase
+      const user = useAuthStore.getState().user;
+      if (user) {
+        set(s => ({ scanLog: [...s.scanLog, 'Saving scan to cloud...'] }));
+        await firebaseDb.saveScan(assessment, user.id || 'unknown');
+        
+        firebaseDb.logAudit({
+          action: 'scan_completed',
+          targetId: assessment.id,
+          metadata: { project: assessment.name, findingsCount: result.findings.length },
+          userId: user.id || 'unknown',
+          userEmail: user.email,
+        }).catch(console.error);
       } else {
-        set({ isScanning: false, scanProgress: 100, assessment, readinessBreakdown: result.readinessIndex, currentPage: 'dashboard' });
+        set(s => ({ scanLog: [...s.scanLog, 'Browser-only mode: Scan not saved (sign in to save).'] }));
+      }
+
+      if (result.errors && result.errors.length > 0) {
+        set({ isScanning: false, scanProgress: 100, assessment, readinessBreakdown: readinessIndex, scanError: `Scan completed with warnings: ${result.errors.join(', ')}` });
+      } else {
+        set({ isScanning: false, scanProgress: 100, assessment, readinessBreakdown: readinessIndex, currentPage: 'dashboard' });
       }
     } catch (err: any) {
       set({ isScanning: false, scanError: err.message || 'An unexpected error occurred during the scan.' });
@@ -616,53 +678,29 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   // ── loadScan: restore a past scan from the backend ────────
   loadScan: async (scanId: string) => {
-    if (!isApiConfigured()) return;
     set({ isScanning: true, scanProgress: 0, scanLog: [`Loading scan ${scanId}...`], scanError: null });
     try {
-      const scanResult = await scansApi.get(scanId);
-      if (scanResult.status !== 'COMPLETE') {
-        throw new Error(`Scan is not complete yet (status: ${scanResult.status})`);
+      let scanResult: Assessment | null = null;
+      
+      // Try Firebase first
+      const user = useAuthStore.getState().user;
+      if (user) {
+        scanResult = await firebaseDb.getScan(scanId);
+      }
+      
+      if (!scanResult) {
+        throw new Error(`Scan not found or permission denied`);
       }
 
-      const findings = scanResult.findings as unknown as Finding[];
-      const services = buildServicesFromFindings(findings);
-      const agility = computeCryptoAgilityScore(findings);
-      const hndl = generateHNDLAssessments(findings);
-      const readinessBreakdown = computeQuantumReadinessIndex(findings);
+      const readinessBreakdown = computeQuantumReadinessIndex(scanResult.findings);
 
-      const assessment: Assessment = {
-        id: scanResult.id,
-        name: scanResult.projectName,
-        organization: 'Your Organization',
-        industry: 'Enterprise Technology',
-        createdAt: scanResult.startedAt,
-        scannedAt: scanResult.completedAt || new Date().toISOString(),
-        status: 'complete',
-        scanProgress: 100,
-        findings,
-        services,
-        migrationTasks: (scanResult.migrationTasks as unknown as MigrationTask[]) || [],
-        qDaySimulation: null,
-        hndlAssessments: hndl,
-        cryptoAgilityScore: agility,
-        quantumReadinessScore: scanResult.readinessScore ?? readinessBreakdown.overall,
-        chatHistory: [],
-        scannedFiles: [],
-        scanStats: {
-          filesScanned: scanResult.filesScanned,
-          linesScanned: scanResult.linesScanned,
-          findingsTotal: findings.length,
-          criticalCount: findings.filter(f => f.severity === 'critical').length,
-          highCount: findings.filter(f => f.severity === 'high').length,
-          mediumCount: findings.filter(f => f.severity === 'medium').length,
-          lowCount: findings.filter(f => f.severity === 'low' || f.severity === 'info').length,
-          vulnerableAlgorithms: findings.filter(f => f.quantumStatus === 'vulnerable').length,
-          secretsFound: findings.filter(f => f.category === 'secret').length,
-          affectedServices: new Set(findings.map(f => f.service)).size,
-        },
-      };
-
-      set({ isScanning: false, scanProgress: 100, assessment, readinessBreakdown, currentPage: 'dashboard' });
+      set({ 
+        isScanning: false, 
+        scanProgress: 100, 
+        assessment: scanResult, 
+        readinessBreakdown, 
+        currentPage: 'dashboard' 
+      });
     } catch (err: any) {
       set({ isScanning: false, scanError: err.message || 'Failed to load scan.' });
     }

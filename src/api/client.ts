@@ -294,3 +294,20 @@ export const reportsApi = {
   downloadCSV: (scanId: string) => buildUrl(`/api/reports/${encodeURIComponent(scanId)}/csv`),
   downloadCBOM: (scanId: string) => buildUrl(`/api/reports/${encodeURIComponent(scanId)}/cbom`),
 };
+
+// ── Audit Log ─────────────────────────────────────────────────
+
+export interface AuditLogEntry {
+  id: string;
+  action: string;
+  targetId: string | null;
+  metadata: Record<string, unknown> | null;
+  timestamp: string;
+}
+
+export const auditApi = {
+  list: (page = 1, limit = 50) =>
+    apiFetch<{ entries: AuditLogEntry[]; total: number; page: number; limit: number }>(
+      `/api/audit?page=${page}&limit=${limit}`
+    ),
+};

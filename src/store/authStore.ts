@@ -12,6 +12,7 @@ import {
   type User as FirebaseUser
 } from 'firebase/auth';
 import { auth } from '../lib/firebase';
+import { firebaseDb } from '../lib/firebaseDb';
 
 export interface UserProfile {
   id?: string;
@@ -88,10 +89,29 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: async (email: string, password: string): Promise<boolean> => {
     set({ isLoading: true, loginError: null });
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const creds = await signInWithEmailAndPassword(auth, email, password);
+      
+      // Log successful login
+      firebaseDb.logAudit({
+        action: 'user_login',
+        targetId: creds.user.uid,
+        metadata: { role: 'USER' },
+        userId: creds.user.uid,
+        userEmail: creds.user.email || 'unknown',
+      }).catch(console.error);
+
       set({ showLoginModal: false, loginError: null, isLoading: false });
       return true;
     } catch (err: any) {
+      // Log failed login (no user object available, so we log what we can)
+      firebaseDb.logAudit({
+        action: 'user_login_failed',
+        targetId: null,
+        metadata: { email_attempt: email, reason: err.message },
+        userId: 'system',
+        userEmail: 'system',
+      }).catch(console.error);
+
       set({ loginError: err.message || 'Incorrect email or password.', isLoading: false });
       return false;
     }
@@ -106,6 +126,15 @@ export const useAuthStore = create<AuthState>((set) => ({
       await updateProfile(userCredential.user, {
         displayName: name.trim()
       });
+
+      // Log registration
+      firebaseDb.logAudit({
+        action: 'user_registered',
+        targetId: userCredential.user.uid,
+        metadata: { name: name.trim(), role: 'USER' },
+        userId: userCredential.user.uid,
+        userEmail: userCredential.user.email || 'unknown',
+      }).catch(console.error);
       
       // Force update of local state immediately since onAuthStateChanged might not catch the profile update
       set({ 

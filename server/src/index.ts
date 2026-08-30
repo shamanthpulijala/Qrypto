@@ -9,6 +9,7 @@ import authRouter from './routes/auth.routes';
 import scanRouter from './routes/scan.routes';
 import findingsRouter from './routes/findings.routes';
 import reportsRouter from './routes/reports.routes';
+import auditRouter from './routes/audit.routes';
 import { startScanWorker } from './workers/scan.worker';
 
 // ── Ensure temp upload directories exist ───────────────────────
@@ -47,6 +48,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/scans', scanRouter);
 app.use('/api/findings', findingsRouter);
 app.use('/api/reports', reportsRouter);
+app.use('/api/audit', auditRouter);
 
 // ── 404 handler ───────────────────────────────────────────────
 app.use((req, res) => {

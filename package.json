@@ -13,6 +13,7 @@
     "test:ui": "vitest --ui --fileParallelism=false"
   },
   "dependencies": {
+    "@aws-sdk/client-kms": "^3.1121.0",
     "@google/generative-ai": "^0.24.1",
     "@react-three/drei": "^10.7.8",
     "@react-three/fiber": "^9.7.0",

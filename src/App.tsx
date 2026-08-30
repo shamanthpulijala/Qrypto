@@ -23,6 +23,8 @@ import { HybridMigration } from './components/migration/HybridMigration';
 import { useAppStore } from './store/assessmentStore';
 import { useAuthStore } from './store/authStore';
 import { ScannerFilterPage } from './components/common/ScannerFilterPage';
+import { ScanHistory } from './components/platform/ScanHistory';
+import { AuditLog } from './components/platform/AuditLog';
 import { StubPage } from './components/common/StubPage';
 
 // ─── P1-14: Route ↔ Store sync ─────────────────────────────
@@ -59,12 +61,6 @@ const PAGE_ROUTES: Record<string, string> = {
   // MIGRATE
   pqcrecs: '/pqcrecs',
   hybridmig: '/hybridmig',
-  // REPORT
-  execreport: '/reports',
-  techreport: '/reports',
-  devfindings: '/reports',
-  cbom: '/reports',
-  export: '/reports',
   // PLATFORM
   scanhistory: '/scanhistory',
   auditlog: '/auditlog',
@@ -134,6 +130,9 @@ function App() {
   const renderPage = () => {
     // Pages that don't require an assessment
     if (currentPage === 'landing') return <Landing />;
+    // Platform pages — no active scan required
+    if (currentPage === 'scanhistory') return <ScanHistory />;
+    if (currentPage === 'auditlog') return <AuditLog />;
     if (currentPage === 'settings') return <Settings />;
 
     // Loading State
@@ -188,12 +187,7 @@ function App() {
       case 'migration':   return <MigrationPlanner />;
       case 'agility':     return <CryptoAgility />;
       case 'ai':          return <AIAdvisor />;
-      case 'reports':
-      case 'execreport':
-      case 'techreport':
-      case 'devfindings':
-      case 'cbom':
-      case 'export':      return <Reports />;
+      case 'reports':     return <Reports />;
       // Scanner-filtered views — real data, filtered by category
       case 'algorithms':  return <ScannerFilterPage title="Algorithms" category="all" description="All cryptographic algorithms detected across your codebase." />;
       case 'secrets':     return <ScannerFilterPage title="Secrets &amp; Keys" category="secret" description="Detected secrets, API keys, and hardcoded credentials." />;
@@ -209,8 +203,6 @@ function App() {
       case 'depgraph':   return <StubPage title="Dependency Graph" description="Visual dependency graph is not yet implemented." />;
       case 'pqcrecs':    return <PQCRecommendations />;
       case 'hybridmig':  return <HybridMigration />;
-      case 'scanhistory':return <StubPage title="Scan History" description="Scan history requires backend persistence. Configure VITE_API_URL to enable." />;
-      case 'auditlog':   return <StubPage title="Audit Log" description="Audit logging requires backend persistence. Configure VITE_API_URL to enable." />;
       default:            return <Dashboard />;
     }
   };

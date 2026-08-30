@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Search, Network, AlertTriangle, Zap,
   Map, Bot, FileText, Shield, BarChart3, Settings, LogOut,
-  FileCode2, Upload
+  History, ScrollText,
 } from 'lucide-react';
 import { useAppStore } from '../../store/assessmentStore';
 import { useAuthStore } from '../../store/authStore';
@@ -34,15 +34,11 @@ const NAV_ITEMS = [
   { id: 'agility',      icon: BarChart3,       label: 'Crypto Agility',        group: 'migrate',  status: 'ready' },
 
   // REPORT
-  { id: 'execreport',   icon: FileText,        label: 'Executive Report',      group: 'report',   status: 'partial' },
-  { id: 'techreport',   icon: FileText,        label: 'Technical Report',      group: 'report',   status: 'partial' },
-  { id: 'devfindings',  icon: FileCode2,       label: 'Developer Findings',    group: 'report',   status: 'partial' },
-  { id: 'cbom',         icon: FileText,        label: 'CBOM',                  group: 'report',   status: 'partial' },
-  { id: 'export',       icon: Upload,          label: 'Export',                group: 'report',   status: 'partial' },
+  { id: 'reports',      icon: FileText,        label: 'Reports',               group: 'report',   status: 'partial' },
 
   // PLATFORM
-  { id: 'scanhistory',  icon: LayoutDashboard, label: 'Scan History',          group: 'platform', status: 'partial' },
-  { id: 'auditlog',     icon: FileText,        label: 'Audit Log',             group: 'platform', status: 'partial' },
+  { id: 'scanhistory',  icon: History,         label: 'Scan History',          group: 'platform', status: 'partial' },
+  { id: 'auditlog',     icon: ScrollText,      label: 'Audit Log',             group: 'platform', status: 'partial' },
 ];
 
 const GROUP_LABELS: Record<string, string> = {
@@ -82,12 +78,6 @@ const PAGE_ROUTES: Record<string, string> = {
   // MIGRATE
   pqcrecs: '/pqcrecs',
   hybridmig: '/hybridmig',
-  // REPORT (all map to reports page)
-  execreport: '/reports',
-  techreport: '/reports',
-  devfindings: '/reports',
-  cbom: '/reports',
-  export: '/reports',
   // PLATFORM
   scanhistory: '/scanhistory',
   auditlog: '/auditlog',
