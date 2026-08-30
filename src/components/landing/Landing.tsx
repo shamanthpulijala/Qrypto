@@ -10,35 +10,37 @@ import { useAppStore } from '../../store/assessmentStore';
 import { useAuthStore } from '../../store/authStore';
 import JSZip from 'jszip';
 
-import { QuantumComputer } from './QuantumComputer';
 import { SCANNER_REGISTRY } from '../../../shared/engine/scannerRegistry';
 import './Landing.css';
 
-// ─── Crypto labels for §10 ────────────────────────────────────
+// ─── Algorithm classification shown pre-scan §10 / §38.1 ──────
+// Reference facts, presented as cards rather than as decoration
+// floating around a 3D scene. §35 wording: quantum-vulnerable,
+// never "already broken".
 const CRYPTO_LABELS = [
   {
-    name: 'RSA-2048', status: 'QUANTUM VULNERABLE', cls: 'vulnerable', pos: { top: '12%', left: '5%' },
+    name: 'RSA-2048', status: 'QUANTUM VULNERABLE', cls: 'vulnerable',
     tooltip: 'RSA relies on integer factorization, which Shor\'s algorithm can solve in polynomial time on a quantum computer.'
   },
   {
-    name: 'ECC', status: 'QUANTUM VULNERABLE', cls: 'vulnerable', pos: { top: '25%', right: '3%' },
-    tooltip: 'Elliptic Curve Cryptography is broken by quantum computers using Shor\'s algorithm on the discrete logarithm problem.'
+    name: 'ECC', status: 'QUANTUM VULNERABLE', cls: 'vulnerable',
+    tooltip: 'Elliptic Curve Cryptography is quantum-vulnerable: Shor\'s algorithm solves the discrete logarithm problem it depends on.'
   },
   {
-    name: 'ECDH', status: 'QUANTUM VULNERABLE', cls: 'vulnerable', pos: { bottom: '30%', left: '2%' },
+    name: 'ECDH', status: 'QUANTUM VULNERABLE', cls: 'vulnerable',
     tooltip: 'ECDH key exchange is vulnerable to quantum attack. Migrate to ML-KEM (FIPS 203) for post-quantum key encapsulation.'
   },
   {
-    name: 'AES-256', status: 'STRONG', cls: 'strong', pos: { bottom: '15%', right: '8%' },
-    tooltip: 'AES-256 remains quantum-safe. Grover\'s algorithm only halves the effective key strength to 128-bit equivalent.'
+    name: 'AES-256', status: 'STRONG', cls: 'strong',
+    tooltip: 'AES-256 remains quantum-safe. Grover\'s algorithm only halves the effective key strength to a 128-bit equivalent.'
   },
   {
-    name: 'ML-KEM', status: 'POST-QUANTUM', cls: 'pqc', pos: { top: '60%', left: '8%' },
-    tooltip: 'FIPS 203 (ML-KEM, formerly Kyber). NIST\'s primary post-quantum key encapsulation mechanism based on Module-LWE.'
+    name: 'ML-KEM', status: 'POST-QUANTUM', cls: 'pqc',
+    tooltip: 'FIPS 203 (ML-KEM, formerly Kyber). NIST\'s primary post-quantum key encapsulation mechanism, based on Module-LWE.'
   },
   {
-    name: 'TLS 1.2', status: 'MIGRATION REQUIRED', cls: 'migration', pos: { top: '45%', right: '2%' },
-    tooltip: 'TLS 1.2 is classically adequate but should be migrated to TLS 1.3 with PQC cipher suites for quantum safety.'
+    name: 'TLS 1.2', status: 'MIGRATION REQUIRED', cls: 'migration',
+    tooltip: 'TLS 1.2 is classically adequate but should move to TLS 1.3 with PQC key exchange for quantum safety.'
   },
 ];
 
@@ -48,12 +50,12 @@ const CRYPTO_LABELS = [
 // These show the model's weight distribution — the fill bar represents
 // the relative weight of each factor, not a measured value.
 const RISK_FACTORS = [
-  { name: 'Quantum Vulnerability', weight: '30%', fill: 30, color: '#ef4444' },
-  { name: 'Business Criticality', weight: '20%', fill: 20, color: '#f97316' },
-  { name: 'Internet Exposure', weight: '15%', fill: 15, color: '#eab308' },
-  { name: 'Confidentiality Lifetime', weight: '15%', fill: 15, color: '#7c3aed' },
-  { name: 'Data Sensitivity', weight: '10%', fill: 10, color: '#00d4ff' },
-  { name: 'Migration Difficulty', weight: '10%', fill: 10, color: '#8b5cf6' },
+  { name: 'Quantum Vulnerability', weight: '30%', fill: 30, color: '#F5484B' },
+  { name: 'Business Criticality', weight: '20%', fill: 20, color: '#FF8A3D' },
+  { name: 'Internet Exposure', weight: '15%', fill: 15, color: '#F5B84D' },
+  { name: 'Confidentiality Lifetime', weight: '15%', fill: 15, color: 'var(--accent-primary)' },
+  { name: 'Data Sensitivity', weight: '10%', fill: 10, color: '#4DD0E1' },
+  { name: 'Migration Difficulty', weight: '10%', fill: 10, color: 'var(--accent-classical)' },
 ];
 
 // ─── Migration transforms §18 ────────────────────────────────
@@ -124,7 +126,6 @@ export function Landing() {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [fileSummary, setFileSummary] = useState<{ name: string; count: number } | null>(null);
   const [pendingFiles, setPendingFiles] = useState<FileEntry[] | null>(null);
-  const [hoveredLabel, setHoveredLabel] = useState<string | null>(null);
   const [selectedHndl, setSelectedHndl] = useState('Medical Records');
 
   // Fade-in refs
@@ -294,27 +295,33 @@ export function Landing() {
             </div>
           </div>
 
-          {/* 3D Quantum Computer §08 */}
-          <div className="hero-3d-container">
-            <QuantumComputer />
-            {/* Floating crypto labels §10 */}
-            <div className="crypto-labels">
+          {/* §38.1 — Real algorithm classification panel.
+              This replaced a decorative orbiting-particles WebGL scene.
+              Every card states a verifiable property of the algorithm and
+              the reason for its classification. It is reference material,
+              not scan output, and says so (§3). */}
+          <div className="hero-algo-panel">
+            <div className="hero-algo-head">
+              <span className="section-label">Algorithm classification</span>
+              <span className="provenance provenance-none" title="Reference classification from NIST guidance — not results from your repository">
+                Reference · not scan data
+              </span>
+            </div>
+            <div className="hero-algo-grid">
               {CRYPTO_LABELS.map(l => (
-                <div
-                  key={l.name}
-                  className="crypto-label"
-                  style={l.pos as React.CSSProperties}
-                  onMouseEnter={() => setHoveredLabel(l.name)}
-                  onMouseLeave={() => setHoveredLabel(null)}
-                >
-                  <span className="cl-name">{l.name}</span>
-                  <span className={`cl-status ${l.cls}`}>{l.status}</span>
-                  {hoveredLabel === l.name && (
-                    <div className="crypto-label-tooltip">{l.tooltip}</div>
-                  )}
+                <div key={l.name} className={`hero-algo-card ${l.cls}`}>
+                  <div className="hac-top">
+                    <span className="hac-name mono">{l.name}</span>
+                    <span className={`hac-status ${l.cls}`}>{l.status}</span>
+                  </div>
+                  <p className="hac-why">{l.tooltip}</p>
                 </div>
               ))}
             </div>
+            <p className="hero-algo-foot">
+              Upload a repository to replace this reference set with your own
+              cryptographic inventory.
+            </p>
           </div>
         </div>
       </section>
@@ -333,7 +340,7 @@ export function Landing() {
             <div key={scanner.id} className="scanner-card" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', padding: '24px', display: 'flex', flexDirection: 'column' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                 <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-primary)' }}>{scanner.name}</h3>
-                <span className={`scanner-status ${scanner.status.toLowerCase()}`} style={{ fontSize: '0.7rem', padding: '4px 8px', borderRadius: '4px', background: scanner.status === 'READY' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(234, 179, 8, 0.1)', color: scanner.status === 'READY' ? '#22c55e' : '#eab308' }}>
+                <span className={`scanner-status ${scanner.status.toLowerCase()}`} style={{ fontSize: '0.7rem', padding: '4px 8px', borderRadius: '4px', background: scanner.status === 'READY' ? 'rgba(76, 175, 109, 0.1)' : 'rgba(245, 184, 77, 0.1)', color: scanner.status === 'READY' ? '#4CAF6D' : '#F5B84D' }}>
                   {scanner.status}
                 </span>
               </div>
@@ -512,15 +519,15 @@ export function Landing() {
                         <span>📄 FILE</span>
                       </button>
                       <button className="cta-select-btn" onClick={() => handleUploadClick('dir')} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '16px', borderRadius: '8px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', color: 'var(--text-primary)' }}>
-                        <Upload size={24} color="#22c55e" />
+                        <Upload size={24} color="#4CAF6D" />
                         <span>📁 FOLDER</span>
                       </button>
                       <button className="cta-select-btn" onClick={() => handleUploadClick('zip')} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '16px', borderRadius: '8px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', color: 'var(--text-primary)' }}>
-                        <Upload size={24} color="#eab308" />
+                        <Upload size={24} color="#F5B84D" />
                         <span>📦 ZIP</span>
                       </button>
                       <button className="cta-select-btn" onClick={() => alert('Repository integration requires backend authentication. Local mode active.')} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '16px', borderRadius: '8px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', color: 'var(--text-primary)' }}>
-                        <Shield size={24} color="#ef4444" />
+                        <Shield size={24} color="#F5484B" />
                         <span>🌐 REPOSITORY</span>
                       </button>
                     </div>

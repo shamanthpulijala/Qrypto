@@ -30,7 +30,7 @@
   animation: liquid-morph 14s infinite alternate ease-in-out;
 }
 .login-overlay::before {
-  background: radial-gradient(circle, rgba(0, 212, 255, 0.55) 0%, transparent 60%);
+  background: radial-gradient(circle, rgba(77, 208, 225, 0.55) 0%, transparent 60%);
   top: -15%; left: -15%;
 }
 .login-overlay::after {
@@ -46,7 +46,7 @@
 
 /* ── The Liquid Glass Modal ── */
 .login-modal {
-  background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(147, 51, 234, 0.07) 100%);
+  background: linear-gradient(135deg, rgba(77, 208, 225, 0.1) 0%, rgba(147, 51, 234, 0.07) 100%);
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 20px 24px 18px 22px / 22px 18px 24px 20px;
   width: 460px;
@@ -61,7 +61,7 @@
     inset 0 12px 24px rgba(255, 255, 255, 0.2),
     inset 0 -12px 24px rgba(0, 0, 0, 0.35),
     0 40px 100px rgba(0, 0, 0, 0.7),
-    0 0 60px rgba(0, 212, 255, 0.15);
+    0 0 60px rgba(77, 208, 225, 0.15);
   animation: liquid-wobble 9s infinite ease-in-out, slide-up-elastic 0.65s cubic-bezier(0.34, 1.56, 0.64, 1);
   scrollbar-width: none;
 }
@@ -98,12 +98,12 @@
 
 .login-modal.error-shake {
   animation: shake-liquid 0.5s cubic-bezier(.36,.07,.19,.97) both;
-  border-color: rgba(239, 68, 68, 0.5);
+  border-color: rgba(245, 72, 75, 0.5);
   box-shadow:
-    inset 0 12px 24px rgba(239, 68, 68, 0.25),
+    inset 0 12px 24px rgba(245, 72, 75, 0.25),
     inset 0 -12px 24px rgba(0, 0, 0, 0.45),
     0 40px 100px rgba(0, 0, 0, 0.8),
-    0 0 60px rgba(239, 68, 68, 0.25);
+    0 0 60px rgba(245, 72, 75, 0.25);
 }
 @keyframes shake-liquid {
   10%, 90% { transform: translate3d(-2px, 1px, 0); }
@@ -131,8 +131,8 @@
   letter-spacing: -0.02em;
 }
 .login-logo .logo-icon {
-  color: #00d4ff;
-  filter: drop-shadow(0 0 12px rgba(0, 212, 255, 0.8));
+  color: #4DD0E1;
+  filter: drop-shadow(0 0 12px rgba(77, 208, 225, 0.8));
   animation: float-icon 4s ease-in-out infinite;
 }
 @keyframes float-icon {
@@ -161,8 +161,8 @@
 }
 .login-close:hover {
   color: #fff;
-  background: rgba(239, 68, 68, 0.2);
-  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(245, 72, 75, 0.2);
+  border-color: rgba(245, 72, 75, 0.4);
   transform: rotate(90deg) scale(1.1);
 }
 
@@ -184,12 +184,12 @@
   top: 5px; bottom: 5px;
   left: 5px;
   width: calc(50% - 7px);
-  background: linear-gradient(135deg, rgba(0, 212, 255, 0.25) 0%, rgba(0, 102, 255, 0.2) 100%);
-  border: 1px solid rgba(0, 212, 255, 0.35);
+  background: linear-gradient(135deg, rgba(77, 208, 225, 0.25) 0%, rgba(0, 102, 255, 0.2) 100%);
+  border: 1px solid rgba(77, 208, 225, 0.35);
   border-radius: 9px;
   transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   pointer-events: none;
-  box-shadow: 0 0 12px rgba(0, 212, 255, 0.2), inset 0 1px 0 rgba(255,255,255,0.15);
+  box-shadow: 0 0 12px rgba(77, 208, 225, 0.2), inset 0 1px 0 rgba(255,255,255,0.15);
 }
 .auth-tab-indicator.right {
   transform: translateX(calc(100% + 4px));
@@ -308,7 +308,7 @@
   top: 0;
   left: 18px;
   font-size: 0.78rem;
-  color: #00d4ff;
+  color: #4DD0E1;
   font-weight: 700;
   background: rgba(10, 15, 30, 0.65);
   backdrop-filter: blur(8px);
@@ -317,16 +317,16 @@
   transform: translateY(-50%);
 }
 .login-input-wrap input:focus {
-  border-color: rgba(0, 212, 255, 0.55);
+  border-color: rgba(77, 208, 225, 0.55);
   background: rgba(255, 255, 255, 0.09);
   box-shadow:
     inset 0 3px 6px rgba(0,0,0,0.25),
-    0 0 0 3px rgba(0, 212, 255, 0.12),
-    0 0 14px rgba(0, 212, 255, 0.2);
+    0 0 0 3px rgba(77, 208, 225, 0.12),
+    0 0 14px rgba(77, 208, 225, 0.2);
 }
 .login-input-wrap input:focus ~ .login-input-icon,
 .login-input-wrap input:not(:placeholder-shown) ~ .login-input-icon {
-  color: #00d4ff;
+  color: #4DD0E1;
   transform: scale(1.1);
 }
 
@@ -350,8 +350,8 @@
   display: flex;
   align-items: center;
   gap: 9px;
-  background: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.35);
+  background: rgba(245, 72, 75, 0.12);
+  border: 1px solid rgba(245, 72, 75, 0.35);
   border-radius: 11px;
   padding: 12px 16px;
   font-size: 0.88rem;
@@ -367,7 +367,7 @@
   align-items: center;
   justify-content: center;
   gap: 10px;
-  background: linear-gradient(135deg, rgba(0, 212, 255, 0.9) 0%, rgba(0, 102, 255, 0.9) 100%);
+  background: linear-gradient(135deg, rgba(77, 208, 225, 0.9) 0%, rgba(0, 102, 255, 0.9) 100%);
   border: 1px solid rgba(255, 255, 255, 0.28);
   border-radius: 14px;
   color: #fff;
@@ -424,7 +424,7 @@
 .auth-switch-link {
   background: none;
   border: none;
-  color: #00d4ff;
+  color: #4DD0E1;
   font-weight: 600;
   cursor: pointer;
   font-family: inherit;

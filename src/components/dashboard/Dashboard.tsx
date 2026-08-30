@@ -42,15 +42,15 @@ function QuantumCore({ score, discoveryScore, agilityScore, migrationScore, cert
   // migrationScore: % of findings remediated or PQC-safe
   // certScore: % of TLS/cert findings that are adequate or better
   const rings = [
-    { name: 'Discovery', score: discoveryScore, radius: 95, color: '#00d4ff' },
-    { name: 'Risk', score: Math.max(10, 100 - (score * 0.8)), radius: 82, color: '#ef4444' },
+    { name: 'Discovery', score: discoveryScore, radius: 95, color: '#4DD0E1' },
+    { name: 'Risk', score: Math.max(10, 100 - (score * 0.8)), radius: 82, color: '#F5484B' },
     { name: 'Crypto Agility', score: agilityScore, radius: 69, color: '#14b8a6' },
-    { name: 'Migration', score: migrationScore, radius: 56, color: '#8b5cf6' },
+    { name: 'Migration', score: migrationScore, radius: 56, color: 'var(--accent-classical)' },
     { name: 'Certificates', score: certScore, radius: 43, color: '#3b82f6' },
   ];
 
   const statusText = score >= 80 ? 'PROTECTED' : score >= 50 ? 'MODERATE EXPOSURE' : 'CRITICAL RISK';
-  const statusColor = score >= 80 ? '#22c55e' : score >= 50 ? '#eab308' : '#ef4444';
+  const statusColor = score >= 80 ? '#4CAF6D' : score >= 50 ? '#F5B84D' : '#F5484B';
 
   return (
     <div className="quantum-core-card">
@@ -164,22 +164,22 @@ export function Dashboard() {
           {/* Mini Stats Grid */}
           <div className="mini-stats-grid">
             <div className="mini-stat" onClick={() => setCurrentPage('findings')}>
-              <div className="mini-stat-val" style={{ color: '#ef4444' }}>{scanStats.criticalCount}</div>
+              <div className="mini-stat-val" style={{ color: '#F5484B' }}>{scanStats.criticalCount}</div>
               <div className="mini-stat-lbl">Critical Risks</div>
             </div>
 
             <div className="mini-stat" onClick={() => setCurrentPage('inventory')}>
-              <div className="mini-stat-val" style={{ color: '#f97316' }}>{scanStats.vulnerableAlgorithms}</div>
+              <div className="mini-stat-val" style={{ color: '#FF8A3D' }}>{scanStats.vulnerableAlgorithms}</div>
               <div className="mini-stat-lbl">Vulnerable Assets</div>
             </div>
 
             <div className="mini-stat" onClick={() => setCurrentPage('findings')}>
-              <div className="mini-stat-val" style={{ color: '#ef4444' }}>{scanStats.secretsFound}</div>
+              <div className="mini-stat-val" style={{ color: '#F5484B' }}>{scanStats.secretsFound}</div>
               <div className="mini-stat-lbl">Hardcoded Secrets</div>
             </div>
 
             <div className="mini-stat" onClick={() => setCurrentPage('migration')}>
-              <div className="mini-stat-val" style={{ color: '#22c55e' }}>
+              <div className="mini-stat-val" style={{ color: '#4CAF6D' }}>
                 {Math.round((findings.filter(f => f.remediationStatus === 'remediated' || f.quantumStatus === 'quantum-resistant').length / Math.max(1, findings.length)) * 100)}%
               </div>
               <div className="mini-stat-lbl">PQC Migration</div>

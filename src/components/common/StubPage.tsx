@@ -28,11 +28,11 @@ export function StubPage({ title, description }: Props) {
         <div style={{
           marginTop: '20px',
           padding: '10px 16px',
-          background: 'rgba(234, 179, 8, 0.08)',
-          border: '1px solid rgba(234, 179, 8, 0.2)',
+          background: 'rgba(245, 184, 77, 0.08)',
+          border: '1px solid rgba(245, 184, 77, 0.2)',
           borderRadius: '6px',
           fontSize: '0.8rem',
-          color: '#eab308',
+          color: '#F5B84D',
         }}>
           STATUS: NOT IMPLEMENTED
         </div>

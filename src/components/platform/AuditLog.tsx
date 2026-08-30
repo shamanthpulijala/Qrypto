@@ -95,7 +95,7 @@ export function AuditLog() {
 
       {!apiConfigured && (
         <div className="platform-callout warn">
-          <AlertCircle size={20} className="platform-callout-icon" style={{ color: '#eab308' }} />
+          <AlertCircle size={20} className="platform-callout-icon" style={{ color: '#F5B84D' }} />
           <div className="platform-callout-body">
             <h3>Audit logging requires sign in</h3>
             <p>
@@ -107,7 +107,7 @@ export function AuditLog() {
 
       {apiConfigured && error && (
         <div className="platform-callout error">
-          <AlertCircle size={20} className="platform-callout-icon" style={{ color: '#ef4444' }} />
+          <AlertCircle size={20} className="platform-callout-icon" style={{ color: '#F5484B' }} />
           <div className="platform-callout-body">
             <h3>Unable to load audit log</h3>
             <p>{error}</p>

@@ -150,6 +150,11 @@ interface AppState {
   currentPage: string;
   sidebarCollapsed: boolean;
 
+  // Cross-page view state (§7/§9). Purely presentational: this seeds
+  // the Findings search box so a command-palette investigation lands
+  // pre-filtered. It never affects how findings or scores are computed.
+  findingsQuery: string;
+
   // Q-Day simulation state
   qdayActive: boolean;
   qdayYear: number;
@@ -177,6 +182,7 @@ interface AppState {
 
   // Actions
   setCurrentPage: (page: string) => void;
+  setFindingsQuery: (query: string) => void;
   toggleSidebar: () => void;
   setGeminiApiKey: (key: string) => void;
   addChatMessage: (message: ChatMessage) => void;
@@ -202,6 +208,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   readinessBreakdown: null,
   currentPage: 'landing',
   sidebarCollapsed: false,
+  findingsQuery: '',
   qdayActive: false,
   qdayYear: 2030,
   geminiApiKey: localStorage.getItem('qg_gemini_key') || (import.meta as any).env?.VITE_OPENROUTER_API_KEY ||' ',
@@ -221,6 +228,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   contextOverrides: [],
 
   setCurrentPage: (page) => set({ currentPage: page }),
+
+  setFindingsQuery: (query) => set({ findingsQuery: query }),
 
   toggleSidebar: () => set(s => ({ sidebarCollapsed: !s.sidebarCollapsed })),
 

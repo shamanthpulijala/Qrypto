@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Search, Network, AlertTriangle, Zap,
   Map, Bot, FileText, Shield, BarChart3, Settings, LogOut,
-  History, ScrollText,
+  History, ScrollText, PanelLeftClose, PanelLeftOpen,
 } from 'lucide-react';
 import { useAppStore } from '../../store/assessmentStore';
 import { useAuthStore } from '../../store/authStore';
@@ -96,21 +96,25 @@ export function Sidebar() {
 
   const groups = ['discover', 'assess', 'migrate', 'report', 'platform'];
 
-  // Role-based access: certain features require specific roles
-  const isAdmin = user?.role === 'ADMIN' || user?.role === 'Security Lead';
-  const isCISO = user?.role === 'CISO' || user?.role === 'EXECUTIVE';
-  const canAccessReports = isAdmin || isCISO || user?.role === 'ANALYST' || user?.role === 'Security Analyst';
-
   return (
-    <aside className="sidebar">
-      {/* Logo */}
+    <aside className={`sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
+      {/* Logo + explicit collapse control (§38.7) */}
       <div className="sidebar-logo">
         <div className="logo-icon">
-          <Shield size={16} />
+          <Shield size={16} aria-hidden />
         </div>
         <div className="logo-text">
           <span className="logo-name">Qrypto</span>
         </div>
+        <button
+          className="sidebar-toggle"
+          onClick={toggleSidebar}
+          title={sidebarCollapsed ? 'Expand navigation' : 'Collapse navigation'}
+          aria-label={sidebarCollapsed ? 'Expand navigation' : 'Collapse navigation'}
+          aria-expanded={!sidebarCollapsed}
+        >
+          {sidebarCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+        </button>
       </div>
 
       {/* Nav Groups */}
@@ -124,25 +128,30 @@ export function Sidebar() {
                 const Icon = item.icon;
                 const isActive = currentPage === item.id;
                 const isPartial = item.status === 'partial' || item.status === 'coming';
-                // Scan (landing) and Dashboard are always accessible. 
+                // Scan (landing) and Dashboard are always accessible.
                 // Partial items are navigable but visually flagged.
                 // Other items require an assessment.
                 const alwaysOn = item.id === 'dashboard' || item.id === 'landing';
                 const isDisabled = !alwaysOn && !assessment && !isPartial;
-                
+
                 return (
                   <button
                     key={item.id}
                     className={`nav-item ${isActive ? 'active' : ''} ${isPartial ? 'partial' : ''} ${isDisabled ? 'disabled' : ''}`}
                     onClick={() => !isDisabled && navigateTo(item.id)}
-                    title={isPartial ? `${item.label} — Partial` : item.label}
+                    aria-current={isActive ? 'page' : undefined}
+                    aria-disabled={isDisabled}
+                    title={
+                      isDisabled
+                        ? `${item.label} — needs a completed scan`
+                        : isPartial
+                          ? `${item.label} — partial coverage`
+                          : item.label
+                    }
                   >
-                    <Icon size={16} className="nav-icon" />
-                    <span className="nav-label">
-                      {item.label}
-                      {isPartial && <span className="text-xs ml-2 opacity-50">(Partial)</span>}
-                    </span>
-                    {isActive && <div className="nav-active-dot" />}
+                    <Icon size={16} className="nav-icon" aria-hidden />
+                    <span className="nav-label">{item.label}</span>
+                    {isPartial && <span className="nav-partial">PARTIAL</span>}
                   </button>
                 );
               })}
@@ -158,16 +167,12 @@ export function Sidebar() {
           onClick={() => navigateTo('settings')}
           title="Settings"
         >
-          <Settings size={16} />
+          <Settings size={16} className="nav-icon" aria-hidden />
           <span className="nav-label">Settings</span>
         </button>
         {user && (
-          <button
-            className="nav-item"
-            onClick={logout}
-            title="Sign out"
-          >
-            <LogOut size={16} />
+          <button className="nav-item" onClick={logout} title="Sign out">
+            <LogOut size={16} className="nav-icon" aria-hidden />
             <span className="nav-label">Sign Out</span>
           </button>
         )}

@@ -85,9 +85,9 @@ const NIST_CONTROLS = [
 
 function StatusBadge({ status }: { status: string }) {
   const cfg: Record<string, { icon: any; color: string; label: string }> = {
-    'compliant':     { icon: CheckCircle2,  color: '#22c55e', label: 'Compliant' },
-    'partial':       { icon: Clock,         color: '#eab308', label: 'Partial' },
-    'non-compliant': { icon: XCircle,       color: '#ef4444', label: 'Non-Compliant' },
+    'compliant':     { icon: CheckCircle2,  color: '#4CAF6D', label: 'Compliant' },
+    'partial':       { icon: Clock,         color: '#F5B84D', label: 'Partial' },
+    'non-compliant': { icon: XCircle,       color: '#F5484B', label: 'Non-Compliant' },
     'not-assessed':  { icon: AlertTriangle, color: '#64748b', label: 'Not Assessed' },
   };
   const c = cfg[status] ?? cfg['not-assessed'];
@@ -156,10 +156,10 @@ function ExecutiveReport({ assessment }: { assessment: any }) {
           <div className="erb-stats-col">
             {[
               { label: 'Total Findings', value: findings.length, color: 'var(--text-primary)' },
-              { label: 'Critical', value: scanStats.criticalCount, color: '#ef4444' },
-              { label: 'Quantum-Vulnerable', value: vulnerables.length, color: '#f97316' },
-              { label: 'Files Scanned', value: scanStats.filesScanned, color: '#00d4ff' },
-              { label: 'Migration Progress', value: `${migProgress}%`, color: '#22c55e' },
+              { label: 'Critical', value: scanStats.criticalCount, color: '#F5484B' },
+              { label: 'Quantum-Vulnerable', value: vulnerables.length, color: '#FF8A3D' },
+              { label: 'Files Scanned', value: scanStats.filesScanned, color: '#4DD0E1' },
+              { label: 'Migration Progress', value: `${migProgress}%`, color: '#4CAF6D' },
             ].map((item, i) => (
               <div key={i} className="erb-stat">
                 <span className="erb-stat-val" style={{ color: item.color }}>{item.value}</span>
@@ -190,7 +190,7 @@ function ExecutiveReport({ assessment }: { assessment: any }) {
             <tbody>
               {criticals.slice(0, 8).map((f: any) => (
                 <tr key={f.id}>
-                  <td className="mono" style={{ color: '#00d4ff' }}>{f.id}</td>
+                  <td className="mono" style={{ color: '#4DD0E1' }}>{f.id}</td>
                   <td style={{ fontWeight: 700 }}>{f.algorithm}</td>
                   <td style={{ color: '#94a3b8' }}>{f.service}</td>
                   <td>
@@ -216,7 +216,7 @@ function ExecutiveReport({ assessment }: { assessment: any }) {
         </h3>
         <div className="impact-grid">
           <div className="card impact-card">
-            <div className="impact-icon" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>
+            <div className="impact-icon" style={{ background: 'rgba(245, 72, 75,0.1)', color: '#F5484B' }}>
               <AlertTriangle size={20} />
             </div>
             <div>
@@ -228,7 +228,7 @@ function ExecutiveReport({ assessment }: { assessment: any }) {
             </div>
           </div>
           <div className="card impact-card">
-            <div className="impact-icon" style={{ background: 'rgba(249,115,22,0.1)', color: '#f97316' }}>
+            <div className="impact-icon" style={{ background: 'rgba(255, 138, 61,0.1)', color: '#FF8A3D' }}>
               <Cpu size={20} />
             </div>
             <div>
@@ -240,7 +240,7 @@ function ExecutiveReport({ assessment }: { assessment: any }) {
             </div>
           </div>
           <div className="card impact-card">
-            <div className="impact-icon" style={{ background: 'rgba(234,179,8,0.1)', color: '#eab308' }}>
+            <div className="impact-icon" style={{ background: 'rgba(245, 184, 77,0.1)', color: '#F5B84D' }}>
               <Shield size={20} />
             </div>
             <div>
@@ -278,10 +278,10 @@ function ExecutiveReport({ assessment }: { assessment: any }) {
         </h3>
         <div className="timeline-grid">
           {[
-            { phase: 'Phase 1', label: 'Immediate (0–30 days)', color: '#ef4444', items: ['Remove hardcoded secrets', 'Deprecate MD5 / SHA-1', 'Fix TLS 1.0/1.1 endpoints'] },
-            { phase: 'Phase 2', label: 'Short-Term (1–6 months)', color: '#f97316', items: ['Deploy hybrid ML-KEM on payment/auth', 'Rotate exposed certificates', 'Adopt secrets manager'] },
-            { phase: 'Phase 3', label: 'Medium-Term (6–18 months)', color: '#eab308', items: ['Full PQC migration for internal services', 'Transition JWT signing to ML-DSA', 'Update TLS cipher suites'] },
-            { phase: 'Phase 4', label: 'Long-Term (18+ months)', color: '#22c55e', items: ['CA infrastructure migration', 'Crypto-agility framework deployment', 'Dependency audit & PQC library adoption'] },
+            { phase: 'Phase 1', label: 'Immediate (0–30 days)', color: '#F5484B', items: ['Remove hardcoded secrets', 'Deprecate MD5 / SHA-1', 'Fix TLS 1.0/1.1 endpoints'] },
+            { phase: 'Phase 2', label: 'Short-Term (1–6 months)', color: '#FF8A3D', items: ['Deploy hybrid ML-KEM on payment/auth', 'Rotate exposed certificates', 'Adopt secrets manager'] },
+            { phase: 'Phase 3', label: 'Medium-Term (6–18 months)', color: '#F5B84D', items: ['Full PQC migration for internal services', 'Transition JWT signing to ML-DSA', 'Update TLS cipher suites'] },
+            { phase: 'Phase 4', label: 'Long-Term (18+ months)', color: '#4CAF6D', items: ['CA infrastructure migration', 'Crypto-agility framework deployment', 'Dependency audit & PQC library adoption'] },
           ].map((ph, i) => (
             <div key={i} className="timeline-card card" style={{ borderTopColor: ph.color }}>
               <div className="tc-phase" style={{ background: ph.color }}>{ph.phase}</div>
@@ -347,7 +347,7 @@ function TechnicalReport({ assessment }: { assessment: any }) {
           <tbody>
             {filtered.map((f: any) => (
               <tr key={f.id} className={`tech-row sev-${f.severity}`}>
-                <td className="mono" style={{ color: '#00d4ff', whiteSpace: 'nowrap' }}>{f.id}</td>
+                <td className="mono" style={{ color: '#4DD0E1', whiteSpace: 'nowrap' }}>{f.id}</td>
                 <td>
                   <div className="tech-file">{f.file}</div>
                   <div className="tech-line">Line {f.line}</div>
@@ -600,27 +600,27 @@ export function Reports() {
                 </span>
               </div>
               <div className="exec-card">
-                <span className="exec-val" style={{ color: '#ef4444' }}>{scanStats.criticalCount}</span>
+                <span className="exec-val" style={{ color: '#F5484B' }}>{scanStats.criticalCount}</span>
                 <span className="exec-lbl">Critical Findings</span>
                 <span className="exec-sub">{openFindings} open · {remediatedFindings} remediated</span>
               </div>
               <div className="exec-card">
-                <span className="exec-val" style={{ color: '#f97316' }}>{vulnCount}</span>
+                <span className="exec-val" style={{ color: '#FF8A3D' }}>{vulnCount}</span>
                 <span className="exec-lbl">Quantum-Vulnerable Assets</span>
                 <span className="exec-sub">Require post-quantum migration</span>
               </div>
               <div className="exec-card">
-                <span className="exec-val" style={{ color: '#eab308' }}>{classicWeakCount}</span>
+                <span className="exec-val" style={{ color: '#F5B84D' }}>{classicWeakCount}</span>
                 <span className="exec-lbl">Classically Deprecated</span>
                 <span className="exec-sub">MD5, SHA-1, TLS 1.0/1.1</span>
               </div>
               <div className="exec-card">
-                <span className="exec-val" style={{ color: '#22c55e' }}>{pqcCount}</span>
+                <span className="exec-val" style={{ color: '#4CAF6D' }}>{pqcCount}</span>
                 <span className="exec-lbl">PQC-Ready Findings</span>
                 <span className="exec-sub">Already using quantum-resistant crypto</span>
               </div>
               <div className="exec-card">
-                <span className="exec-val" style={{ color: '#00d4ff' }}>{scanStats.filesScanned}</span>
+                <span className="exec-val" style={{ color: '#4DD0E1' }}>{scanStats.filesScanned}</span>
                 <span className="exec-lbl">Files Scanned</span>
                 <span className="exec-sub">{scanStats.linesScanned.toLocaleString()} lines of code</span>
               </div>
@@ -632,9 +632,9 @@ export function Reports() {
             <div className="section-heading-row">
               <h3 className="section-heading">NIST PQC Readiness Checklist</h3>
               <div className="compliance-summary">
-                <span style={{ color: '#22c55e' }}>{compliantCount} Compliant</span>
-                <span style={{ color: '#eab308' }}>{partialCount} Partial</span>
-                <span style={{ color: '#ef4444' }}>{nonCompliantCount} Non-Compliant</span>
+                <span style={{ color: '#4CAF6D' }}>{compliantCount} Compliant</span>
+                <span style={{ color: '#F5B84D' }}>{partialCount} Partial</span>
+                <span style={{ color: '#F5484B' }}>{nonCompliantCount} Non-Compliant</span>
               </div>
             </div>
             <div className="card compliance-table-wrapper">
@@ -684,9 +684,9 @@ export function Reports() {
                       </td>
                       <td>
                         <span style={{
-                          color: risk === 'vulnerable' ? '#f97316' :
-                                 risk === 'classical-weak' ? '#ef4444' :
-                                 risk === 'quantum-resistant' ? '#22c55e' : '#3b82f6',
+                          color: risk === 'vulnerable' ? '#FF8A3D' :
+                                 risk === 'classical-weak' ? '#F5484B' :
+                                 risk === 'quantum-resistant' ? '#4CAF6D' : '#3b82f6',
                           fontWeight: 600, fontSize: '0.875rem'
                         }}>
                           {risk === 'vulnerable' ? 'HIGH' :
@@ -710,19 +710,19 @@ export function Reports() {
                 <span className="mig-stat-lbl">Total Migration Tasks</span>
               </div>
               <div className="card mig-stat-card">
-                <span className="mig-stat-val" style={{ color: '#22c55e' }}>
+                <span className="mig-stat-val" style={{ color: '#4CAF6D' }}>
                   {migrationTasks.filter((t: any) => t.status === 'done').length}
                 </span>
                 <span className="mig-stat-lbl">Completed</span>
               </div>
               <div className="card mig-stat-card">
-                <span className="mig-stat-val" style={{ color: '#eab308' }}>
+                <span className="mig-stat-val" style={{ color: '#F5B84D' }}>
                   {migrationTasks.filter((t: any) => t.status === 'in-progress').length}
                 </span>
                 <span className="mig-stat-lbl">In Progress</span>
               </div>
               <div className="card mig-stat-card">
-                <span className="mig-stat-val" style={{ color: '#ef4444' }}>
+                <span className="mig-stat-val" style={{ color: '#F5484B' }}>
                   {migrationTasks.filter((t: any) => t.priority === 'critical' && t.status === 'todo').length}
                 </span>
                 <span className="mig-stat-lbl">Critical / Pending</span>
@@ -749,13 +749,13 @@ export function Reports() {
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ marginBottom: '12px' }}>
-                      <div style={{ color: '#22c55e', fontSize: '0.85rem', fontWeight: 600 }}>✓ Strengths</div>
+                      <div style={{ color: '#4CAF6D', fontSize: '0.85rem', fontWeight: 600 }}>✓ Strengths</div>
                       {cryptoAgilityScore.positives.slice(0, 3).map((p: string, i: number) => (
                         <div key={i} style={{ color: '#94a3b8', fontSize: '0.8rem', marginTop: '4px' }}>• {p}</div>
                       ))}
                     </div>
                     <div>
-                      <div style={{ color: '#f97316', fontSize: '0.85rem', fontWeight: 600 }}>✗ Gaps</div>
+                      <div style={{ color: '#FF8A3D', fontSize: '0.85rem', fontWeight: 600 }}>✗ Gaps</div>
                       {cryptoAgilityScore.negatives.slice(0, 3).map((n: string, i: number) => (
                         <div key={i} style={{ color: '#94a3b8', fontSize: '0.8rem', marginTop: '4px' }}>• {n}</div>
                       ))}
@@ -763,13 +763,13 @@ export function Reports() {
                   </div>
                   <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
                     <div style={{ textAlign: 'center', background: 'var(--bg-elevated)', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                      <div style={{ fontSize: '1.5rem', fontWeight: 800, color: cryptoAgilityScore.hardcodedReferences > 0 ? '#ef4444' : '#22c55e' }}>
+                      <div style={{ fontSize: '1.5rem', fontWeight: 800, color: cryptoAgilityScore.hardcodedReferences > 0 ? '#F5484B' : '#4CAF6D' }}>
                         {cryptoAgilityScore.hardcodedReferences}
                       </div>
                       <div style={{ fontSize: '0.7rem', color: '#64748b', textTransform: 'uppercase' }}>Hardcoded Refs</div>
                     </div>
                     <div style={{ textAlign: 'center', background: 'var(--bg-elevated)', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                      <div style={{ fontSize: '1.5rem', fontWeight: 800, color: cryptoAgilityScore.directLowLevelCalls > 5 ? '#f97316' : '#22c55e' }}>
+                      <div style={{ fontSize: '1.5rem', fontWeight: 800, color: cryptoAgilityScore.directLowLevelCalls > 5 ? '#FF8A3D' : '#4CAF6D' }}>
                         {cryptoAgilityScore.directLowLevelCalls}
                       </div>
                       <div style={{ fontSize: '0.7rem', color: '#64748b', textTransform: 'uppercase' }}>Low-Level Calls</div>
@@ -786,13 +786,13 @@ export function Reports() {
             <div className="card" style={{ padding: '20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap' }}>
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '2rem', fontWeight: 900, color: '#00d4ff', fontFamily: 'var(--font-mono)' }}>
+                  <div style={{ fontSize: '2rem', fontWeight: 900, color: '#4DD0E1', fontFamily: 'var(--font-mono)' }}>
                     {topAlgos.length}
                   </div>
                   <div style={{ color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase' }}>Unique Algorithms</div>
                 </div>
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '2rem', fontWeight: 900, color: '#22c55e' }}>
+                  <div style={{ fontSize: '2rem', fontWeight: 900, color: '#4CAF6D' }}>
                     {findings.length}
                   </div>
                   <div style={{ color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase' }}>CBOM Components</div>

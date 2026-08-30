@@ -36,15 +36,15 @@ export function NextBestAction() {
           <div className="nba-section-label">WHY THIS MATTERS</div>
           <div className="nba-tags">
             <span className="nba-tag">High Criticality</span>
-            {topFinding?.internetFacing && <span className="nba-tag" style={{ color: '#ef4444' }}>Internet Exposed</span>}
-            <span className="nba-tag" style={{ color: '#f97316' }}>{targetAlgo} Vulnerable</span>
+            {topFinding?.internetFacing && <span className="nba-tag" style={{ color: '#F5484B' }}>Internet Exposed</span>}
+            <span className="nba-tag" style={{ color: '#FF8A3D' }}>{targetAlgo} Vulnerable</span>
             <span className="nba-tag">Long-Lived Data</span>
           </div>
         </div>
 
         <div>
           <div className="nba-section-label">RISK SCORE</div>
-          <div className="nba-impact-val" style={{ color: topFinding?.riskScore ? (topFinding.riskScore >= 60 ? '#ef4444' : '#f97316') : undefined }}>
+          <div className="nba-impact-val" style={{ color: topFinding?.riskScore ? (topFinding.riskScore >= 60 ? '#F5484B' : '#FF8A3D') : undefined }}>
             {topFinding?.riskScore ?? '—'} / 100
           </div>
         </div>

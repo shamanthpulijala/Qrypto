@@ -107,7 +107,7 @@
 }
 
 .findings-table tr:hover {
-  background: rgba(0, 212, 255, 0.03);
+  background: rgba(77, 208, 225, 0.03);
 }
 
 .algo-cell {
@@ -137,7 +137,7 @@
 
 .file-cell {
   font-family: monospace;
-  color: #00d4ff;
+  color: #4DD0E1;
 }
 
 .line-cell {
@@ -153,14 +153,14 @@
   display: inline-block;
 }
 
-.qr-high { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
-.qr-moderate { background: rgba(249, 115, 22, 0.15); color: #f97316; border: 1px solid rgba(249, 115, 22, 0.3); }
-.qr-low { background: rgba(34, 197, 94, 0.15); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.3); }
-.qr-minimal { background: rgba(0, 212, 255, 0.15); color: #00d4ff; border: 1px solid rgba(0, 212, 255, 0.3); }
+.qr-high { background: rgba(245, 72, 75, 0.15); color: #F5484B; border: 1px solid rgba(245, 72, 75, 0.3); }
+.qr-moderate { background: rgba(255, 138, 61, 0.15); color: #FF8A3D; border: 1px solid rgba(255, 138, 61, 0.3); }
+.qr-low { background: rgba(76, 175, 109, 0.15); color: #4CAF6D; border: 1px solid rgba(76, 175, 109, 0.3); }
+.qr-minimal { background: rgba(77, 208, 225, 0.15); color: #4DD0E1; border: 1px solid rgba(77, 208, 225, 0.3); }
 
-.cr-critical { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
-.cr-high { background: rgba(249, 115, 22, 0.15); color: #f97316; }
-.cr-low { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
+.cr-critical { background: rgba(245, 72, 75, 0.15); color: #F5484B; }
+.cr-high { background: rgba(255, 138, 61, 0.15); color: #FF8A3D; }
+.cr-low { background: rgba(76, 175, 109, 0.15); color: #4CAF6D; }
 .cr-minimal { background: rgba(148, 163, 184, 0.15); color: #94a3b8; }
 
 .status-pill {
@@ -172,13 +172,13 @@
   color: #94a3b8;
 }
 
-.status-open { background: rgba(239, 68, 68, 0.1); color: #f87171; }
-.status-in-progress { background: rgba(234, 179, 8, 0.1); color: #fde047; }
-.status-remediated { background: rgba(34, 197, 94, 0.1); color: #4ade80; }
+.status-open { background: rgba(245, 72, 75, 0.1); color: #f87171; }
+.status-in-progress { background: rgba(245, 184, 77, 0.1); color: #fde047; }
+.status-remediated { background: rgba(76, 175, 109, 0.1); color: #4ade80; }
 
 .btn-view-action {
-  color: #00d4ff;
-  border: 1px solid rgba(0, 212, 255, 0.3);
+  color: #4DD0E1;
+  border: 1px solid rgba(77, 208, 225, 0.3);
   padding: 4px 10px;
   border-radius: 4px;
   cursor: pointer;
@@ -191,7 +191,7 @@
 }
 
 .btn-view-action:hover {
-  background: rgba(0, 212, 255, 0.15);
+  background: rgba(77, 208, 225, 0.15);
   color: #fff;
 }
 
@@ -232,16 +232,16 @@
 }
 
 .root-node {
-  background: rgba(124, 58, 237, 0.1);
-  border-color: rgba(124, 58, 237, 0.3);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.14);
   color: var(--accent-violet);
   font-weight: 600;
   margin-bottom: 16px;
 }
 
 .file-node {
-  background: rgba(0, 212, 255, 0.05);
-  border-color: rgba(0, 212, 255, 0.2);
+  background: rgba(77, 208, 225, 0.05);
+  border-color: rgba(77, 208, 225, 0.2);
   color: var(--text-primary);
   margin-bottom: 12px;
 }
@@ -251,11 +251,12 @@
   margin-bottom: 8px;
 }
 
-.dep-finding-node.severity-critical { border-color: rgba(239, 68, 68, 0.5); color: #ef4444; }
-.dep-finding-node.severity-high { border-color: rgba(249, 115, 22, 0.5); color: #f97316; }
-.dep-finding-node.severity-medium { border-color: rgba(234, 179, 8, 0.5); color: #eab308; }
-.dep-finding-node.severity-low { border-color: rgba(59, 130, 246, 0.5); color: #3b82f6; }
-.dep-finding-node.severity-info { border-color: rgba(168, 85, 247, 0.5); color: #a855f7; }
+.dep-finding-node.severity-critical { border-color: rgba(245, 72, 75, 0.5); color: var(--severity-critical); }
+.dep-finding-node.severity-high { border-color: rgba(255, 138, 61, 0.5); color: var(--severity-high); }
+.dep-finding-node.severity-medium { border-color: rgba(245, 184, 77, 0.5); color: var(--severity-medium); }
+.dep-finding-node.severity-low { border-color: rgba(76, 175, 109, 0.5); color: var(--severity-low); }
+/* Informational is not a severity colour — it is metadata (§26.4). */
+.dep-finding-node.severity-info { border-color: var(--border-strong); color: var(--text-tertiary); }
 
 .dep-usage-tag {
   background: rgba(255, 255, 255, 0.1);

@@ -92,19 +92,19 @@ export function FindingsList() {
           <span className="fs-lbl">Total Findings</span>
         </div>
         <div className="fs-item">
-          <span className="fs-val" style={{ color: '#ef4444' }}>
+          <span className="fs-val" style={{ color: '#F5484B' }}>
             {findings.filter(f => f.severity === 'critical').length}
           </span>
           <span className="fs-lbl">Critical Severity</span>
         </div>
         <div className="fs-item">
-          <span className="fs-val" style={{ color: '#f97316' }}>
+          <span className="fs-val" style={{ color: '#FF8A3D' }}>
             {findings.filter(f => f.quantumStatus === 'vulnerable').length}
           </span>
           <span className="fs-lbl">Quantum Vulnerable</span>
         </div>
         <div className="fs-item">
-          <span className="fs-val" style={{ color: '#eab308' }}>
+          <span className="fs-val" style={{ color: '#F5B84D' }}>
             {findings.filter(f => f.classicalStatus === 'broken' || f.classicalStatus === 'weak').length}
           </span>
           <span className="fs-lbl">Classically Deprecated</span>

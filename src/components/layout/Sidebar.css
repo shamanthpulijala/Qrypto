@@ -1,161 +1,180 @@
 /* ============================================================
-   QuantumGuard AI — Navigation Rail §22
-   Slim floating glass sidebar — icons-only by default,
-   expand on hover to show labels
+   Qrypto — Navigation Rail §22 / §38.7
+   A docked sidebar, not a floating capsule that grows on hover.
+   Labels are visible by default because an analyst navigating a
+   15-item information architecture should not have to hover to
+   read it. Collapsing is an explicit, remembered choice.
    ============================================================ */
 
 .sidebar {
-  position: fixed;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  max-height: calc(100vh - 24px);
-  width: 52px;
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  height: 100vh;
+  width: var(--sidebar-width);
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 8px;
-  background: var(--glass-bg-heavy);
-  backdrop-filter: blur(var(--glass-blur));
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-xl);
-  z-index: 100;
-  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: var(--space-2);
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border-default);
+  z-index: 50;
   overflow: hidden;
-  box-shadow: var(--glass-shadow);
+  transition: width var(--duration-medium) var(--ease-standard);
 }
 
-.sidebar:hover {
-  width: 200px;
-}
+.sidebar.collapsed { width: var(--sidebar-collapsed-width); }
 
-/* Logo */
+/* ── Logo + collapse control ─────────────────────────────────── */
 .sidebar-logo {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 6px 10px;
-  border-bottom: 1px solid var(--glass-border);
-  margin-bottom: 4px;
-  min-height: 36px;
-  overflow: hidden;
+  gap: var(--space-2);
+  height: 36px;
+  padding: 0 var(--space-1);
+  margin-bottom: var(--space-2);
+  flex-shrink: 0;
 }
 
 .logo-icon {
-  width: 28px;
-  height: 28px;
-  background: linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(0, 212, 255, 0.15));
-  border: 1px solid rgba(124, 58, 237, 0.3);
-  border-radius: var(--radius-md);
+  width: 26px;
+  height: 26px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--accent-violet);
+  color: var(--text-primary);
   flex-shrink: 0;
-  box-shadow: var(--shadow-glow-violet);
 }
 
 .logo-text {
   display: flex;
   align-items: baseline;
-  gap: 6px;
+  gap: var(--space-2);
   overflow: hidden;
   white-space: nowrap;
-  opacity: 0;
-  transition: opacity 0.2s ease 0.1s;
-}
-
-.sidebar:hover .logo-text {
-  opacity: 1;
+  min-width: 0;
 }
 
 .logo-name {
-  font-size: 0.82rem;
-  font-weight: 700;
+  font-size: var(--text-base);
+  font-weight: 600;
+  letter-spacing: -0.01em;
   color: var(--text-primary);
   white-space: nowrap;
 }
 
+/* The collapse toggle is a real control with a real shortcut,
+   not a hover side effect (§38.7). */
 .sidebar-toggle {
-  display: none; /* Hidden in rail mode */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  margin-left: auto;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-xs);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color var(--duration-instant) var(--ease-standard),
+              color var(--duration-instant) var(--ease-standard);
 }
 
-/* Nav */
+.sidebar-toggle:hover { background: var(--overlay-hover); color: var(--text-primary); }
+.sidebar-toggle:focus-visible { outline: none; border-color: var(--border-focus); }
+
+.sidebar.collapsed .logo-text { display: none; }
+.sidebar.collapsed .sidebar-toggle { margin-left: 0; }
+.sidebar.collapsed .sidebar-logo { justify-content: center; }
+.sidebar.collapsed .logo-icon { display: none; }
+
+/* ── Nav ─────────────────────────────────────────────────────── */
 .sidebar-nav {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 1px;
   overflow-y: auto;
   overflow-x: hidden;
+  min-height: 0;
 }
 
-/* Hide scrollbar for aesthetics but keep functionality */
-.sidebar-nav::-webkit-scrollbar {
-  width: 3px;
-}
-.sidebar-nav::-webkit-scrollbar-thumb {
-  background: var(--glass-border);
-  border-radius: 3px;
-}
-.sidebar-nav::-webkit-scrollbar-track {
-  background: transparent;
-}
+.sidebar-nav::-webkit-scrollbar { width: 3px; }
+.sidebar-nav::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+.sidebar-nav::-webkit-scrollbar-track { background: transparent; }
 
+/* §38.7 group dividers — the five phases of the workflow are real
+   boundaries, so they get a rule rather than only a faint label. */
 .nav-group {
   display: flex;
   flex-direction: column;
   gap: 1px;
-  margin-bottom: 4px;
+  padding: var(--space-2) 0;
 }
+
+.nav-group + .nav-group { border-top: 1px solid var(--border-subtle); }
 
 .nav-group-label {
   display: block;
-  font-size: 0.55rem;
-  font-weight: 700;
+  font-size: var(--text-2xs);
+  line-height: var(--lh-2xs);
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   color: var(--text-tertiary);
-  padding: 6px 8px 2px;
+  padding: 0 var(--space-2) var(--space-1);
   white-space: nowrap;
   overflow: hidden;
-  opacity: 0;
-  transition: opacity 0.2s ease 0.1s;
 }
 
-.sidebar:hover .nav-group-label {
-  opacity: 1;
-}
+/* Collapsed: the label would be unreadable, so the divider carries
+   the grouping on its own. */
+.sidebar.collapsed .nav-group-label { display: none; }
 
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 8px;
-  border-radius: var(--radius-md);
+  gap: var(--space-2);
+  height: 30px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  background: none;
+  background: transparent;
   border: none;
   font-family: var(--font-sans);
-  font-size: 0.78rem;
+  font-size: var(--text-sm);
   font-weight: 500;
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   width: 100%;
   text-align: left;
-  transition: all 0.2s ease;
   position: relative;
   white-space: nowrap;
   overflow: hidden;
+  transition: background-color var(--duration-instant) var(--ease-standard),
+              color var(--duration-instant) var(--ease-standard);
 }
 
 .nav-item:hover:not(.disabled) {
-  background: rgba(124, 58, 237, 0.08);
+  background: var(--overlay-hover);
   color: var(--text-primary);
 }
 
+.nav-item:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 1px var(--border-focus);
+}
+
+/* §38.7 — active is a filled monochrome tint, not a hue change.
+   Reading "where am I" should not compete with the severity
+   colours that carry actual meaning (§26.4). */
 .nav-item.active {
-  background: var(--accent-violet-dim);
-  color: var(--accent-violet);
+  background: var(--overlay-selected);
+  color: var(--text-primary);
+  font-weight: 600;
 }
 
 .nav-item.active::before {
@@ -164,14 +183,14 @@
   left: 0;
   top: 50%;
   transform: translateY(-50%);
-  width: 3px;
-  height: 16px;
-  background: var(--accent-violet);
+  width: 2px;
+  height: 14px;
+  background: var(--accent-primary);
   border-radius: 0 2px 2px 0;
 }
 
 .nav-item.disabled {
-  opacity: 0.3;
+  opacity: 0.35;
   cursor: not-allowed;
 }
 
@@ -185,39 +204,50 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  opacity: 0;
-  transition: opacity 0.2s ease 0.1s;
+  min-width: 0;
 }
 
-.sidebar:hover .nav-label {
-  opacity: 1;
-}
+.sidebar.collapsed .nav-label { display: none; }
+.sidebar.collapsed .nav-item { justify-content: center; padding: 0; }
+.sidebar.collapsed .nav-active-dot { display: none; }
 
-.nav-active-dot {
-  width: 5px;
-  height: 5px;
-  background: var(--accent-violet);
-  border-radius: 50%;
+/* Partial-coverage marker: honest about what is not finished (§3). */
+.nav-partial {
   margin-left: auto;
   flex-shrink: 0;
-  opacity: 0;
-  transition: opacity 0.2s ease 0.1s;
+  font-size: var(--text-2xs);
+  line-height: 1;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xs);
+  padding: 1px 4px;
 }
 
-.sidebar:hover .nav-active-dot {
-  opacity: 1;
-}
+.sidebar.collapsed .nav-partial { display: none; }
 
-/* Bottom */
+.nav-active-dot { display: none; }
+
+/* ── Bottom ──────────────────────────────────────────────────── */
 .sidebar-bottom {
-  padding: 4px 0 0;
-  border-top: 1px solid var(--glass-border);
-  margin-top: 4px;
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border-subtle);
+  margin-top: var(--space-2);
+  flex-shrink: 0;
 }
 
-/* Collapsed state — not used in rail mode */
-.sidebar.collapsed { width: 52px; }
-.sidebar.collapsed .nav-group-label { display: none; }
-.sidebar.collapsed .nav-label { display: none; }
-.sidebar.collapsed .nav-active-dot { display: none; }
-.sidebar.collapsed .logo-text { display: none; }
+/* ── §30 — below 1100px the rail collapses itself and stays
+   collapsed; the workspace needs the horizontal room more than
+   the labels. */
+@media (max-width: 1100px) {
+  .sidebar { width: var(--sidebar-collapsed-width); }
+  .sidebar .logo-text,
+  .sidebar .nav-group-label,
+  .sidebar .nav-label,
+  .sidebar .nav-partial { display: none; }
+  .sidebar .nav-item { justify-content: center; padding: 0; }
+  .sidebar .logo-icon { display: none; }
+  .sidebar .sidebar-logo { justify-content: center; }
+  .sidebar .sidebar-toggle { margin-left: 0; }
+}

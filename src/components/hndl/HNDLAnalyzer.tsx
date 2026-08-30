@@ -26,10 +26,10 @@ export function HNDLAnalyzer() {
 
     const hndlScore = (f.riskBreakdown.dataLifetime + f.riskBreakdown.dataSensitivity) / 2;
 
-    let color = '#22c55e'; // low exposure
-    if (hndlScore > 60) color = '#ef4444'; // critical exposure
-    else if (hndlScore > 30) color = '#f97316'; // high
-    else if (hndlScore > 15) color = '#eab308'; // medium
+    let color = '#4CAF6D'; // low exposure
+    if (hndlScore > 60) color = '#F5484B'; // critical exposure
+    else if (hndlScore > 30) color = '#FF8A3D'; // high
+    else if (hndlScore > 15) color = '#F5B84D'; // medium
 
     return {
       id: f.id,
@@ -90,7 +90,7 @@ export function HNDLAnalyzer() {
                 }}
                 labelFormatter={() => ''}
               />
-              <ReferenceLine x={5} stroke="#ef4444" strokeDasharray="3 3" label={{ position: 'top', value: 'High Danger Zone', fill: '#ef4444', fontSize: 12 }} />
+              <ReferenceLine x={5} stroke="#F5484B" strokeDasharray="3 3" label={{ position: 'top', value: 'High Danger Zone', fill: '#F5484B', fontSize: 12 }} />
               <Scatter name="Findings" data={scatterData}>
                 {scatterData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />

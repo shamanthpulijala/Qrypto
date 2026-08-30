@@ -49,10 +49,10 @@
   border-radius: 50%;
 }
 
-.rp-bullet.critical { background: #ef4444; box-shadow: 0 0 8px rgba(239, 68, 68, 0.5); }
-.rp-bullet.warning { background: #f97316; }
-.rp-bullet.info { background: #00d4ff; }
-.rp-bullet.success { background: #22c55e; }
+.rp-bullet.critical { background: #F5484B; box-shadow: 0 0 8px rgba(245, 72, 75, 0.5); }
+.rp-bullet.warning { background: #FF8A3D; }
+.rp-bullet.info { background: #4DD0E1; }
+.rp-bullet.success { background: #4CAF6D; }
 
 .rp-time {
   font-size: 0.65rem;

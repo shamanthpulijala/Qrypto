@@ -126,7 +126,7 @@
 }
 
 .inv-row.expanded {
-  background: rgba(0, 212, 255, 0.03);
+  background: rgba(77, 208, 225, 0.03);
   border-left: 2px solid var(--accent-cyan);
 }
 

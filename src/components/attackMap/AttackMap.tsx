@@ -33,7 +33,7 @@ function ServiceNodeComponent({ data }: { data: any }) {
       <div className="node-body">
         <div className="nb-row">
           <span className="nb-label">Risk</span>
-          <span className="nb-val" style={{ color: data.riskScore >= 70 ? '#ef4444' : data.riskScore >= 40 ? '#eab308' : '#22c55e' }}>
+          <span className="nb-val" style={{ color: data.riskScore >= 70 ? '#F5484B' : data.riskScore >= 40 ? '#F5B84D' : '#4CAF6D' }}>
             {data.riskScore}/100
           </span>
         </div>
@@ -141,7 +141,7 @@ export function AttackMap() {
           target: svc.id,
           animated: isQDayAffected,
           style: {
-            stroke: isQDayAffected ? '#ef4444' : '#334155',
+            stroke: isQDayAffected ? '#F5484B' : '#334155',
             strokeWidth: isQDayAffected ? 2.5 : 1,
             opacity: isQDayAffected ? 1 : 0.5,
           },
@@ -267,7 +267,7 @@ export function AttackMap() {
                 </div>
                 <div className="ni-row">
                   <span className="ni-label">Exposure</span>
-                  <span className="ni-val" style={{ color: selectedService.internetFacing ? '#00d4ff' : '#94a3b8' }}>
+                  <span className="ni-val" style={{ color: selectedService.internetFacing ? '#4DD0E1' : '#94a3b8' }}>
                     {selectedService.internetFacing ? '🌐 Internet Facing' : '🔒 Internal Only'}
                   </span>
                 </div>
@@ -280,7 +280,7 @@ export function AttackMap() {
                 </div>
                 <div className="ni-row">
                   <span className="ni-label">Risk Score</span>
-                  <span className="ni-val-strong" style={{ color: selectedService.riskScore >= 70 ? '#ef4444' : selectedService.riskScore >= 40 ? '#eab308' : '#22c55e' }}>
+                  <span className="ni-val-strong" style={{ color: selectedService.riskScore >= 70 ? '#F5484B' : selectedService.riskScore >= 40 ? '#F5B84D' : '#4CAF6D' }}>
                     {selectedService.riskScore} / 100
                   </span>
                 </div>

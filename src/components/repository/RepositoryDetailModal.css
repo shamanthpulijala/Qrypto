@@ -3,11 +3,11 @@
   max-width: 900px;
   max-height: 85vh;
   background: var(--bg-card, #131b2e);
-  border: 1px solid var(--border-accent, rgba(0, 212, 255, 0.2));
+  border: 1px solid var(--border-accent, rgba(77, 208, 225, 0.2));
   border-radius: 16px;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.7), 0 0 40px rgba(0, 212, 255, 0.05);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.7), 0 0 40px rgba(77, 208, 225, 0.05);
   overflow: hidden;
 }
 
@@ -29,8 +29,8 @@
 .rdm-icon {
   width: 42px;
   height: 42px;
-  background: rgba(0, 212, 255, 0.1);
-  border: 1px solid rgba(0, 212, 255, 0.25);
+  background: rgba(77, 208, 225, 0.1);
+  border: 1px solid rgba(77, 208, 225, 0.25);
   border-radius: 10px;
   display: flex;
   align-items: center;
@@ -131,7 +131,7 @@
 }
 
 .rdm-search input:focus {
-  border-color: rgba(0, 212, 255, 0.4);
+  border-color: rgba(77, 208, 225, 0.4);
 }
 
 .rdm-clear-search {
@@ -193,7 +193,7 @@
 }
 
 .rdm-table tr:last-child td { border-bottom: none; }
-.rdm-table tr:hover td { background: rgba(0, 212, 255, 0.02); }
+.rdm-table tr:hover td { background: rgba(77, 208, 225, 0.02); }
 
 .rdm-file-cell {
   display: flex;
@@ -201,7 +201,7 @@
   gap: 8px;
 }
 
-.rdm-file-icon { color: #00d4ff; flex-shrink: 0; }
+.rdm-file-icon { color: #4DD0E1; flex-shrink: 0; }
 
 .rdm-file-path {
   font-family: var(--font-mono, monospace);
@@ -214,9 +214,9 @@
 }
 
 .rdm-lang-badge {
-  background: rgba(139, 92, 246, 0.1);
-  border: 1px solid rgba(139, 92, 246, 0.25);
-  color: #a78bfa;
+  background: rgba(91, 127, 166, 0.1);
+  border: 1px solid rgba(91, 127, 166, 0.25);
+  color: var(--accent-classical);
   border-radius: 4px;
   padding: 2px 7px;
   font-size: 0.72rem;
@@ -224,13 +224,13 @@
 }
 
 .rdm-findings-count {
-  color: #ef4444;
+  color: #F5484B;
   font-weight: 700;
   font-family: var(--font-mono, monospace);
 }
 
 .rdm-clean-tag {
-  color: #22c55e;
+  color: #4CAF6D;
   font-size: 0.78rem;
   display: flex;
   align-items: center;

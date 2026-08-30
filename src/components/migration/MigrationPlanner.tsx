@@ -48,9 +48,9 @@ export function MigrationPlanner() {
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'critical': return '#ef4444';
-      case 'high': return '#f97316';
-      case 'medium': return '#eab308';
+      case 'critical': return '#F5484B';
+      case 'high': return '#FF8A3D';
+      case 'medium': return '#F5B84D';
       case 'low': return '#3b82f6';
       default: return '#64748b';
     }
@@ -92,14 +92,14 @@ export function MigrationPlanner() {
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontFamily: 'var(--font-mono)' }}>
-            <span style={{ color: '#ef4444' }}>Open ({totalTasks - doneTasks - inProgressTasks})</span>
-            <span style={{ color: '#eab308' }}>In Progress ({inProgressTasks})</span>
-            <span style={{ color: '#22c55e' }}>Completed ({doneTasks})</span>
+            <span style={{ color: '#F5484B' }}>Open ({totalTasks - doneTasks - inProgressTasks})</span>
+            <span style={{ color: '#F5B84D' }}>In Progress ({inProgressTasks})</span>
+            <span style={{ color: '#4CAF6D' }}>Completed ({doneTasks})</span>
           </div>
           <div style={{ height: '8px', background: 'var(--border-subtle)', borderRadius: 'var(--radius-full)', overflow: 'hidden', display: 'flex' }}>
-            <div style={{ width: `${totalTasks > 0 ? ((totalTasks - doneTasks - inProgressTasks) / totalTasks) * 100 : 100}%`, background: '#ef4444', transition: 'width 0.8s ease' }} />
-            <div style={{ width: `${totalTasks > 0 ? (inProgressTasks / totalTasks) * 100 : 0}%`, background: '#eab308', transition: 'width 0.8s ease' }} />
-            <div style={{ width: `${progressPercent}%`, background: '#22c55e', transition: 'width 0.8s ease' }} />
+            <div style={{ width: `${totalTasks > 0 ? ((totalTasks - doneTasks - inProgressTasks) / totalTasks) * 100 : 100}%`, background: '#F5484B', transition: 'width 0.8s ease' }} />
+            <div style={{ width: `${totalTasks > 0 ? (inProgressTasks / totalTasks) * 100 : 0}%`, background: '#F5B84D', transition: 'width 0.8s ease' }} />
+            <div style={{ width: `${progressPercent}%`, background: '#4CAF6D', transition: 'width 0.8s ease' }} />
           </div>
         </div>
       </div>

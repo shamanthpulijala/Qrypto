@@ -21,9 +21,9 @@
 .mph-icon {
   width: 48px;
   height: 48px;
-  background: rgba(34, 197, 94, 0.1);
+  background: rgba(76, 175, 109, 0.1);
   color: var(--status-low);
-  border: 1px solid rgba(34, 197, 94, 0.3);
+  border: 1px solid rgba(76, 175, 109, 0.3);
   border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
@@ -47,7 +47,7 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: rgba(0, 212, 255, 0.1);
+  background: rgba(77, 208, 225, 0.1);
   border: 2px solid var(--accent-cyan);
   display: flex;
   align-items: center;
@@ -161,8 +161,8 @@
 }
 
 .qday-badge-warning {
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: rgba(245, 72, 75, 0.1);
+  border: 1px solid rgba(245, 72, 75, 0.3);
   color: var(--status-critical);
   padding: 8px 16px;
   border-radius: var(--radius-md);
@@ -200,7 +200,7 @@
 
 .phase-card.expanded {
   border-color: var(--border-accent);
-  box-shadow: 0 4px 20px rgba(0, 212, 255, 0.05);
+  box-shadow: 0 4px 20px rgba(77, 208, 225, 0.05);
 }
 
 .phase-header {
@@ -246,12 +246,12 @@
 }
 
 .bap-before {
-  background: rgba(239, 68, 68, 0.04);
+  background: rgba(245, 72, 75, 0.04);
   border-right: 1px solid var(--border-default);
 }
 
 .bap-after {
-  background: rgba(34, 197, 94, 0.04);
+  background: rgba(76, 175, 109, 0.04);
   border-left: 1px solid var(--border-default);
 }
 
@@ -275,13 +275,13 @@
 }
 
 .before-indicator {
-  background: #ef4444;
-  box-shadow: 0 0 6px rgba(239, 68, 68, 0.6);
+  background: #F5484B;
+  box-shadow: 0 0 6px rgba(245, 72, 75, 0.6);
 }
 
 .after-indicator {
-  background: #22c55e;
-  box-shadow: 0 0 6px rgba(34, 197, 94, 0.6);
+  background: #4CAF6D;
+  box-shadow: 0 0 6px rgba(76, 175, 109, 0.6);
 }
 
 .bap-metrics {
@@ -320,8 +320,8 @@
   margin-top: var(--space-4);
   font-size: 0.72rem;
   color: var(--text-tertiary);
-  background: rgba(34, 197, 94, 0.06);
-  border: 1px solid rgba(34, 197, 94, 0.15);
+  background: rgba(76, 175, 109, 0.06);
+  border: 1px solid rgba(76, 175, 109, 0.15);
   border-radius: var(--radius-sm);
   padding: 6px 10px;
   font-style: italic;
@@ -350,7 +350,7 @@
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  color: #00d4ff;
+  color: #4DD0E1;
   font-size: 0.7rem;
   font-weight: 800;
   text-transform: uppercase;
@@ -429,15 +429,15 @@
 }
 
 .info-card-pqc {
-  background: rgba(0, 212, 255, 0.03);
-  border-color: rgba(0, 212, 255, 0.15);
+  background: rgba(77, 208, 225, 0.03);
+  border-color: rgba(77, 208, 225, 0.15);
 }
 
 .ic-title {
   color: var(--accent-cyan);
   margin-bottom: var(--space-4);
   font-size: 1rem;
-  border-bottom: 1px solid rgba(0, 212, 255, 0.15);
+  border-bottom: 1px solid rgba(77, 208, 225, 0.15);
   padding-bottom: var(--space-2);
 }
 

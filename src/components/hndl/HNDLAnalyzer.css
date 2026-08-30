@@ -20,9 +20,9 @@
 .hh-icon {
   width: 48px;
   height: 48px;
-  background: rgba(234, 179, 8, 0.1);
+  background: rgba(245, 184, 77, 0.1);
   color: var(--status-medium);
-  border: 1px solid rgba(234, 179, 8, 0.3);
+  border: 1px solid rgba(245, 184, 77, 0.3);
   border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
@@ -47,8 +47,8 @@
 }
 
 .hndl-info-card {
-  background: rgba(239, 68, 68, 0.05);
-  border-color: rgba(239, 68, 68, 0.2);
+  background: rgba(245, 72, 75, 0.05);
+  border-color: rgba(245, 72, 75, 0.2);
 }
 
 .hndl-info-card h4 {

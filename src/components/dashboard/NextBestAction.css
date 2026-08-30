@@ -18,7 +18,7 @@
   gap: 6px;
   padding: 4px 12px;
   background: var(--accent-violet-dim);
-  border: 1px solid rgba(124, 58, 237, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: var(--radius-full);
   font-size: 0.65rem;
   font-weight: 700;
@@ -76,7 +76,7 @@
   font-size: 1.3rem;
   font-weight: 800;
   font-family: var(--font-mono);
-  color: #22c55e;
+  color: #4CAF6D;
 }
 
 .nba-effort-val {
@@ -93,20 +93,22 @@
 .btn-nba {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  background: linear-gradient(135deg, #7c3aed, #6d28d9);
-  color: #fff;
-  border: none;
-  border-radius: var(--radius-md);
-  font-size: 0.85rem;
+  gap: var(--space-2);
+  height: 32px;
+  padding: 0 var(--space-4);
+  background: var(--accent-primary);
+  color: var(--accent-primary-ink);
+  border: 1px solid var(--accent-primary);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
+  transition: opacity var(--duration-fast) var(--ease-standard);
 }
 
-.btn-nba:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4);
+.btn-nba:hover { opacity: 0.88; }
+.btn-nba:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--bg-canvas), 0 0 0 4px var(--border-focus);
 }
+

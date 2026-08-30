@@ -78,7 +78,7 @@ export function RepositoryDetailModal({ onClose }: Props) {
         {/* Header */}
         <div className="rdm-header">
           <div className="rdm-title-area">
-            <div className="rdm-icon"><FolderGit2 size={22} color="#00d4ff" /></div>
+            <div className="rdm-icon"><FolderGit2 size={22} color="#4DD0E1" /></div>
             <div>
               <h2>{assessment.name.replace(' Assessment', '').replace(' Scan', '')} — Uploaded File Details</h2>
               <p className="rdm-subtitle">Scanned Source Code Repository & File Breakdown</p>
@@ -94,14 +94,14 @@ export function RepositoryDetailModal({ onClose }: Props) {
           {/* Summary Stats Grid */}
           <div className="rdm-stats-grid">
             <div className="rdm-stat-card">
-              <FileCode2 size={18} className="rdm-stat-icon" color="#00d4ff" />
+              <FileCode2 size={18} className="rdm-stat-icon" color="#4DD0E1" />
               <div>
                 <span className="rdm-stat-val">{totalFiles}</span>
                 <span className="rdm-stat-lbl">Uploaded Files</span>
               </div>
             </div>
             <div className="rdm-stat-card">
-              <Code size={18} className="rdm-stat-icon" color="#8b5cf6" />
+              <Code size={18} className="rdm-stat-icon" color="var(--accent-classical)" />
               <div>
                 <span className="rdm-stat-val">{totalLines.toLocaleString()}</span>
                 <span className="rdm-stat-lbl">Lines of Code</span>
@@ -115,7 +115,7 @@ export function RepositoryDetailModal({ onClose }: Props) {
               </div>
             </div>
             <div className="rdm-stat-card">
-              <Layers size={18} className="rdm-stat-icon" color="#eab308" />
+              <Layers size={18} className="rdm-stat-icon" color="#F5B84D" />
               <div>
                 <span className="rdm-stat-val">{assessment.findings.length}</span>
                 <span className="rdm-stat-lbl">Total Detected Findings</span>

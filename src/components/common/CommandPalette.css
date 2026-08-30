@@ -1,52 +1,48 @@
-/* QuantumGuard AI — Command Palette §41 */
+/* Qrypto — Command Center (⌘K) — §6 / motion §28.2
+   A genuinely floating surface, so elevation + blur are sanctioned (§26). */
 
 .cmd-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(5, 6, 8, 0.7);
-  backdrop-filter: blur(8px);
+  background: rgba(5, 6, 8, 0.62);
   z-index: 9999;
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding-top: 20vh;
-  animation: cmdFadeIn 0.15s ease;
+  padding-top: 18vh;
+  animation: cmdBackdropIn var(--duration-fast) var(--ease-standard);
 }
+.cmd-overlay.closing { animation: cmdBackdropOut var(--duration-fast) var(--ease-accelerate) forwards; }
 
-@keyframes cmdFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
+@keyframes cmdBackdropIn  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes cmdBackdropOut { from { opacity: 1; } to { opacity: 0; } }
 
 .cmd-palette {
-  width: 560px;
-  max-width: 90vw;
+  width: 600px;
+  max-width: 92vw;
   background: var(--glass-bg-heavy);
   backdrop-filter: blur(24px);
   border: 1px solid var(--glass-border);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-lg);
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
   overflow: hidden;
-  animation: cmdSlideIn 0.2s ease;
+  transform-origin: top center;
+  /* enter: scale 98%→100% + fade, spring (overshoot-free) — §28.2 */
+  animation: cmdPaletteIn var(--duration-medium) var(--ease-spring);
 }
+.cmd-palette.closing { animation: cmdPaletteOut var(--duration-fast) var(--ease-accelerate) forwards; }
 
-@keyframes cmdSlideIn {
-  from { opacity: 0; transform: translateY(-10px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
+@keyframes cmdPaletteIn  { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+@keyframes cmdPaletteOut { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0.98); } }
 
 .cmd-input-wrap {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 16px 20px;
+  padding: 15px 18px;
   border-bottom: 1px solid var(--glass-border);
 }
-
-.cmd-input-wrap svg {
-  color: var(--text-tertiary);
-  flex-shrink: 0;
-}
+.cmd-input-wrap svg { color: var(--text-tertiary); flex-shrink: 0; }
 
 .cmd-input {
   flex: 1;
@@ -54,86 +50,94 @@
   border: none;
   outline: none;
   font-family: var(--font-sans);
-  font-size: 1rem;
+  font-size: var(--text-lg);
   color: var(--text-primary);
 }
+.cmd-input::placeholder { color: var(--text-tertiary); }
 
-.cmd-input::placeholder {
+.cmd-scope-tag {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.08em;
   color: var(--text-tertiary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  padding: 2px 6px;
 }
 
-.cmd-results {
-  max-height: 320px;
-  overflow-y: auto;
-  padding: 8px;
-}
+.cmd-results { max-height: 360px; overflow-y: auto; padding: 6px; }
+.cmd-group { margin-bottom: 2px; }
 
 .cmd-group-label {
-  font-size: 0.6rem;
+  font-size: var(--text-2xs);
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--text-tertiary);
-  padding: 8px 12px 4px;
+  padding: 10px 12px 4px;
 }
 
 .cmd-item {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 12px;
+  padding: 9px 12px;
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all 0.15s ease;
   border: none;
   background: none;
   width: 100%;
   text-align: left;
   font-family: var(--font-sans);
   color: var(--text-secondary);
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
+  position: relative;
+  transition: background var(--duration-instant) var(--ease-standard),
+              color var(--duration-instant) var(--ease-standard);
+  /* subtle staggered entrance, capped at 6 rows via inline animation-delay */
+  animation: cmdRowIn var(--duration-base) var(--ease-decelerate) backwards;
 }
 
-.cmd-item:hover,
+@keyframes cmdRowIn { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+
+/* Neutral selection — NOT decorative violet (§26/§26.1). Cyan hairline accent. */
 .cmd-item.active {
-  background: var(--accent-violet-dim);
+  background: var(--selection-bg);
   color: var(--text-primary);
 }
-
-.cmd-item svg {
-  color: var(--text-tertiary);
-  flex-shrink: 0;
+.cmd-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 6px; bottom: 6px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--selection-accent);
 }
+.cmd-item svg { color: var(--text-tertiary); flex-shrink: 0; }
+.cmd-item.active svg { color: var(--text-primary); }
 
-.cmd-item:hover svg,
-.cmd-item.active svg {
-  color: var(--accent-violet);
-}
+.cmd-item-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .cmd-item-hint {
   margin-left: auto;
-  font-size: 0.65rem;
+  font-size: var(--text-2xs);
   font-family: var(--font-mono);
   color: var(--text-tertiary);
   padding: 2px 6px;
   background: rgba(255, 255, 255, 0.04);
   border-radius: var(--radius-sm);
+  white-space: nowrap;
 }
 
-.cmd-empty {
-  padding: 24px;
-  text-align: center;
-  color: var(--text-tertiary);
-  font-size: 0.85rem;
-}
+.cmd-empty { padding: 28px; text-align: center; color: var(--text-tertiary); font-size: var(--text-sm); }
 
 .cmd-footer {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 10px 20px;
+  padding: 9px 18px;
   border-top: 1px solid var(--glass-border);
-  font-size: 0.65rem;
+  font-size: var(--text-2xs);
   color: var(--text-tertiary);
 }
 
@@ -142,10 +146,21 @@
   align-items: center;
   justify-content: center;
   padding: 1px 6px;
+  margin-right: 3px;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 4px;
   font-family: var(--font-mono);
-  font-size: 0.6rem;
-  min-width: 20px;
+  font-size: var(--text-2xs);
+  min-width: 18px;
+}
+
+/* Reduced motion: opacity-only, no stagger/scale/translate — §28.7 */
+@media (prefers-reduced-motion: reduce) {
+  .cmd-palette, .cmd-palette.closing,
+  .cmd-overlay, .cmd-overlay.closing,
+  .cmd-item {
+    animation: none !important;
+    transform: none !important;
+  }
 }

@@ -1,113 +1,220 @@
 /* ============================================================
-   QuantumGuard AI — Premium Design System
-   Cinematic quantum-cybersecurity aesthetic
+   Qrypto — Design System
+   Analyst-workstation aesthetic. Monochrome chrome, colour
+   reserved entirely for data/status. §26 / §26.2 / §27.1
+   ------------------------------------------------------------
+   Two naming layers live here on purpose:
+     · SPEC tokens  (--bg-canvas, --accent-primary, --text-2xs …)
+       are the canonical names from the design spec.
+     · LEGACY tokens (--bg-card, --accent-violet …) are kept as
+       aliases so the existing ~30 component stylesheets keep
+       working. They are re-pointed at spec values, which is how
+       purple leaves the app in one move instead of thirty.
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 /* ── CSS Custom Properties ──────────────────────────────────── */
 :root {
-  /* Backgrounds — §04 */
-  --bg-base:       #050608;
-  --bg-primary:    #080B10;
-  --bg-secondary:  #0D1117;
-  --bg-card:       #0f1219;
-  --bg-card-hover: #141a24;
-  --bg-elevated:   #161c28;
-  --bg-input:      #0a0e16;
+  /* ── Surfaces — §26.2 ─────────────────────────────────────── */
+  --bg-canvas:    #0A0A0B;
+  --bg-surface:   #131315;
+  --bg-surface-2: #1A1A1D;
 
-  /* Borders */
-  --border-subtle:  #1a1f2e;
-  --border-default: #1e2738;
-  --border-strong:  #2a3548;
-  --border-accent:  rgba(124, 58, 237, 0.4);
+  /* legacy surface aliases */
+  --bg-base:       var(--bg-canvas);
+  --bg-primary:    #0C0C0E;
+  --bg-secondary:  var(--bg-surface);
+  --bg-card:       var(--bg-surface);
+  --bg-card-hover: var(--bg-surface-2);
+  --bg-elevated:   var(--bg-surface-2);
+  --bg-input:      #0F0F11;
 
-  /* Accent Colors — §04 */
-  --accent-violet:    #7c3aed;
-  --accent-violet-dim: rgba(124, 58, 237, 0.15);
-  --accent-cyan:    #00d4ff;
-  --accent-cyan-dim: rgba(0, 212, 255, 0.15);
-  --accent-blue:    #60a5fa;
-  --accent-purple:  #8b5cf6;
-  --accent-indigo:  #312e81;
-  --accent-teal:    #14b8a6;
+  /* ── Borders — §26.2 ──────────────────────────────────────────
+     Borders do the structural work; shadows are reserved for
+     layers that genuinely float. Colour-only tokens (used as
+     `1px solid var(--border-default)` across components) plus
+     full-shorthand aliases for new code. The shorthands are
+     suffixed `-rule` because the colour names were already taken. */
+  --border:         rgba(255, 255, 255, 0.08);
+  --border-subtle:  rgba(255, 255, 255, 0.06);
+  --border-default: rgba(255, 255, 255, 0.08);
+  --border-strong:  rgba(255, 255, 255, 0.14);
+  --border-focus:   rgba(255, 255, 255, 0.20);
+  --border-accent:  rgba(255, 255, 255, 0.20);
 
-  /* Status Colors */
-  --status-critical:     #ef4444;
-  --status-critical-bg:  rgba(239, 68, 68, 0.10);
-  --status-critical-dim: rgba(239, 68, 68, 0.35);
-  --status-high:         #f97316;
-  --status-high-bg:      rgba(249, 115, 22, 0.10);
-  --status-medium:       #eab308;
-  --status-medium-bg:    rgba(234, 179, 8, 0.10);
-  --status-low:          #22c55e;
-  --status-low-bg:       rgba(34, 197, 94, 0.10);
-  --status-info:         #94a3b8;
-  --status-info-bg:      rgba(148, 163, 184, 0.08);
+  --rule-hairline: 1px solid rgba(255, 255, 255, 0.08);
+  --rule-subtle:   1px solid rgba(255, 255, 255, 0.12);
+  --rule-strong:   1px solid rgba(255, 255, 255, 0.20);
 
-  /* Quantum Status Colors */
-  --quantum-vulnerable:   #f97316;
-  --quantum-weak:         #ef4444;
-  --quantum-adequate:     #3b82f6;
-  --quantum-resistant:    #22c55e;
+  /* ── Accents — §26 / §26.2 ────────────────────────────────────
+     --accent-primary is MONOCHROME, not a hue: an off-white fill
+     with near-black text, exactly like Raycast's primary button.
+     Colour is spent on data, never on "this is a button". */
+  --accent-primary:     #F2F2F3;
+  --accent-primary-ink: var(--bg-canvas);   /* text on a primary fill */
+  --accent-primary-dim: rgba(255, 255, 255, 0.10);
 
-  /* Text — §04 */
-  --text-primary:   #F5F7FA;
-  --text-secondary: #8B93A1;
-  --text-tertiary:  #5a6374;
-  --text-accent:    #00d4ff;
-  --text-success:   #22c55e;
-  --text-warning:   #eab308;
-  --text-danger:    #ef4444;
+  /* Selection / hover: translucent white overlay, never a hue */
+  --overlay-hover:    rgba(255, 255, 255, 0.06);
+  --overlay-selected: rgba(255, 255, 255, 0.10);
+  --overlay-pressed:  rgba(255, 255, 255, 0.14);
 
-  /* Typography — §06 */
+  /* Semantic hybrid-crypto layers — same blue family, split by
+     saturation/hue-shift so the Circuit stays legible (§26). */
+  --accent-classical:     #5B7FA6;  /* classical KEM — X25519 */
+  --accent-classical-dim: rgba(91, 127, 166, 0.14);
+  --accent-pqc:           #4DD0E1;  /* post-quantum KEM — ML-KEM */
+  --accent-pqc-dim:       rgba(77, 208, 225, 0.14);
+
+  /* legacy accent aliases — deliberately de-hued */
+  --accent-violet:     var(--accent-primary);
+  --accent-violet-dim: var(--accent-primary-dim);
+  --accent-purple:     var(--accent-classical);
+  --accent-cyan:       var(--accent-pqc);
+  --accent-cyan-dim:   var(--accent-pqc-dim);
+  --accent-blue:       var(--accent-classical);
+  --accent-indigo:     #24303D;
+  --accent-teal:       #3FB8A8;
+
+  /* ── Severity — §26.2. The only saturated colour in the app. */
+  --severity-critical: #F5484B;
+  --severity-high:     #FF8A3D;
+  --severity-medium:   #F5B84D;
+  --severity-low:      #4CAF6D;
+  --severity-info:     var(--accent-pqc);
+
+  --status-critical:     var(--severity-critical);
+  --status-critical-bg:  rgba(245, 72, 75, 0.10);
+  --status-critical-dim: rgba(245, 72, 75, 0.35);
+  --status-high:         var(--severity-high);
+  --status-high-bg:      rgba(255, 138, 61, 0.10);
+  --status-medium:       var(--severity-medium);
+  --status-medium-bg:    rgba(245, 184, 77, 0.10);
+  --status-low:          var(--severity-low);
+  --status-low-bg:       rgba(76, 175, 109, 0.10);
+  --status-info:         #9B9BA3;
+  --status-info-bg:      rgba(155, 155, 163, 0.08);
+
+  /* Quantum status */
+  --quantum-vulnerable:   var(--severity-high);
+  --quantum-weak:         var(--severity-critical);
+  --quantum-adequate:     var(--accent-classical);
+  --quantum-resistant:    var(--severity-low);
+
+  /* ── Text — §26.2 ─────────────────────────────────────────── */
+  --text-primary:   #F2F2F3;
+  --text-secondary: #9B9BA3;
+  --text-tertiary:  #6B6B72;
+  --text-accent:    var(--accent-pqc);
+  --text-success:   var(--severity-low);
+  --text-warning:   var(--severity-medium);
+  --text-danger:    var(--severity-critical);
+
+  /* ── Typography — §27.1 ────────────────────────────────────── */
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+  --font-mono: 'JetBrains Mono', 'IBM Plex Mono', 'Fira Code', monospace;
 
-  /* Glassmorphism — §05 */
-  --glass-bg: rgba(13, 17, 23, 0.7);
-  --glass-bg-heavy: rgba(13, 17, 23, 0.85);
-  --glass-border: rgba(255, 255, 255, 0.06);
-  --glass-blur: 20px;
-  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  /* Translucency — §26.4. Real vibrancy behind floating layers is
+     the single most recognisable Raycast signature. */
+  --glass-bg:        rgba(19, 19, 21, 0.72);
+  --glass-bg-heavy:  rgba(19, 19, 21, 0.86);
+  --glass-border:    rgba(255, 255, 255, 0.08);
+  --glass-blur:      12px;
+  --backdrop-blur:   12px;
+  --glass-shadow:    0 12px 32px rgba(0, 0, 0, 0.45);
 
-  /* Spacing */
-  --space-1: 0.25rem;
-  --space-2: 0.5rem;
-  --space-3: 0.75rem;
-  --space-4: 1rem;
-  --space-5: 1.25rem;
-  --space-6: 1.5rem;
-  --space-8: 2rem;
-  --space-10: 2.5rem;
-  --space-12: 3rem;
-  --space-16: 4rem;
+  /* ── Spacing — §26.2. Exact 4px base unit, in px so it cannot
+     drift with root font-size. Never eyeball a padding value. */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
 
-  /* Radius */
-  --radius-sm:  4px;
+  /* ── Radius — §26.2. Nothing exceeds 12px. Legacy xl/2xl/full
+     are capped rather than deleted so old rules inherit the fix. */
+  --radius-xs:  4px;
+  --radius-sm:  6px;
   --radius-md:  8px;
   --radius-lg:  12px;
-  --radius-xl:  16px;
-  --radius-2xl: 24px;
-  --radius-full: 9999px;
+  --radius-xl:  12px;
+  --radius-2xl: 12px;
+  --radius-full: 4px;   /* pills → chips; true circles use 50% */
+  --radius-circle: 50%;
 
-  /* Shadows */
-  --shadow-sm:  0 1px 3px rgba(0,0,0,0.5);
-  --shadow-md:  0 4px 16px rgba(0,0,0,0.5);
-  --shadow-lg:  0 8px 32px rgba(0,0,0,0.6);
-  --shadow-glow-violet: 0 0 30px rgba(124, 58, 237, 0.2);
-  --shadow-glow-cyan: 0 0 20px rgba(0, 212, 255, 0.15);
-  --shadow-glow-red:  0 0 20px rgba(239, 68, 68, 0.2);
+  /* ── Elevation — §26.2. Shadow means "temporarily floating
+     above the app", never "this is a card". */
+  --elevation-1: 0 4px 12px rgba(0, 0, 0, 0.30);
+  --elevation-2: 0 12px 32px rgba(0, 0, 0, 0.45);
 
-  /* Transitions */
+  --shadow-sm:  none;
+  --shadow-md:  var(--elevation-1);
+  --shadow-lg:  var(--elevation-2);
+  --shadow-glow-violet: none;
+  --shadow-glow-cyan:   none;
+  --shadow-glow-red:    0 0 0 1px rgba(245, 72, 75, 0.25);
+
+  /* Transitions (legacy — retained for existing components) */
   --transition-fast:   150ms ease;
   --transition-normal: 250ms ease;
   --transition-slow:   400ms ease;
 
+  /* ── Motion System — §28.1 ────────────────────────────────
+     Durations communicate distance travelled; easings communicate
+     whether an element is entering, exiting, or changing in place. */
+  --duration-instant: 80ms;   /* hover, focus rings, toggles */
+  --duration-fast:    120ms;  /* button press, row select, chip toggle */
+  --duration-base:    180ms;  /* panel content swap, tab switch, tooltip */
+  --duration-medium:  240ms;  /* context panel, modal, dropdown */
+  --duration-slow:    360ms;  /* workspace transition, graph focus */
+  --duration-flow:    720ms;  /* multi-step sequences: circuit, scan→workspace */
+
+  --ease-standard:   cubic-bezier(0.4, 0.0, 0.2, 1);  /* in-place state change */
+  --ease-decelerate: cubic-bezier(0.0, 0.0, 0.2, 1);  /* entering elements */
+  --ease-accelerate: cubic-bezier(0.4, 0.0, 1, 1);    /* exiting elements */
+  --ease-spring:     cubic-bezier(0.16, 1, 0.3, 1);   /* panels, palette (overshoot-free) */
+
+  /* ── Type Scale — §27.1 ───────────────────────────────────────
+     Base is 13px, not the web-default 16px: dense analyst tools
+     run smaller, and that one choice signals "professional tool"
+     harder than any colour decision. Hierarchy from size/weight/
+     spacing — never from colour. */
+  --text-2xs:  11px;   /* micro-labels, timestamps, badge text */
+  --text-xs:   12px;   /* metadata, secondary row text, section labels */
+  --text-sm:   13px;   /* DEFAULT body/UI text */
+  --text-base: 14px;   /* row primary labels, form labels */
+  --text-md:   16px;   /* panel/section headers */
+  --text-lg:   20px;   /* page-level headers */
+  --text-xl:   28px;   /* rare — top-level hero scores only */
+
+  --lh-2xs:  16px;
+  --lh-xs:   16px;
+  --lh-sm:   20px;
+  --lh-base: 20px;
+  --lh-md:   24px;
+  --lh-lg:   28px;
+  --lh-xl:   36px;
+
+  /* Hybrid-crypto layer aliases (§17 Circuit consumes these) */
+  --hybrid-classical:     var(--accent-classical);
+  --hybrid-classical-dim: var(--accent-classical-dim);
+  --hybrid-pqc:           var(--accent-pqc);
+  --hybrid-pqc-dim:       var(--accent-pqc-dim);
+
+  /* Monochrome selection — §26.4 */
+  --selection-bg:     var(--overlay-selected);
+  --selection-accent: var(--accent-primary);
+
   /* Sidebar */
-  --sidebar-width: 240px;
-  --sidebar-collapsed-width: 60px;
-  --topbar-height: 56px;
+  --sidebar-width: 216px;
+  --sidebar-collapsed-width: 52px;
+  --topbar-height: 52px;
 }
 
 
@@ -122,39 +229,42 @@ html {
   font-size: 14px;
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
   font-family: var(--font-sans);
-  background-color: var(--bg-base);
+  font-size: var(--text-sm);
+  line-height: var(--lh-sm);
+  background-color: var(--bg-canvas);
   color: var(--text-primary);
-  line-height: 1.6;
   min-height: 100vh;
   overflow-x: hidden;
+  font-variant-numeric: tabular-nums;
 }
 
 #root {
   min-height: 100vh;
 }
 
-/* ── Typography ─────────────────────────────────────────────── */
+/* ── Typography — §27.1 ─────────────────────────────────────── */
 h1, h2, h3, h4, h5, h6 {
   font-weight: 600;
-  line-height: 1.3;
   color: var(--text-primary);
+  letter-spacing: -0.01em;
 }
 
-h1 { font-size: 2.25rem; font-weight: 700; }
-h2 { font-size: 1.75rem; font-weight: 600; }
-h3 { font-size: 1.375rem; font-weight: 600; }
-h4 { font-size: 1.125rem; font-weight: 600; }
-h5 { font-size: 1rem; font-weight: 500; }
-h6 { font-size: 0.875rem; font-weight: 500; }
+h1 { font-size: var(--text-xl);   line-height: var(--lh-xl); font-weight: 700; }
+h2 { font-size: var(--text-lg);   line-height: var(--lh-lg); }
+h3 { font-size: var(--text-md);   line-height: var(--lh-md); }
+h4 { font-size: var(--text-base); line-height: var(--lh-base); font-weight: 600; }
+h5 { font-size: var(--text-sm);   line-height: var(--lh-sm); font-weight: 600; }
+h6 { font-size: var(--text-xs);   line-height: var(--lh-xs); font-weight: 600; }
 
-p { color: var(--text-secondary); line-height: 1.7; }
-a { color: var(--accent-cyan); text-decoration: none; transition: opacity var(--transition-fast); }
-a:hover { opacity: 0.85; }
-code, pre { font-family: var(--font-mono); }
+p { color: var(--text-secondary); font-size: var(--text-sm); line-height: 1.65; }
+a { color: var(--text-primary); text-decoration: none; transition: opacity var(--duration-instant) var(--ease-standard); }
+a:hover { opacity: 0.75; }
+code, pre { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 
 /* ── Layout ─────────────────────────────────────────────────── */
 .app-shell {
@@ -163,29 +273,36 @@ code, pre { font-family: var(--font-mono); }
   position: relative;
 }
 
+/* The rail is a real flex child, not a floating overlay, so the
+   workspace never needs a magic margin to dodge it (§38.7). */
 .main-content {
   flex: 1;
   display: flex;
   flex-direction: column;
   min-width: 0;
-  margin-left: 72px; /* Space for floating nav rail */
-  transition: margin-left var(--transition-normal);
 }
 
+/* §36.5: don't strand content in huge margins at 1920px — the
+   workspace uses the width it's given, capped only where line
+   length would otherwise hurt reading. */
 .page-content {
   flex: 1;
-  padding: var(--space-6);
+  padding: var(--space-5) var(--space-6);
   overflow-y: auto;
-  max-width: 1400px;
+  width: 100%;
+  max-width: 1920px;
 }
 
-/* ── Cards ──────────────────────────────────────────────────── */
+/* ── Cards / Panels ─────────────────────────────────────────────
+   Flat panels get borders only, zero shadow (§26.2). */
 .card {
-  background: var(--bg-card);
+  background: var(--bg-surface);
   border: 1px solid var(--border-default);
-  border-radius: var(--radius-lg);
-  padding: var(--space-6);
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  box-shadow: none;
+  transition: border-color var(--duration-instant) var(--ease-standard),
+              background-color var(--duration-instant) var(--ease-standard);
 }
 
 .card:hover {
@@ -193,8 +310,8 @@ code, pre { font-family: var(--font-mono); }
 }
 
 .card-accent {
-  border-color: var(--border-accent);
-  box-shadow: var(--shadow-glow-cyan);
+  border-color: var(--border-focus);
+  box-shadow: none;
 }
 
 .card-header {
@@ -204,42 +321,46 @@ code, pre { font-family: var(--font-mono); }
   margin-bottom: var(--space-4);
 }
 
+/* Section label — §27.1: 12px, uppercase, +0.04em, tertiary. Never bold. */
 .card-title {
-  font-size: 0.875rem;
-  font-weight: 600;
+  font-size: var(--text-xs);
+  line-height: var(--lh-xs);
+  font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+  color: var(--text-tertiary);
 }
 
 /* ── Stat Cards ─────────────────────────────────────────────── */
 .stat-card {
-  background: var(--bg-card);
+  background: var(--bg-surface);
   border: 1px solid var(--border-default);
-  border-radius: var(--radius-lg);
-  padding: var(--space-5) var(--space-6);
-  transition: all var(--transition-normal);
+  border-radius: var(--radius-md);
+  padding: var(--space-4) var(--space-5);
+  transition: border-color var(--duration-instant) var(--ease-standard),
+              background-color var(--duration-instant) var(--ease-standard);
   cursor: default;
 }
 
 .stat-card:hover {
   border-color: var(--border-strong);
-  background: var(--bg-card-hover);
-  transform: translateY(-1px);
+  background: var(--bg-surface-2);
 }
 
 .stat-value {
-  font-size: 2.5rem;
-  font-weight: 800;
-  line-height: 1;
+  font-size: var(--text-xl);
+  line-height: var(--lh-xl);
+  font-weight: 700;
+  letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
 }
 
 .stat-label {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
+  font-size: var(--text-2xs);
+  line-height: var(--lh-2xs);
+  color: var(--text-tertiary);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   margin-top: var(--space-1);
 }
 
@@ -250,88 +371,105 @@ code, pre { font-family: var(--font-mono); }
 .severity-low      { color: var(--status-low); }
 .severity-info     { color: var(--status-info); }
 
+/* Badges are chips, not pills (§26.2: --radius-xs, no 9999px) */
 .badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px 10px;
-  border-radius: var(--radius-full);
-  font-size: 0.75rem;
+  gap: var(--space-1);
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-xs);
+  font-size: var(--text-2xs);
+  line-height: var(--lh-2xs);
   font-weight: 600;
   letter-spacing: 0.03em;
+  font-variant-numeric: tabular-nums;
 }
 
 .badge-critical { background: var(--status-critical-bg); color: var(--status-critical); border: 1px solid var(--status-critical-dim); }
-.badge-high     { background: var(--status-high-bg);     color: var(--status-high);     border: 1px solid rgba(249, 115, 22, 0.3); }
-.badge-medium   { background: var(--status-medium-bg);   color: var(--status-medium);   border: 1px solid rgba(234, 179, 8, 0.3); }
-.badge-low      { background: var(--status-low-bg);      color: var(--status-low);      border: 1px solid rgba(34, 197, 94, 0.3); }
-.badge-info     { background: var(--status-info-bg);     color: var(--status-info);     border: 1px solid rgba(148, 163, 184, 0.2); }
-.badge-cyan     { background: var(--accent-cyan-dim);    color: var(--accent-cyan);     border: 1px solid rgba(0, 212, 255, 0.3); }
-.badge-purple   { background: rgba(139, 92, 246, 0.15);  color: var(--accent-purple);   border: 1px solid rgba(139, 92, 246, 0.3); }
+.badge-high     { background: var(--status-high-bg);     color: var(--status-high);     border: 1px solid rgba(255, 138, 61, 0.30); }
+.badge-medium   { background: var(--status-medium-bg);   color: var(--status-medium);   border: 1px solid rgba(245, 184, 77, 0.30); }
+.badge-low      { background: var(--status-low-bg);      color: var(--status-low);      border: 1px solid rgba(76, 175, 109, 0.30); }
+.badge-info     { background: var(--status-info-bg);     color: var(--status-info);     border: 1px solid rgba(155, 155, 163, 0.20); }
+.badge-cyan     { background: var(--accent-pqc-dim);     color: var(--accent-pqc);      border: 1px solid rgba(77, 208, 225, 0.30); }
+/* legacy alias — was violet, now the classical-crypto slate-blue (§26) */
+.badge-purple   { background: var(--accent-classical-dim); color: var(--accent-classical); border: 1px solid rgba(91, 127, 166, 0.30); }
 
 /* Quantum status badges */
-.badge-vulnerable       { background: rgba(249, 115, 22, 0.12); color: var(--quantum-vulnerable); border: 1px solid rgba(249, 115, 22, 0.3); }
-.badge-classical-weak   { background: rgba(239, 68, 68, 0.12);  color: var(--quantum-weak);       border: 1px solid rgba(239, 68, 68, 0.3); }
-.badge-adequate         { background: rgba(59, 130, 246, 0.12); color: var(--quantum-adequate);   border: 1px solid rgba(59, 130, 246, 0.3); }
-.badge-quantum-resistant{ background: rgba(34, 197, 94, 0.12);  color: var(--quantum-resistant);  border: 1px solid rgba(34, 197, 94, 0.3); }
+.badge-vulnerable       { background: var(--status-high-bg);     color: var(--quantum-vulnerable); border: 1px solid rgba(255, 138, 61, 0.30); }
+.badge-classical-weak   { background: var(--status-critical-bg); color: var(--quantum-weak);       border: 1px solid rgba(245, 72, 75, 0.30); }
+.badge-adequate         { background: var(--accent-classical-dim); color: var(--quantum-adequate); border: 1px solid rgba(91, 127, 166, 0.30); }
+.badge-quantum-resistant{ background: var(--status-low-bg);      color: var(--quantum-resistant);  border: 1px solid rgba(76, 175, 109, 0.30); }
 
-/* ── Buttons ────────────────────────────────────────────────── */
+/* ── Buttons — §26.2 / §38.12 ───────────────────────────────────
+   ONE primary-action colour app-wide: a solid off-white fill with
+   near-black ink (Raycast's own primary button). No gradients, no
+   coloured "this is a button" fills. Red is reserved strictly for
+   destructive/critical actions. */
 .btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: var(--space-2);
-  padding: var(--space-2) var(--space-5);
-  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
   font-family: var(--font-sans);
-  font-size: 0.875rem;
-  font-weight: 600;
+  font-size: var(--text-sm);
+  line-height: var(--lh-sm);
+  font-weight: 500;
   cursor: pointer;
   border: 1px solid transparent;
-  transition: all var(--transition-fast);
+  transition: background-color var(--duration-instant) var(--ease-standard),
+              border-color var(--duration-instant) var(--ease-standard),
+              color var(--duration-instant) var(--ease-standard),
+              opacity var(--duration-instant) var(--ease-standard);
   text-decoration: none;
   white-space: nowrap;
 }
 
+.btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 1px var(--bg-canvas), 0 0 0 3px var(--border-focus);
+}
+
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
 .btn-primary {
-  background: linear-gradient(135deg, #00d4ff, #0ea5e9);
-  color: #0a0e1a;
+  background: var(--accent-primary);
+  color: var(--accent-primary-ink);
   border-color: transparent;
+  font-weight: 600;
 }
-.btn-primary:hover {
-  background: linear-gradient(135deg, #22dbff, #38bdf8);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 20px rgba(0, 212, 255, 0.35);
-}
+.btn-primary:hover:not(:disabled) { background: #FFFFFE; }
+.btn-primary:active:not(:disabled) { background: #DDDDDE; }
 
 .btn-danger {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
-  color: white;
+  background: transparent;
+  color: var(--severity-critical);
+  border-color: rgba(245, 72, 75, 0.35);
 }
-.btn-danger:hover {
-  background: linear-gradient(135deg, #f87171, #ef4444);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-glow-red);
+.btn-danger:hover:not(:disabled) {
+  background: var(--status-critical-bg);
+  border-color: rgba(245, 72, 75, 0.55);
 }
 
+/* Q-Day simulation is a primary analysis action, not a destructive
+   one — §38.12 moves it off red onto the app-wide primary. */
 .btn-qday {
-  background: linear-gradient(135deg, #1a0a0a, #3b0f0f);
-  color: #ff4444;
-  border: 1px solid rgba(239, 68, 68, 0.5);
-  font-size: 1rem;
-  padding: var(--space-3) var(--space-8);
-  border-radius: var(--radius-lg);
-  letter-spacing: 0.05em;
+  background: var(--accent-primary);
+  color: var(--accent-primary-ink);
+  border: 1px solid transparent;
+  font-size: var(--text-base);
+  font-weight: 600;
+  padding: var(--space-3) var(--space-6);
+  border-radius: var(--radius-sm);
+  letter-spacing: 0.02em;
 }
-.btn-qday:hover {
-  background: linear-gradient(135deg, #2d0a0a, #5c1a1a);
-  box-shadow: 0 0 30px rgba(239, 68, 68, 0.4);
-  border-color: rgba(239, 68, 68, 0.8);
-  transform: translateY(-1px);
-}
+.btn-qday:hover { background: #FFFFFE; }
 .btn-qday.active {
-  background: linear-gradient(135deg, #5c1a1a, #7f1d1d);
-  color: #fca5a5;
-  animation: pulse-red 2s infinite;
+  background: transparent;
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+  animation: none;
 }
 
 .btn-ghost {
@@ -340,39 +478,40 @@ code, pre { font-family: var(--font-mono); }
   border-color: var(--border-default);
 }
 .btn-ghost:hover {
-  background: var(--bg-card);
+  background: var(--overlay-hover);
   color: var(--text-primary);
   border-color: var(--border-strong);
 }
 
 .btn-sm {
   padding: var(--space-1) var(--space-3);
-  font-size: 0.8rem;
+  font-size: var(--text-xs);
 }
 
 .btn-lg {
-  padding: var(--space-4) var(--space-10);
-  font-size: 1rem;
-  border-radius: var(--radius-lg);
+  padding: var(--space-3) var(--space-6);
+  font-size: var(--text-base);
+  border-radius: var(--radius-sm);
 }
 
 /* ── Inputs ─────────────────────────────────────────────────── */
 .input {
   background: var(--bg-input);
   border: 1px solid var(--border-default);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   color: var(--text-primary);
   font-family: var(--font-sans);
-  font-size: 0.875rem;
-  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+  padding: var(--space-2) var(--space-3);
   width: 100%;
-  transition: border-color var(--transition-fast);
+  transition: border-color var(--duration-instant) var(--ease-standard),
+              box-shadow var(--duration-instant) var(--ease-standard);
 }
 
 .input:focus {
   outline: none;
-  border-color: var(--accent-cyan);
-  box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.04);
 }
 
 .input::placeholder { color: var(--text-tertiary); }
@@ -387,34 +526,40 @@ select.input {
   padding-right: 2.5rem;
 }
 
-/* ── Tables ─────────────────────────────────────────────────── */
+/* ── Tables — dense by intent (§26.1) ───────────────────────── */
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
 }
 
 .data-table th {
   text-align: left;
-  padding: var(--space-3) var(--space-4);
-  font-size: 0.75rem;
-  font-weight: 600;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-2xs);
+  line-height: var(--lh-2xs);
+  font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.04em;
   color: var(--text-tertiary);
   border-bottom: 1px solid var(--border-default);
   white-space: nowrap;
 }
 
 .data-table td {
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-2) var(--space-3);
   border-bottom: 1px solid var(--border-subtle);
   color: var(--text-primary);
   vertical-align: middle;
 }
 
+/* Numeric columns right-align so digits stack (§36.5) */
+.data-table th.num,
+.data-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+
 .data-table tr:hover td {
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--overlay-hover);
 }
 
 .data-table tr:last-child td {
@@ -423,22 +568,23 @@ select.input {
 
 .data-table .mono {
   font-family: var(--font-mono);
-  font-size: 0.8rem;
+  font-size: var(--text-xs);
   color: var(--text-secondary);
 }
 
 /* ── Progress Bars ──────────────────────────────────────────── */
 .progress-bar {
-  background: var(--border-subtle);
-  border-radius: var(--radius-full);
+  background: var(--overlay-hover);
+  border-radius: var(--radius-xs);
   overflow: hidden;
-  height: 6px;
+  height: 4px;
 }
 
 .progress-fill {
   height: 100%;
-  border-radius: var(--radius-full);
-  transition: width var(--transition-slow);
+  border-radius: var(--radius-xs);
+  transform-origin: left center;
+  transition: width var(--duration-base) var(--ease-standard);
 }
 
 /* ── Code Blocks ─────────────────────────────────────────────── */
@@ -453,8 +599,8 @@ select.input {
   line-height: 1.6;
 }
 
-.diff-removed { color: #f87171; background: rgba(239, 68, 68, 0.08); }
-.diff-added   { color: #4ade80; background: rgba(34, 197, 94, 0.08); }
+.diff-removed { color: #f87171; background: rgba(245, 72, 75, 0.08); }
+.diff-added   { color: #4ade80; background: rgba(76, 175, 109, 0.08); }
 
 /* ── Scrollbar ──────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -474,13 +620,13 @@ select.input {
 }
 
 @keyframes pulse-red {
-  0%, 100% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.3); }
-  50%       { box-shadow: 0 0 30px rgba(239, 68, 68, 0.6); }
+  0%, 100% { box-shadow: 0 0 15px rgba(245, 72, 75, 0.3); }
+  50%       { box-shadow: 0 0 30px rgba(245, 72, 75, 0.6); }
 }
 
 @keyframes pulse-cyan {
-  0%, 100% { box-shadow: 0 0 15px rgba(0, 212, 255, 0.2); }
-  50%       { box-shadow: 0 0 30px rgba(0, 212, 255, 0.5); }
+  0%, 100% { box-shadow: 0 0 15px rgba(77, 208, 225, 0.2); }
+  50%       { box-shadow: 0 0 30px rgba(77, 208, 225, 0.5); }
 }
 
 @keyframes scan-line {
@@ -498,8 +644,8 @@ select.input {
   to   { opacity: 1; transform: scale(1); }
 }
 
-.animate-fade-in  { animation: fadeIn var(--transition-normal) ease forwards; }
-.animate-slide-in { animation: slideIn var(--transition-normal) ease forwards; }
+.animate-fade-in  { animation: fadeIn var(--duration-base) var(--ease-decelerate) forwards; }
+.animate-slide-in { animation: slideIn var(--duration-base) var(--ease-decelerate) forwards; }
 
 /* ── Dividers ────────────────────────────────────────────────── */
 .divider {
@@ -508,21 +654,27 @@ select.input {
   margin: var(--space-6) 0;
 }
 
-/* ── Empty State ─────────────────────────────────────────────── */
+/* ── Empty State — §33: never a blank page, never fake data ──── */
 .empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: var(--space-16);
+  padding: var(--space-12) var(--space-6);
   text-align: center;
   color: var(--text-tertiary);
-  gap: var(--space-4);
+  gap: var(--space-3);
 }
 
+.empty-state h2 { font-size: var(--text-md); color: var(--text-primary); }
+.empty-state p  { max-width: 46ch; font-size: var(--text-sm); }
+
 .empty-state-icon {
-  font-size: 3rem;
-  opacity: 0.4;
+  color: var(--text-tertiary);
+  opacity: 0.5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* ── Tooltip ─────────────────────────────────────────────────── */
@@ -533,19 +685,20 @@ select.input {
 .tooltip::after {
   content: attr(data-tip);
   position: absolute;
-  bottom: calc(100% + 8px);
+  bottom: calc(100% + 6px);
   left: 50%;
   transform: translateX(-50%);
-  background: var(--bg-elevated);
+  background: var(--bg-surface-2);
   border: 1px solid var(--border-default);
   color: var(--text-secondary);
-  font-size: 0.75rem;
-  padding: 4px 10px;
-  border-radius: var(--radius-sm);
+  font-size: var(--text-2xs);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-xs);
   white-space: nowrap;
   pointer-events: none;
   opacity: 0;
-  transition: opacity var(--transition-fast);
+  box-shadow: var(--elevation-1);
+  transition: opacity var(--duration-instant) var(--ease-standard);
   z-index: 100;
 }
 
@@ -575,10 +728,10 @@ select.input {
 
 /* ── Loader ─────────────────────────────────────────────────── */
 .spinner {
-  width: 20px;
-  height: 20px;
-  border: 2px solid var(--border-default);
-  border-top-color: var(--accent-cyan);
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--border-strong);
+  border-top-color: var(--text-primary);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
@@ -594,20 +747,20 @@ select.input {
 }
 
 .alert-warning {
-  background: rgba(234, 179, 8, 0.08);
-  border-color: rgba(234, 179, 8, 0.3);
+  background: rgba(245, 184, 77, 0.08);
+  border-color: rgba(245, 184, 77, 0.3);
   color: #fbbf24;
 }
 
 .alert-danger {
-  background: rgba(239, 68, 68, 0.08);
-  border-color: rgba(239, 68, 68, 0.3);
+  background: rgba(245, 72, 75, 0.08);
+  border-color: rgba(245, 72, 75, 0.3);
   color: #f87171;
 }
 
 .alert-info {
-  background: rgba(0, 212, 255, 0.06);
-  border-color: rgba(0, 212, 255, 0.25);
+  background: rgba(77, 208, 225, 0.06);
+  border-color: rgba(77, 208, 225, 0.25);
   color: var(--accent-cyan);
 }
 
@@ -615,19 +768,19 @@ select.input {
 .scenario-label {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 12px;
-  background: rgba(234, 179, 8, 0.1);
-  border: 1px solid rgba(234, 179, 8, 0.3);
-  border-radius: var(--radius-full);
-  font-size: 0.7rem;
-  font-weight: 700;
+  gap: var(--space-1);
+  padding: 1px var(--space-2);
+  background: var(--status-medium-bg);
+  border: 1px solid rgba(245, 184, 77, 0.30);
+  border-radius: var(--radius-xs);
+  font-size: var(--text-2xs);
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: #fbbf24;
+  letter-spacing: 0.06em;
+  color: var(--severity-medium);
 }
 
-/* ── Tabs ────────────────────────────────────────────────────── */
+/* ── Tabs — monochrome selection (§26.4) ────────────────────── */
 .tabs {
   display: flex;
   border-bottom: 1px solid var(--border-default);
@@ -635,13 +788,15 @@ select.input {
 }
 
 .tab {
-  padding: var(--space-2) var(--space-5);
-  font-size: 0.875rem;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
   font-weight: 500;
   color: var(--text-tertiary);
   cursor: pointer;
   border-bottom: 2px solid transparent;
-  transition: all var(--transition-fast);
+  transition: color var(--duration-instant) var(--ease-standard),
+              border-color var(--duration-instant) var(--ease-standard),
+              background-color var(--duration-instant) var(--ease-standard);
   background: none;
   border-top: none;
   border-left: none;
@@ -649,11 +804,12 @@ select.input {
   font-family: var(--font-sans);
 }
 
-.tab:hover { color: var(--text-secondary); }
+.tab:hover { color: var(--text-secondary); background: var(--overlay-hover); }
 .tab.active {
-  color: var(--accent-cyan);
-  border-bottom-color: var(--accent-cyan);
+  color: var(--text-primary);
+  border-bottom-color: var(--accent-primary);
 }
+.tab:focus-visible { outline: none; box-shadow: inset 0 0 0 1px var(--border-focus); }
 
 /* ── Risk Score Bar ─────────────────────────────────────────── */
 .risk-bar-item {
@@ -679,18 +835,20 @@ select.input {
 
 /* ── Page Header ─────────────────────────────────────────────── */
 .page-header {
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--space-5);
 }
 
 .page-header h2 {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: var(--text-lg);
+  line-height: var(--lh-lg);
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 .page-header p {
-  font-size: 0.9rem;
+  font-size: var(--text-sm);
   color: var(--text-tertiary);
-  margin-top: 4px;
+  margin-top: var(--space-1);
 }
 
 /* ── Responsive ─────────────────────────────────────────────── */
@@ -712,64 +870,70 @@ select.input {
 .quantum-badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
-  border-radius: var(--radius-full);
-  font-size: 0.72rem;
-  font-weight: 700;
+  gap: var(--space-1);
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-xs);
+  font-size: var(--text-2xs);
+  line-height: var(--lh-2xs);
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   border: 1px solid;
+  white-space: nowrap;
 }
 
-.qb-vulnerable        { background: rgba(249, 115, 22, 0.12); color: #f97316; border-color: rgba(249, 115, 22, 0.3); }
-.qb-classical-weak    { background: rgba(239, 68, 68, 0.12);  color: #ef4444; border-color: rgba(239, 68, 68, 0.3); }
-.qb-adequate          { background: rgba(59, 130, 246, 0.12); color: #3b82f6; border-color: rgba(59, 130, 246, 0.3); }
-.qb-quantum-resistant { background: rgba(34, 197, 94, 0.12);  color: #22c55e; border-color: rgba(34, 197, 94, 0.3); }
-.qb-unknown           { background: rgba(100, 116, 139, 0.12); color: #64748b; border-color: rgba(100, 116, 139, 0.3); }
+.qb-vulnerable        { background: var(--status-high-bg);       color: var(--severity-high);     border-color: rgba(255, 138, 61, 0.30); }
+.qb-classical-weak    { background: var(--status-critical-bg);   color: var(--severity-critical); border-color: rgba(245, 72, 75, 0.30); }
+.qb-adequate          { background: var(--accent-classical-dim); color: var(--accent-classical);  border-color: rgba(91, 127, 166, 0.30); }
+.qb-quantum-resistant { background: var(--status-low-bg);        color: var(--severity-low);      border-color: rgba(76, 175, 109, 0.30); }
+.qb-unknown           { background: var(--status-info-bg);       color: var(--text-tertiary);     border-color: var(--border-strong); }
 
 /* ── Global Status Pills (remediation status) ───────────────── */
 .status-pill {
   display: inline-flex;
   align-items: center;
-  padding: 2px 9px;
-  border-radius: var(--radius-full);
-  font-size: 0.72rem;
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-xs);
+  font-size: var(--text-2xs);
+  line-height: var(--lh-2xs);
   font-weight: 600;
   text-transform: capitalize;
   border: 1px solid;
+  white-space: nowrap;
 }
 
-.status-open          { background: rgba(239, 68, 68, 0.1);  color: #ef4444; border-color: rgba(239, 68, 68, 0.25); }
-.status-in-progress   { background: rgba(234, 179, 8, 0.1);  color: #eab308; border-color: rgba(234, 179, 8, 0.25); }
-.status-remediated    { background: rgba(34, 197, 94, 0.1);  color: #22c55e; border-color: rgba(34, 197, 94, 0.25); }
-.status-accepted-risk { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; border-color: rgba(139, 92, 246, 0.25); }
-.status-wont-fix      { background: rgba(100, 116, 139, 0.1); color: #64748b; border-color: rgba(100, 116, 139, 0.25); }
-.status-todo          { background: rgba(239, 68, 68, 0.1);  color: #ef4444; border-color: rgba(239, 68, 68, 0.25); }
-.status-done          { background: rgba(34, 197, 94, 0.1);  color: #22c55e; border-color: rgba(34, 197, 94, 0.25); }
+.status-open          { background: var(--status-critical-bg);   color: var(--severity-critical); border-color: rgba(245, 72, 75, 0.25); }
+.status-in-progress   { background: var(--status-medium-bg);     color: var(--severity-medium);   border-color: rgba(245, 184, 77, 0.25); }
+.status-remediated    { background: var(--status-low-bg);        color: var(--severity-low);      border-color: rgba(76, 175, 109, 0.25); }
+.status-accepted-risk { background: var(--accent-classical-dim); color: var(--accent-classical);  border-color: rgba(91, 127, 166, 0.25); }
+.status-wont-fix      { background: var(--status-info-bg);       color: var(--text-tertiary);     border-color: var(--border-strong); }
+.status-todo          { background: var(--status-critical-bg);   color: var(--severity-critical); border-color: rgba(245, 72, 75, 0.25); }
+.status-done          { background: var(--status-low-bg);        color: var(--severity-low);      border-color: rgba(76, 175, 109, 0.25); }
 
-/* ── badge-cyan (for PQC recommendations) ──────────────────── */
+/* ── badge-cyan (PQC semantics only — §26) ─────────────────── */
 .badge-cyan {
-  background: rgba(0, 212, 255, 0.1);
-  color: #00d4ff;
-  border: 1px solid rgba(0, 212, 255, 0.25);
-  padding: 2px 8px;
-  border-radius: var(--radius-full);
-  font-size: 0.72rem;
-  font-weight: 700;
+  background: var(--accent-pqc-dim);
+  color: var(--accent-pqc);
+  border: 1px solid rgba(77, 208, 225, 0.25);
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-xs);
+  font-size: var(--text-2xs);
+  font-weight: 600;
 }
 
-/* ── Global Modal ───────────────────────────────────────────── */
+/* ── Global Modal — floats, so it earns a shadow (§26.2) ────── */
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(6, 10, 19, 0.82);
-  backdrop-filter: blur(6px);
+  background: rgba(6, 6, 8, 0.68);
+  backdrop-filter: blur(var(--backdrop-blur));
+  -webkit-backdrop-filter: blur(var(--backdrop-blur));
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 500;
-  padding: 16px;
+  padding: var(--space-4);
+  animation: fadeInOnly var(--duration-fast) var(--ease-decelerate);
 }
 
 .modal-content {
@@ -777,32 +941,217 @@ select.input {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  animation: modal-slide-up 0.2s ease;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elevation-2);
+  animation: modal-slide-up var(--duration-medium) var(--ease-spring);
 }
 
 @keyframes modal-slide-up {
-  from { opacity: 0; transform: translateY(20px) scale(0.98); }
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
   to   { opacity: 1; transform: translateY(0)  scale(1); }
 }
 
+@keyframes fadeInOnly {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
 .modal-close-btn {
-  width: 32px;
-  height: 32px;
-  background: var(--bg-elevated);
+  width: 28px;
+  height: 28px;
+  background: transparent;
   border: 1px solid var(--border-default);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   color: var(--text-tertiary);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background-color var(--duration-instant) var(--ease-standard),
+              color var(--duration-instant) var(--ease-standard),
+              border-color var(--duration-instant) var(--ease-standard);
   flex-shrink: 0;
 }
 .modal-close-btn:hover {
-  background: var(--status-critical-bg);
-  border-color: var(--status-critical-dim);
-  color: var(--status-critical);
+  background: var(--overlay-hover);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+/* ── Type scale utilities — §27.1 ───────────────────────────── */
+.t-2xs { font-size: var(--text-2xs);  line-height: var(--lh-2xs); }
+.t-xs  { font-size: var(--text-xs);   line-height: var(--lh-xs); }
+.t-sm  { font-size: var(--text-sm);   line-height: var(--lh-sm); }
+.t-base{ font-size: var(--text-base); line-height: var(--lh-base); }
+.t-md  { font-size: var(--text-md);   line-height: var(--lh-md); }
+.t-lg  { font-size: var(--text-lg);   line-height: var(--lh-lg); }
+.t-xl  { font-size: var(--text-xl);   line-height: var(--lh-xl); }
+.mono  { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.num   { font-variant-numeric: tabular-nums; }
+
+/* Section label — the one canonical treatment (§27.1) */
+.section-label {
+  font-size: var(--text-xs);
+  line-height: var(--lh-xs);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-tertiary);
+}
+
+/* ── Keycap shortcut chips — §26.4 ─────────────────────────────
+   Shortcuts render as individual recessed keys, not "Ctrl + K"
+   plain text. Used in the palette footer and every shortcut hint. */
+.keycap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--radius-xs);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.35);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  line-height: 1;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.keycap-row { display: inline-flex; align-items: center; gap: 3px; }
+
+/* ── Data provenance tags — §3 (non-negotiable) ────────────────
+   Every data-bearing surface declares where its numbers came from.
+   These are deliberately plain so they read as metadata, not decoration. */
+.provenance {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-xs);
+  font-size: var(--text-2xs);
+  line-height: var(--lh-2xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px solid var(--border-strong);
+  color: var(--text-tertiary);
+  background: transparent;
+  white-space: nowrap;
+}
+.provenance-real    { color: var(--severity-low);      border-color: rgba(76, 175, 109, 0.30); }
+.provenance-demo    { color: var(--severity-medium);   border-color: rgba(245, 184, 77, 0.30); }
+.provenance-pending { color: var(--accent-pqc);        border-color: rgba(77, 208, 225, 0.30); }
+.provenance-none    { color: var(--text-tertiary);     border-color: var(--border-strong); }
+
+/* ── Designed loading states — §36.5 ──────────────────────────
+   Skeletons take the shape of the content they become. A single
+   centred spinner on a data-dense screen is a default, not a design. */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.035) 25%,
+    rgba(255, 255, 255, 0.07) 37%,
+    rgba(255, 255, 255, 0.035) 63%
+  );
+  background-size: 400% 100%;
+  border-radius: var(--radius-xs);
+  animation: skeleton-sweep 1.4s var(--ease-standard) infinite;
+}
+
+.skeleton-row {
+  height: 36px;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0 var(--space-3);
+}
+
+.skeleton-text { height: 9px; }
+
+@keyframes skeleton-sweep {
+  from { background-position: 100% 50%; }
+  to   { background-position: 0 50%; }
+}
+
+/* ── Reactive surface field — §26.3 ───────────────────────────
+   A sparse hairline grid that brightens toward off-white within a
+   soft radius of the cursor. Two stacked gradients, position driven
+   by --mx/--my written from JS (transform-free, GPU-cheap). It reads
+   as light catching a surface, never as a colour effect. It NEVER
+   animates without user input, and it is never placed behind dense
+   tables where it would cost legibility. */
+.reactive-field {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  --mx: 50%;
+  --my: 50%;
+  --reactive-radius: 220px;
+  --reactive-strength: 0;
+}
+
+.reactive-field::before,
+.reactive-field::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, rgba(107, 107, 114, 0.5) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(107, 107, 114, 0.5) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* Resting layer: static, very low opacity. Always present. */
+.reactive-field::before { opacity: 0.10; }
+
+/* Reactive layer: identical grid, masked to a soft disc at the
+   cursor, brightened toward --accent-primary. Fades out on idle. */
+.reactive-field::after {
+  background-image:
+    linear-gradient(to right, rgba(242, 242, 243, 0.9) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(242, 242, 243, 0.9) 1px, transparent 1px);
+  opacity: calc(0.16 * var(--reactive-strength));
+  mask-image: radial-gradient(
+    circle var(--reactive-radius) at var(--mx) var(--my),
+    #000 0%, rgba(0, 0, 0, 0.55) 45%, transparent 78%
+  );
+  -webkit-mask-image: radial-gradient(
+    circle var(--reactive-radius) at var(--mx) var(--my),
+    #000 0%, rgba(0, 0, 0, 0.55) 45%, transparent 78%
+  );
+  transition: opacity var(--duration-slow) var(--ease-standard);
+}
+
+/* ── Reduced motion — §28.7 ─────────────────────────────────────
+   Strip decorative/sequenced motion app-wide. Keep only the
+   functional transitions needed to comprehend a state change,
+   clamped to instant/fast and opacity-only (no translate/scale). */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: var(--duration-instant) !important;
+    scroll-behavior: auto !important;
+  }
+  /* Neutralise transform-based entrances so nothing slides/scales */
+  .animate-fade-in,
+  .animate-slide-in,
+  .cmd-palette,
+  .cmd-overlay,
+  .cmd-actions,
+  .modal-content {
+    animation: none !important;
+    transform: none !important;
+  }
+  /* §26.3: no cursor tracking — fall back to the static grid */
+  .reactive-field::after { display: none !important; }
+  .skeleton { animation: none !important; background: rgba(255, 255, 255, 0.05) !important; }
 }
 
 

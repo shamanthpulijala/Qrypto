@@ -45,11 +45,11 @@ interface AuthState {
 
 function roleToAvatarColor(role: string): string {
   const palette: Record<string, string> = {
-    ADMIN: 'linear-gradient(135deg, #00d4ff, #8b5cf6)',
-    ANALYST: 'linear-gradient(135deg, #22c55e, #14b8a6)',
-    EXECUTIVE: 'linear-gradient(135deg, #f97316, #ef4444)',
+    ADMIN: 'linear-gradient(135deg, #4DD0E1, var(--accent-classical))',
+    ANALYST: 'linear-gradient(135deg, #4CAF6D, #14b8a6)',
+    EXECUTIVE: 'linear-gradient(135deg, #FF8A3D, #F5484B)',
     DEVELOPER: 'linear-gradient(135deg, #3b82f6, #6366f1)',
-    USER: 'linear-gradient(135deg, #00d4ff, #0066ff)',
+    USER: 'linear-gradient(135deg, #4DD0E1, #0066ff)',
   };
   return palette[role] ?? 'linear-gradient(135deg, #64748b, #475569)';
 }

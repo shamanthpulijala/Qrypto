@@ -61,12 +61,12 @@ export class ErrorBoundary extends Component<Props, State> {
             width: '56px',
             height: '56px',
             borderRadius: '50%',
-            background: 'rgba(239, 68, 68, 0.15)',
-            border: '1px solid rgba(239, 68, 68, 0.3)',
+            background: 'rgba(245, 72, 75, 0.15)',
+            border: '1px solid rgba(245, 72, 75, 0.3)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#ef4444',
+            color: '#F5484B',
             marginBottom: '16px',
           }}>
             <AlertTriangle size={28} />

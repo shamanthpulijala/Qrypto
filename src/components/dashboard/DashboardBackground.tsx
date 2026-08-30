@@ -44,7 +44,7 @@ export function DashboardBackground() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       // Faint grid
-      ctx.strokeStyle = 'rgba(124, 58, 237, 0.015)';
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.015)';
       ctx.lineWidth = 0.5;
       const gridSize = 60;
       for (let x = 0; x < canvas.width; x += gridSize) {
@@ -70,7 +70,7 @@ export function DashboardBackground() {
         if (p.y > canvas!.height) p.y = 0;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(124, 58, 237, ${p.opacity})`;
+        ctx.fillStyle = `rgba(255, 255, 255, ${p.opacity})`;
         ctx.fill();
       });
 

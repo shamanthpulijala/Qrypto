@@ -26,8 +26,8 @@
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse 60% 50% at 50% 40%, rgba(124, 58, 237, 0.08) 0%, transparent 70%),
-    radial-gradient(ellipse 40% 40% at 30% 60%, rgba(0, 212, 255, 0.04) 0%, transparent 70%);
+    radial-gradient(ellipse 60% 50% at 50% 40%, rgba(255, 255, 255, 0.08) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 40% at 30% 60%, rgba(77, 208, 225, 0.04) 0%, transparent 70%);
   pointer-events: none;
   z-index: 1;
 }
@@ -57,35 +57,41 @@
   gap: 1.5rem;
 }
 
+/* §38.2 — chip, not a pill; monochrome, no violet tint. */
 .hero-badge {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 16px;
-  background: var(--accent-violet-dim);
-  border: 1px solid rgba(124, 58, 237, 0.25);
-  border-radius: var(--radius-full);
-  font-size: 0.7rem;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xs);
+  font-size: var(--text-2xs);
+  line-height: var(--lh-2xs);
   font-weight: 600;
-  letter-spacing: 0.1em;
-  color: var(--accent-violet);
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
   width: fit-content;
 }
 
+/* §38.1 — the gradient text fill is gone. Emphasis now comes from
+   contrast between two real text colours, which survives at every
+   size and never smears the letterforms. */
 .hero-title {
-  font-size: clamp(2.5rem, 5.5vw, 4.5rem);
-  font-weight: 800;
-  line-height: 1.05;
-  letter-spacing: -0.03em;
-  color: var(--text-primary);
+  font-size: clamp(2.25rem, 5vw, 3.75rem);
+  font-weight: 700;
+  line-height: 1.04;
+  letter-spacing: -0.035em;
+  color: var(--text-secondary);
   margin: 0;
 }
 
 .hero-title-accent {
-  background: linear-gradient(135deg, #7c3aed, #00d4ff);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--text-primary);
+  background: none;
+  -webkit-background-clip: border-box;
+  -webkit-text-fill-color: currentColor;
+  background-clip: border-box;
 }
 
 .hero-subtitle {
@@ -114,48 +120,57 @@
   }
 }
 
+/* §38.4 — one primary action, solid fill, capped radius, no glow.
+   Hover changes surface, not position: a 2px lift on a page-level
+   CTA reads as decoration, not feedback. */
 .btn-hero-primary {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding: 14px 32px;
-  background: linear-gradient(135deg, #7c3aed, #6d28d9);
-  color: #fff;
-  border: none;
-  border-radius: var(--radius-lg);
-  font-size: 0.95rem;
+  gap: var(--space-2);
+  padding: 0 var(--space-5);
+  height: 38px;
+  background: var(--accent-primary);
+  color: var(--accent-primary-ink);
+  border: 1px solid var(--accent-primary);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
   font-weight: 600;
   letter-spacing: 0.02em;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.3);
+  transition: opacity var(--duration-fast) var(--ease-standard);
 }
 
-.btn-hero-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(124, 58, 237, 0.4);
+.btn-hero-primary:hover { opacity: 0.88; }
+.btn-hero-primary:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--bg-canvas), 0 0 0 4px var(--border-focus);
 }
 
 .btn-hero-secondary {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding: 14px 32px;
+  gap: var(--space-2);
+  padding: 0 var(--space-5);
+  height: 38px;
   background: transparent;
   color: var(--text-secondary);
   border: 1px solid var(--border-default);
-  border-radius: var(--radius-lg);
-  font-size: 0.95rem;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: color var(--duration-fast) var(--ease-standard),
+              border-color var(--duration-fast) var(--ease-standard),
+              background-color var(--duration-fast) var(--ease-standard);
 }
 
 .btn-hero-secondary:hover {
   color: var(--text-primary);
-  border-color: var(--accent-cyan);
-  background: rgba(0, 212, 255, 0.05);
+  border-color: var(--border-strong);
+  background: var(--overlay-hover);
 }
+
+.btn-hero-secondary:focus-visible { outline: none; border-color: var(--border-focus); }
 
 /* Hero stats */
 .hero-stats {
@@ -178,102 +193,121 @@
   gap: 2px;
 }
 
+/* §38.3 — stats sit on the type scale instead of inventing sizes.
+   The value is the loud element; the label is metadata. */
 .hero-stat-value {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: var(--text-lg);
+  line-height: var(--lh-lg);
+  font-weight: 600;
   font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   color: var(--text-primary);
+  letter-spacing: -0.02em;
 }
 
 .hero-stat-label {
-  font-size: 0.72rem;
+  font-size: var(--text-2xs);
+  line-height: var(--lh-2xs);
   color: var(--text-tertiary);
-  letter-spacing: 0.03em;
+  letter-spacing: 0.04em;
 }
 
-/* ── Hero 3D Scene ─────────────────────────────────────────── */
-.hero-3d-container {
-  position: relative;
+/* ── §38.1 Algorithm classification panel ────────────────────
+   Replaces the decorative WebGL orbit. Real content, laid out on
+   the same grid as the rest of the product, so the hero previews
+   the workstation instead of advertising it. */
+.hero-algo-panel {
   width: 100%;
-  aspect-ratio: 1;
-  max-width: 600px;
+  max-width: 560px;
   margin: 0 auto;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+  overflow: hidden;
+}
+
+.hero-algo-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.hero-algo-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+}
+
+.hero-algo-card {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+  border-right: 1px solid var(--border-subtle);
+  min-width: 0;
+}
+
+.hero-algo-card:nth-child(2n) { border-right: none; }
+.hero-algo-card:nth-last-child(-n + 2) { border-bottom: none; }
+
+.hac-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.hac-name {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+/* Colour lands on the classification — the one piece of data in
+   the card — never on the card chrome (§26.4). */
+.hac-status {
+  font-size: var(--text-2xs);
+  line-height: var(--lh-2xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.hac-status.vulnerable { color: var(--severity-critical); }
+.hac-status.migration  { color: var(--severity-medium); }
+.hac-status.strong     { color: var(--severity-low); }
+.hac-status.pqc        { color: var(--accent-pqc); }
+
+.hac-why {
+  margin: 0;
+  font-size: var(--text-xs);
+  line-height: var(--lh-xs);
+  color: var(--text-tertiary);
+}
+
+.hero-algo-foot {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.02);
+  font-size: var(--text-xs);
+  line-height: var(--lh-xs);
+  color: var(--text-tertiary);
 }
 
 @media (max-width: 1024px) {
-  .hero-3d-container {
-    max-width: 400px;
-    order: -1;
-  }
+  .hero-algo-panel { max-width: 480px; order: -1; }
 }
 
-/* Crypto labels floating around 3D scene §10 */
-.crypto-labels {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 20;
-}
-
-.crypto-label {
-  position: absolute;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 8px 14px;
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur));
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-md);
-  font-family: var(--font-mono);
-  font-size: 0.68rem;
-  letter-spacing: 0.04em;
-  pointer-events: auto;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  opacity: 0.85;
-}
-
-.crypto-label:hover {
-  opacity: 1;
-  transform: scale(1.05);
-  border-color: rgba(124, 58, 237, 0.3);
-}
-
-.crypto-label .cl-name {
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.crypto-label .cl-status {
-  font-size: 0.6rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-}
-
-.crypto-label .cl-status.vulnerable { color: #ef4444; }
-.crypto-label .cl-status.strong { color: #22c55e; }
-.crypto-label .cl-status.pqc { color: #00d4ff; }
-.crypto-label .cl-status.migration { color: #eab308; }
-
-.crypto-label-tooltip {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%);
-  width: 240px;
-  padding: 12px;
-  background: var(--glass-bg-heavy);
-  backdrop-filter: blur(24px);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-md);
-  font-size: 0.72rem;
-  line-height: 1.5;
-  color: var(--text-secondary);
-  font-family: var(--font-sans);
-  letter-spacing: 0;
-  z-index: 30;
-  pointer-events: none;
+@media (max-width: 560px) {
+  .hero-algo-grid { grid-template-columns: minmax(0, 1fr); }
+  .hero-algo-card { border-right: none; }
+  .hero-algo-card:nth-last-child(-n + 2) { border-bottom: 1px solid var(--border-subtle); }
+  .hero-algo-card:last-child { border-bottom: none; }
 }
 
 /* ── Scroll Sections ───────────────────────────────────────── */
@@ -290,7 +324,7 @@
   gap: 6px;
   padding: 5px 14px;
   background: var(--accent-violet-dim);
-  border: 1px solid rgba(124, 58, 237, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.10);
   border-radius: var(--radius-full);
   font-size: 0.65rem;
   font-weight: 700;
@@ -301,13 +335,13 @@
 
 .section-badge.danger {
   background: var(--status-critical-bg);
-  border-color: rgba(239, 68, 68, 0.2);
+  border-color: rgba(245, 72, 75, 0.2);
   color: var(--status-critical);
 }
 
 .section-badge.cyan {
   background: var(--accent-cyan-dim);
-  border-color: rgba(0, 212, 255, 0.2);
+  border-color: rgba(77, 208, 225, 0.2);
   color: var(--accent-cyan);
 }
 
@@ -368,7 +402,7 @@
   font-family: var(--font-mono);
   font-size: 0.68rem;
   padding: 3px 8px;
-  background: rgba(124, 58, 237, 0.1);
+  background: rgba(255, 255, 255, 0.1);
   border-radius: var(--radius-sm);
   color: var(--accent-violet);
 }
@@ -443,7 +477,7 @@
 .hndl-category-btn:hover,
 .hndl-category-btn.active {
   background: var(--accent-violet-dim);
-  border-color: rgba(124, 58, 237, 0.3);
+  border-color: rgba(255, 255, 255, 0.14);
   color: var(--accent-violet);
 }
 
@@ -462,7 +496,7 @@
   font-size: 3rem;
   font-weight: 800;
   font-family: var(--font-mono);
-  background: linear-gradient(135deg, #ef4444, #f97316);
+  background: linear-gradient(135deg, #F5484B, #FF8A3D);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -497,10 +531,10 @@
   font-family: var(--font-mono);
   font-size: 0.82rem;
   font-weight: 600;
-  color: #ef4444;
+  color: #F5484B;
   min-width: 140px;
   padding: 6px 12px;
-  background: rgba(239, 68, 68, 0.08);
+  background: rgba(245, 72, 75, 0.08);
   border-radius: var(--radius-sm);
   text-align: center;
 }
@@ -515,10 +549,10 @@
   font-family: var(--font-mono);
   font-size: 0.82rem;
   font-weight: 600;
-  color: #22c55e;
+  color: #4CAF6D;
   min-width: 140px;
   padding: 6px 12px;
-  background: rgba(34, 197, 94, 0.08);
+  background: rgba(76, 175, 109, 0.08);
   border-radius: var(--radius-sm);
   text-align: center;
 }
@@ -533,7 +567,7 @@
 
 .migration-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, #ef4444, #eab308, #22c55e);
+  background: linear-gradient(90deg, #F5484B, #F5B84D, #4CAF6D);
   border-radius: var(--radius-full);
   transition: width 1.5s ease;
 }
@@ -600,19 +634,19 @@
 
 .drop-zone:hover {
   border-color: var(--accent-violet);
-  background: rgba(124, 58, 237, 0.04);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .drop-zone.dragging {
   border-color: var(--accent-cyan);
-  background: rgba(0, 212, 255, 0.06);
+  background: rgba(77, 208, 225, 0.06);
   transform: scale(1.01);
 }
 
 .drop-zone.has-file {
   border-style: solid;
-  border-color: rgba(34, 197, 94, 0.3);
-  background: rgba(34, 197, 94, 0.04);
+  border-color: rgba(76, 175, 109, 0.3);
+  background: rgba(76, 175, 109, 0.04);
   cursor: default;
 }
 
@@ -656,7 +690,7 @@
   gap: 8px;
   padding: 10px 14px;
   background: var(--status-critical-bg);
-  border: 1px solid rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(245, 72, 75, 0.2);
   border-radius: var(--radius-md);
   color: var(--status-critical);
   font-size: 0.8rem;
@@ -666,25 +700,26 @@
 .upload-scan-btn {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-2);
   width: 100%;
   justify-content: center;
-  padding: 14px 24px;
-  background: linear-gradient(135deg, #7c3aed, #6d28d9);
-  color: #fff;
-  border: none;
-  border-radius: var(--radius-lg);
-  font-size: 0.9rem;
+  height: 40px;
+  padding: 0 var(--space-5);
+  background: var(--accent-primary);
+  color: var(--accent-primary-ink);
+  border: 1px solid var(--accent-primary);
+  border-radius: var(--radius-md);
+  font-size: var(--text-base);
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
-  margin-top: 12px;
-  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.3);
+  transition: opacity var(--duration-fast) var(--ease-standard);
+  margin-top: var(--space-3);
 }
 
-.upload-scan-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 30px rgba(124, 58, 237, 0.4);
+.upload-scan-btn:hover:not(:disabled) { opacity: 0.88; }
+.upload-scan-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--bg-canvas), 0 0 0 4px var(--border-focus);
 }
 
 .upload-scan-btn:disabled {
@@ -766,7 +801,7 @@
 }
 
 .scan-step-icon {
-  color: #22c55e;
+  color: #4CAF6D;
   flex-shrink: 0;
 }
 
@@ -789,7 +824,7 @@
 
 .scan-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, #7c3aed, #00d4ff);
+  background: linear-gradient(90deg, var(--accent-primary), #4DD0E1);
   border-radius: var(--radius-full);
   transition: width 0.3s ease;
 }

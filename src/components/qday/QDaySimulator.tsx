@@ -33,7 +33,7 @@ export function QDaySimulator() {
   }, [assessment, qdayYear]);
 
   const getExposure = (year: number) => {
-    if (!assessment || !mosca) return { value: 0, risk: 'Low', color: '#22c55e', era: 'Pre-Quantum Era' };
+    if (!assessment || !mosca) return { value: 0, risk: 'Low', color: '#4CAF6D', era: 'Pre-Quantum Era' };
 
     const vuln = assessment.findings.filter(
       f => f.quantumStatus === 'vulnerable' || f.classicalStatus === 'broken' || f.classicalStatus === 'weak'
@@ -44,7 +44,7 @@ export function QDaySimulator() {
       return {
         value: 0,
         risk: 'Verified Clean',
-        color: '#22c55e',
+        color: '#4CAF6D',
         era: year < 2010 ? 'Pre-Quantum Era (2000s)' :
              year < 2020 ? 'HNDL Discovery (2010s)' :
              year < 2030 ? 'PQC Transition (2020s)' :
@@ -57,10 +57,10 @@ export function QDaySimulator() {
     const value = vuln.length > 0 ? Math.min(100, Math.round((atRiskCount / vuln.length) * 100)) : 0;
 
     let risk = 'Low';
-    let color = '#22c55e';
-    if (value >= 70) { risk = 'Critical'; color = '#ef4444'; }
-    else if (value >= 45) { risk = 'High'; color = '#f97316'; }
-    else if (value >= 20) { risk = 'Moderate'; color = '#eab308'; }
+    let color = '#4CAF6D';
+    if (value >= 70) { risk = 'Critical'; color = '#F5484B'; }
+    else if (value >= 45) { risk = 'High'; color = '#FF8A3D'; }
+    else if (value >= 20) { risk = 'Moderate'; color = '#F5B84D'; }
 
     let era = '';
     if (year < 2010) era = 'Pre-Quantum Legacy (2000s)';
@@ -244,8 +244,8 @@ export function QDaySimulator() {
 
               {/* Mosca Explanation Panel */}
               {mosca && (
-                <div className="card" style={{ padding: '20px', marginTop: '16px', borderLeft: '3px solid #8b5cf6' }}>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.08em', color: '#8b5cf6', marginBottom: '12px' }}>
+                <div className="card" style={{ padding: '20px', marginTop: '16px', borderLeft: '3px solid var(--accent-classical)' }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.08em', color: 'var(--accent-classical)', marginBottom: '12px' }}>
                     MOSCA THEOREM: X + Y vs Z
                   </div>
                   <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '12px' }}>
@@ -253,21 +253,21 @@ export function QDaySimulator() {
                   </p>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '12px', marginBottom: '16px' }}>
                     <div style={{ textAlign: 'center', padding: '8px', background: 'var(--bg-elevated)', borderRadius: '8px' }}>
-                      <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#ef4444' }}>{mosca.summary.atRiskCount}</div>
+                      <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#F5484B' }}>{mosca.summary.atRiskCount}</div>
                       <div style={{ fontSize: '0.7rem', color: '#64748b', textTransform: 'uppercase' }}>At Risk (X+Y &gt; Z)</div>
                     </div>
                     <div style={{ textAlign: 'center', padding: '8px', background: 'var(--bg-elevated)', borderRadius: '8px' }}>
-                      <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#22c55e' }}>{mosca.summary.safeCount}</div>
+                      <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#4CAF6D' }}>{mosca.summary.safeCount}</div>
                       <div style={{ fontSize: '0.7rem', color: '#64748b', textTransform: 'uppercase' }}>Safe (X+Y &le; Z)</div>
                     </div>
                     <div style={{ textAlign: 'center', padding: '8px', background: 'var(--bg-elevated)', borderRadius: '8px' }}>
-                      <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#8b5cf6' }}>{qdayYear}</div>
+                      <div style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--accent-classical)' }}>{qdayYear}</div>
                       <div style={{ fontSize: '0.7rem', color: '#64748b', textTransform: 'uppercase' }}>Threat Horizon (Z)</div>
                     </div>
                   </div>
                   {mosca.findings.filter(f => f.atRisk).slice(0, 5).map(f => (
-                    <div key={f.findingId} style={{ padding: '8px 12px', background: 'rgba(239,68,68,0.06)', borderRadius: '6px', marginBottom: '6px', fontSize: '0.8rem' }}>
-                      <strong>{f.algorithm}</strong> in {f.service} — {f.dataLifetimeYears}y data + {f.migrationTimeYears.toFixed(1)}y migration = {(f.dataLifetimeYears + f.migrationTimeYears).toFixed(1)}y needed, but only {f.threatHorizonYears}y until horizon. <span style={{ color: '#ef4444', fontWeight: 600 }}>Margin: {f.marginYears.toFixed(1)}y</span>
+                    <div key={f.findingId} style={{ padding: '8px 12px', background: 'rgba(245, 72, 75,0.06)', borderRadius: '6px', marginBottom: '6px', fontSize: '0.8rem' }}>
+                      <strong>{f.algorithm}</strong> in {f.service} — {f.dataLifetimeYears}y data + {f.migrationTimeYears.toFixed(1)}y migration = {(f.dataLifetimeYears + f.migrationTimeYears).toFixed(1)}y needed, but only {f.threatHorizonYears}y until horizon. <span style={{ color: '#F5484B', fontWeight: 600 }}>Margin: {f.marginYears.toFixed(1)}y</span>
                     </div>
                   ))}
                 </div>

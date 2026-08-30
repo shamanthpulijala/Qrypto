@@ -97,7 +97,7 @@ export function ScanHistory() {
 
       {!apiConfigured && (
         <div className="platform-callout warn">
-          <AlertCircle size={20} className="platform-callout-icon" style={{ color: '#eab308' }} />
+          <AlertCircle size={20} className="platform-callout-icon" style={{ color: '#F5B84D' }} />
           <div className="platform-callout-body">
             <h3>Scans are not persisted in guest mode</h3>
             <p>
@@ -110,7 +110,7 @@ export function ScanHistory() {
 
       {apiConfigured && error && (
         <div className="platform-callout error">
-          <AlertCircle size={20} className="platform-callout-icon" style={{ color: '#ef4444' }} />
+          <AlertCircle size={20} className="platform-callout-icon" style={{ color: '#F5484B' }} />
           <div className="platform-callout-body">
             <h3>Unable to load scan history</h3>
             <p>{error}</p>
