@@ -1,5 +1,5 @@
 // ============================================================
-// QuantumGuard AI — Migration Planner Engine
+// Qrypto AI Advisor — Migration Planner Engine
 // Generates prioritized 4-phase PQC migration roadmap from findings
 // ============================================================
 

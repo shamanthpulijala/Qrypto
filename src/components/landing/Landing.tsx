@@ -1,5 +1,5 @@
 // ============================================================
-// QuantumGuard AI — Premium Landing Page §09-§20
+// Qrypto AI Advisor — Premium Landing Page §09-§20
 // Cinematic scroll-driven editorial experience
 // ============================================================
 
@@ -115,6 +115,7 @@ export function Landing() {
   const navigate = useNavigate();
   const { startScan, isScanning, scanProgress, scanLog, scanError, setCurrentPage } = useAppStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dirInputRef = useRef<HTMLInputElement>(null);
   const dropRef = useRef<HTMLDivElement>(null);
 
   const [dragging, setDragging] = useState(false);
@@ -231,7 +232,7 @@ export function Landing() {
           <div className="hero-text">
             <div className="hero-badge">
               <Shield size={11} />
-              QUANTUMGUARD AI
+              Qrypto AI Advisor
             </div>
             <h1 className="hero-title">
               SEE WHAT BREAKS<br />
@@ -299,7 +300,7 @@ export function Landing() {
           KNOW EXACTLY<br />WHAT WE CAN SEE.
         </h2>
         <p className="section-desc">
-          QuantumGuard maps your cryptographic dependencies across multiple dimensions. Here is what is currently supported.
+          Qrypto maps your cryptographic dependencies across multiple dimensions. Here is what is currently supported.
         </p>
         <div className="scanners-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px', marginTop: '40px' }}>
           {SCANNER_REGISTRY.map(scanner => (
@@ -314,12 +315,20 @@ export function Landing() {
               
               <div style={{ marginTop: 'auto' }}>
                 <div style={{ marginBottom: '12px' }}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', marginBottom: '4px' }}>Inputs</div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{scanner.supportedInputs.join(', ')}</div>
+                </div>
+                <div style={{ marginBottom: '12px' }}>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', marginBottom: '4px' }}>Detects</div>
                   <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{scanner.detects}</div>
                 </div>
                 <div style={{ marginBottom: '12px' }}>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', marginBottom: '4px' }}>Does Not Detect</div>
                   <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{scanner.doesNotDetect}</div>
+                </div>
+                <div style={{ marginBottom: '12px' }}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', marginBottom: '4px' }}>Limitations</div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{scanner.limitations}</div>
                 </div>
                 <div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', marginBottom: '4px' }}>Method</div>
@@ -333,7 +342,7 @@ export function Landing() {
 
       {/* ═══ RISK MODEL §14 ═══ */}
       <div ref={riskRef} className="landing-section fade-in-section">
-        <div className="section-badge">QUANTUMGUARD RISK MODEL</div>
+        <div className="section-badge">Qrypto RISK MODEL</div>
         <h2 className="section-title">
           NOT EVERY<br />CRYPTOGRAPHIC RISK<br />IS THE SAME.
         </h2>
@@ -395,7 +404,7 @@ export function Landing() {
           From classical<br />to quantum-safe.
         </h2>
         <p className="section-desc">
-          QuantumGuard generates step-by-step migration paths aligned with NIST FIPS 203, 204, and 205.
+          Qrypto generates step-by-step migration paths aligned with NIST FIPS 203, 204, and 205.
         </p>
         <div className="migration-transforms">
           {MIGRATIONS.map(m => (
@@ -454,14 +463,43 @@ export function Landing() {
                   </div>
                 </div>
 
-                <div
-                  ref={dropRef}
-                  className={`drop-zone ${dragging ? 'dragging' : ''} ${fileSummary ? 'has-file' : ''}`}
-                  onDragOver={onDragOver}
-                  onDragLeave={onDragLeave}
-                  onDrop={onDrop}
-                  onClick={() => !fileSummary && fileInputRef.current?.click()}
-                >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', margin: '24px 0' }}>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '1px' }}>Profile: COMBINED ENTERPRISE SCAN</div>
+                  
+                  {fileSummary ? (
+                    <div className="drop-zone-ready" style={{ border: '1px solid var(--border)', borderRadius: '8px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div className="dz-file-icon" style={{ fontSize: '1.5rem' }}>📦</div>
+                        <div className="dz-file-info" style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span className="dz-file-name" style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{fileSummary.name}</span>
+                          <span className="dz-file-count" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{fileSummary.count} file{fileSummary.count !== 1 ? 's' : ''} ready to scan</span>
+                        </div>
+                      </div>
+                      <button className="dz-change-btn" style={{ background: 'rgba(255,255,255,0.05)', border: 'none', padding: '6px 12px', borderRadius: '6px', color: 'var(--text-secondary)', cursor: 'pointer' }} onClick={() => { setPendingFiles(null); setFileSummary(null); }}>
+                        Clear
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+                      <button className="cta-select-btn" onClick={() => fileInputRef.current?.click()} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '16px', borderRadius: '8px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', color: 'var(--text-primary)' }}>
+                        <FileCode2 size={24} color="#6366f1" />
+                        <span>📄 FILE</span>
+                      </button>
+                      <button className="cta-select-btn" onClick={() => dirInputRef.current?.click()} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '16px', borderRadius: '8px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', color: 'var(--text-primary)' }}>
+                        <Upload size={24} color="#22c55e" />
+                        <span>📁 FOLDER</span>
+                      </button>
+                      <button className="cta-select-btn" onClick={() => fileInputRef.current?.click()} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '16px', borderRadius: '8px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', color: 'var(--text-primary)' }}>
+                        <Upload size={24} color="#eab308" />
+                        <span>📦 ZIP</span>
+                      </button>
+                      <button className="cta-select-btn" onClick={() => alert('Repository integration requires backend authentication. Local mode active.')} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '16px', borderRadius: '8px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', color: 'var(--text-primary)' }}>
+                        <Shield size={24} color="#ef4444" />
+                        <span>🌐 REPOSITORY</span>
+                      </button>
+                    </div>
+                  )}
+
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -470,25 +508,16 @@ export function Landing() {
                     style={{ display: 'none' }}
                     onChange={e => handleFiles(e.target.files)}
                   />
-                  {fileSummary ? (
-                    <div className="drop-zone-ready">
-                      <div className="dz-file-icon">📦</div>
-                      <div className="dz-file-info">
-                        <span className="dz-file-name">{fileSummary.name}</span>
-                        <span className="dz-file-count">{fileSummary.count} file{fileSummary.count !== 1 ? 's' : ''} ready to scan</span>
-                      </div>
-                      <button className="dz-change-btn" onClick={e => { e.stopPropagation(); setPendingFiles(null); setFileSummary(null); fileInputRef.current?.click(); }}>
-                        Change
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <Upload size={32} className="dz-icon" />
-                      <p className="dz-primary">Drop your ZIP or source file here</p>
-                      <p className="dz-secondary">or <span className="dz-link">browse files</span></p>
-                      <p className="dz-hint">Any source, config, archive, cert, or binary artifact · Max 500 MB per file</p>
-                    </>
-                  )}
+                  <input
+                    ref={dirInputRef}
+                    type="file"
+                    /* @ts-expect-error React types don't officially support directory attributes on inputs, but browsers do */
+                    webkitdirectory=""
+                    directory=""
+                    multiple
+                    style={{ display: 'none' }}
+                    onChange={e => handleFiles(e.target.files)}
+                  />
                 </div>
 
                 {uploadError && <div className="upload-error"><AlertCircle size={14} />{uploadError}</div>}
@@ -513,7 +542,7 @@ export function Landing() {
           <div>
             <h3>Built on technical accuracy</h3>
             <p>
-              QuantumGuard distinguishes classical security problems (MD5, SHA-1, weak TLS) from
+              Qrypto distinguishes classical security problems (MD5, SHA-1, weak TLS) from
               quantum migration concerns (RSA, ECC, ECDH). It does not claim quantum computers can
               currently break RSA, or that PQC algorithms are mathematically guaranteed to be secure.
               Every recommendation is grounded in NIST-standardized PQC algorithms (ML-KEM FIPS 203,
@@ -526,7 +555,7 @@ export function Landing() {
       {/* ═══ FOOTER ═══ */}
       <footer className="landing-footer">
         <div className="landing-footer-logo">
-          <Shield size={16} /> QuantumGuard AI
+          <Shield size={16} /> Qrypto AI Advisor
         </div>
         <span className="landing-footer-text">Post-Quantum Cryptography Readiness Platform</span>
       </footer>

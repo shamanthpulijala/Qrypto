@@ -1,5 +1,5 @@
 // ============================================================
-// QuantumGuard AI — Navigation Rail §22
+// Qrypto AI Advisor — Navigation Rail §22
 // Slim floating glass sidebar with icon-only default state
 // ============================================================
 
@@ -19,16 +19,6 @@ const NAV_ITEMS = [
   { id: 'dashboard',    icon: LayoutDashboard, label: 'Dashboard',             group: 'discover', status: 'ready' },
   { id: 'landing',      icon: Zap,             label: 'Scan',                  group: 'discover', status: 'ready' },
   { id: 'inventory',    icon: Search,          label: 'Inventory',             group: 'discover', status: 'ready' },
-  { id: 'algorithms',   icon: Search,          label: 'Algorithms',            group: 'discover', status: 'partial' },
-  { id: 'secrets',      icon: Shield,          label: 'Secrets & Keys',        group: 'discover', status: 'partial' },
-  { id: 'certificates', icon: FileText,        label: 'Certificates',          group: 'discover', status: 'partial' },
-  { id: 'tls',          icon: Network,         label: 'TLS / Protocols',       group: 'discover', status: 'partial' },
-  { id: 'libraries',    icon: FileCode2,       label: 'Libraries / Dependencies', group: 'discover', status: 'partial' },
-  { id: 'hsm',          icon: Shield,          label: 'HSM / PKCS#11',         group: 'discover', status: 'partial' },
-  { id: 'cloudkms',     icon: Network,         label: 'Cloud KMS',             group: 'discover', status: 'partial' },
-  { id: 'containers',   icon: Zap,             label: 'Containers',            group: 'discover', status: 'partial' },
-  { id: 'binary',       icon: FileCode2,       label: 'Binary Artifacts',      group: 'discover', status: 'partial' },
-  { id: 'depgraph',     icon: Network,         label: 'Dependency Graph',      group: 'discover', status: 'partial' },
 
   // ASSESS
   { id: 'findings',     icon: AlertTriangle,   label: 'Findings',              group: 'assess',   status: 'ready' },
@@ -75,8 +65,32 @@ const PAGE_ROUTES: Record<string, string> = {
   agility: '/agility',
   ai: '/ai',
   reports: '/reports',
-  compliance: '/compliance',
   settings: '/settings',
+  // DISCOVER scanner views
+  algorithms: '/algorithms',
+  secrets: '/secrets',
+  certificates: '/certificates',
+  tls: '/tls',
+  libraries: '/libraries',
+  hsm: '/hsm',
+  cloudkms: '/cloudkms',
+  containers: '/containers',
+  binary: '/binary',
+  depgraph: '/depgraph',
+  // ASSESS
+  quantumrisk: '/quantumrisk',
+  // MIGRATE
+  pqcrecs: '/pqcrecs',
+  hybridmig: '/hybridmig',
+  // REPORT (all map to reports page)
+  execreport: '/reports',
+  techreport: '/reports',
+  devfindings: '/reports',
+  cbom: '/reports',
+  export: '/reports',
+  // PLATFORM
+  scanhistory: '/scanhistory',
+  auditlog: '/auditlog',
 };
 
 export function Sidebar() {
@@ -105,7 +119,7 @@ export function Sidebar() {
           <Shield size={16} />
         </div>
         <div className="logo-text">
-          <span className="logo-name">QuantumGuard</span>
+          <span className="logo-name">Qrypto</span>
         </div>
       </div>
 
@@ -125,6 +139,7 @@ export function Sidebar() {
                 // Other items require an assessment.
                 const alwaysOn = item.id === 'dashboard' || item.id === 'landing';
                 const isDisabled = !alwaysOn && !assessment && !isPartial;
+                
                 return (
                   <button
                     key={item.id}

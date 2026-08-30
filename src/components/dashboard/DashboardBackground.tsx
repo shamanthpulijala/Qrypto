@@ -1,5 +1,5 @@
 // ============================================================
-// QuantumGuard AI — Dashboard Background §23
+// Qrypto AI Advisor — Dashboard Background §23
 // Subtle dynamic particle/grid environment
 // ============================================================
 

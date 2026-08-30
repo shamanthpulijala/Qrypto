@@ -1,5 +1,5 @@
 // ============================================================
-// QuantumGuard AI — Command Palette §41
+// Qrypto AI Advisor — Command Palette §41
 // Ctrl+K global search — premium developer-tool feel
 // ============================================================
 

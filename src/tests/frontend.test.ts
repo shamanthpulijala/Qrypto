@@ -1,5 +1,5 @@
 // ============================================================
-// QuantumGuard AI — §35 Frontend Tests
+// Qrypto AI Advisor — §35 Frontend Tests
 //
 // Covers:
 //   - Dashboard loads

@@ -1,5 +1,5 @@
 // ============================================================
-// QuantumGuard AI — §35 Scanner Tests
+// Qrypto AI Advisor — §35 Scanner Tests
 //
 // Tests for all crypto pattern detectors:
 //   RSA, ECC, ECDH, SHA-1, MD5, TLS, Secrets

@@ -73,7 +73,7 @@ export function Inventory() {
     const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = 'quantumguard-cbom.csv'; a.click();
+    const a = document.createElement('a'); a.href = url; a.download = 'Qrypto-cbom.csv'; a.click();
   }
 
   const uniqueLanguages = [...new Set(findings.map(f => f.language))];

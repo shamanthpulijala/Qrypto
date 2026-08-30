@@ -1,5 +1,5 @@
 // ============================================================
-// QuantumGuard AI — Custom Quantum Cursor §07
+// Qrypto AI Advisor — Custom Quantum Cursor §07
 // Premium luminous dot + trailing ring with magnetic hover
 // ============================================================
 

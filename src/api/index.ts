@@ -1,5 +1,5 @@
 // ============================================================
-// QuantumGuard AI — §11 REST API Service Layer (Mock)
+// Qrypto AI Advisor — §11 REST API Service Layer (Mock)
 //
 // Implements all specified endpoints with in-browser routing.
 // API is designed to be backend-swappable: replace the mock
@@ -22,6 +22,8 @@
 //   POST /api/migration/tasks
 //   GET  /api/projects/:id/readiness
 //   POST /api/projects/:id/report
+//   POST /api/settings/ai        (Mock: setAIApiKey)
+//   POST /api/ai/ask             (Mock: askAI)
 // ============================================================
 
 import type {
@@ -32,6 +34,30 @@ import { computeQuantumReadinessIndex } from '../engine/riskEngine';
 import { computeCryptoAgilityScore } from '../engine/cryptoAgility';
 import { generateMigrationRoadmap, getUsageAwareRecommendation } from '../engine/migrationPlanner';
 import { runScanPipeline } from '../engine/pipeline';
+import { askConsultant } from '../ai/consultant';
+
+// ─── §45 Observability & Logging ─────────────────────────────
+//
+// Safe logging wrapper that ensures no sensitive data is printed.
+// Matches high-entropy strings, tokens, and keys.
+//
+
+const REDACT_PATTERN = /(?:sk-[a-zA-Z0-9]{32,}|eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+|AIza[0-9A-Za-z-_]{35}|password=.*|secret=.*)/g;
+
+export const logger = {
+  info: (msg: string, ...args: any[]) => {
+    const safeMsg = msg.replace(REDACT_PATTERN, '[REDACTED_SECRET]');
+    console.log(`[INFO] ${new Date().toISOString()} - ${safeMsg}`, ...args);
+  },
+  warn: (msg: string, ...args: any[]) => {
+    const safeMsg = msg.replace(REDACT_PATTERN, '[REDACTED_SECRET]');
+    console.warn(`[WARN] ${new Date().toISOString()} - ${safeMsg}`, ...args);
+  },
+  error: (msg: string, ...args: any[]) => {
+    const safeMsg = msg.replace(REDACT_PATTERN, '[REDACTED_SECRET]');
+    console.error(`[ERROR] ${new Date().toISOString()} - ${safeMsg}`, ...args);
+  }
+};
 
 // ─── In-Memory Data Store ────────────────────────────────────
 
@@ -45,6 +71,7 @@ interface InMemoryStore {
   tasks: Map<string, MigrationTask[]>;   // projectId → tasks
   simulations: Map<string, Simulation>;
   scans: Map<string, ScanRecord>;
+  aiApiKey: string | null;
 }
 
 interface ScanRecord {
@@ -67,6 +94,7 @@ const store: InMemoryStore = {
   tasks: new Map(),
   simulations: new Map(),
   scans: new Map(),
+  aiApiKey: null,
 };
 
 // ─── API Response Wrapper ────────────────────────────────────
@@ -392,23 +420,57 @@ export function generateReport(projectId: string): ApiResponse<{
   });
 }
 
-// ─── Store Helpers (for demo data injection) ─────────────────
 
-/** Inject pre-computed demo data into the in-memory store */
-export function injectDemoData(
-  project: Project,
-  findings: Finding[],
-  services: ServiceNode[],
-  tasks: MigrationTask[],
-  assets?: Asset[],
-  certificates?: Certificate[],
-) {
-  store.projects.set(project.id, project);
-  store.findings.set(project.id, findings);
-  store.services.set(project.id, services);
-  store.tasks.set(project.id, tasks);
-  if (assets) assets.forEach(a => store.assets.set(a.id, a));
-  if (certificates) certificates.forEach(c => store.certificates.set(c.id, c));
+
+// ─── AI Mock Endpoints ───────────────────────────────────────
+
+/** POST /api/settings/ai */
+export function setAIApiKey(body: { apiKey: string }): ApiResponse<void> {
+  store.aiApiKey = body.apiKey;
+  return ok(undefined);
+}
+
+/** POST /api/ai/ask */
+export async function askAI(
+  projectId: string,
+  body: {
+    question: string;
+    chatHistory: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }>;
+  }
+): Promise<ApiResponse<{ answer: string; citedFindings: string[] }>> {
+  const project = store.projects.get(projectId);
+  if (!project) return notFound('Project not found.');
+  
+  // Reconstruct assessment object for consultant
+  const findings = store.findings.get(projectId) || [];
+  const assessment: any = {
+    id: project.id,
+    name: project.name,
+    organization: 'Example Corp',
+    industry: 'Technology',
+    findings,
+    services: store.services.get(projectId) || [],
+    migrationTasks: store.tasks.get(projectId) || [],
+    quantumReadinessScore: computeQuantumReadinessIndex(findings).overall,
+    scanStats: {
+      criticalCount: findings.filter((f) => f.severity === 'critical').length,
+      highCount: findings.filter((f) => f.severity === 'high').length,
+      vulnerableAlgorithms: findings.filter((f) => f.quantumStatus === 'vulnerable').length,
+      secretsFound: findings.filter((f) => f.category === 'secret').length,
+    }
+  };
+
+  try {
+    const result = await askConsultant(
+      body.question, 
+      assessment, 
+      store.aiApiKey || undefined, 
+      body.chatHistory
+    );
+    return ok(result);
+  } catch (error: any) {
+    return badRequest(`AI Request failed: ${error.message}`);
+  }
 }
 
 export { store };

@@ -1,5 +1,5 @@
 // ============================================================
-// QuantumGuard AI — §35 API Tests
+// Qrypto AI Advisor — §35 API Tests
 //
 // Tests for all API endpoints:
 //   - Project creation
@@ -19,12 +19,19 @@ import {
   getMigration,
   runQDaySimulation,
   getReadiness,
-  injectDemoData,
+  store,
 } from '../api';
 import { scanFiles } from '../engine/scanner';
 import type { ServiceNode } from '../types';
 
 // ─── Sample Test Data ─────────────────────────────────────────
+
+function injectTestData(project: any, findings: any[], services: any[], tasks: any[]) {
+  store.projects.set(project.id, project);
+  store.findings.set(project.id, findings);
+  store.services.set(project.id, services);
+  store.tasks.set(project.id, tasks);
+}
 
 const SAMPLE_FILES = [
   {
@@ -153,7 +160,7 @@ describe('API — Scanning Integration', () => {
       createdAt: new Date().toISOString(),
     };
     const findings = scanFiles(SAMPLE_FILES);
-    injectDemoData(project, findings, SAMPLE_SERVICES, []);
+    injectTestData(project, findings, SAMPLE_SERVICES, []);
     const risk = getRisk('test-inject-proj');
     expect(risk.status).toBe(200);
   });
@@ -192,7 +199,7 @@ describe('API — Findings', () => {
     const proj = createProject({ name: `FindingsTest-${Date.now()}`, description: '', repository: 'a/b', language: 'python', owner: 'team' });
     projectId = proj.data!.id;
     const findings = scanFiles(SAMPLE_FILES);
-    injectDemoData(
+    injectTestData(
       { id: projectId, name: 'FindingsTest', description: '', repository: 'a/b', language: 'python', owner: 'team', createdAt: new Date().toISOString() },
       findings,
       SAMPLE_SERVICES,
@@ -245,7 +252,7 @@ describe('API — Q-Day Simulation', () => {
     const proj = createProject({ name: `QDay-${Date.now()}`, description: '', repository: 'a/b', language: 'python', owner: 'team' });
     projectId = proj.data!.id;
     const findings = scanFiles(SAMPLE_FILES);
-    injectDemoData(
+    injectTestData(
       { id: projectId, name: 'QDayTest', description: '', repository: 'a/b', language: 'python', owner: 'team', createdAt: new Date().toISOString() },
       findings,
       SAMPLE_SERVICES,
@@ -306,7 +313,7 @@ describe('API — Migration', () => {
     const proj = createProject({ name: `Migration-${Date.now()}`, description: '', repository: 'a/b', language: 'python', owner: 'team' });
     projectId = proj.data!.id;
     const findings = scanFiles(SAMPLE_FILES);
-    injectDemoData(
+    injectTestData(
       { id: projectId, name: 'MigTest', description: '', repository: 'a/b', language: 'python', owner: 'team', createdAt: new Date().toISOString() },
       findings,
       SAMPLE_SERVICES,

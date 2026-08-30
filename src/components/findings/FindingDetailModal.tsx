@@ -1,5 +1,5 @@
 // ============================================================
-// QuantumGuard AI — §28 Finding Detail Page / Modal
+// Qrypto AI Advisor — §28 Finding Detail Page / Modal
 //
 // Shows:
 // - Header (Algorithm, Risk Score, Quantum Status, Detected At, Evidence)
@@ -88,12 +88,18 @@ export function FindingDetailModal({ finding, onClose }: Props) {
         {/* Modal Body */}
         <div className="fdm-body">
 
-          {/* Quick Metrics Bar */}
+          {/* Quick Metrics Bar — Section 25 */}
           <div className="fdm-metrics-bar">
             <div className="fdm-metric">
               <span className="fdm-m-label">Risk Score</span>
               <span className="fdm-m-val" style={{ color: scoreToColor(finding.riskScore) }}>
                 {finding.riskScore} / 100
+              </span>
+            </div>
+            <div className="fdm-metric">
+              <span className="fdm-m-label">Algorithm Severity</span>
+              <span className={`badge badge-${finding.algorithmSeverity ?? finding.severity}`}>
+                {(finding.algorithmSeverity ?? finding.severity).toUpperCase()}
               </span>
             </div>
             <div className="fdm-metric">
@@ -109,11 +115,37 @@ export function FindingDetailModal({ finding, onClose }: Props) {
               </span>
             </div>
             <div className="fdm-metric">
+              <span className="fdm-m-label">Confidence</span>
+              <span className="fdm-m-val">
+                {finding.confidence !== undefined ? `${Math.round(finding.confidence * 100)}%` : 'N/A'}
+              </span>
+            </div>
+            <div className="fdm-metric">
+              <span className="fdm-m-label">Context Source</span>
+              <span style={{ fontSize: '0.8rem', fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}>
+                {finding.contextSource ?? 'UNKNOWN'}
+              </span>
+            </div>
+            <div className="fdm-metric">
+              <span className="fdm-m-label">Detection Layer</span>
+              <span style={{ fontSize: '0.78rem', fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}>
+                {finding.evidence?.detectionLayers?.join(', ') ?? 'regex'}
+              </span>
+            </div>
+            <div className="fdm-metric">
               <span className="fdm-m-label">Detected Location</span>
               <span className="fdm-m-loc" title={finding.file}>
                 {finding.file}:{finding.line}
               </span>
             </div>
+            {finding.fingerprint && (
+              <div className="fdm-metric" style={{ gridColumn: 'span 2' }}>
+                <span className="fdm-m-label">Fingerprint</span>
+                <span style={{ fontSize: '0.75rem', fontFamily: 'var(--font-mono)', color: 'var(--text-tertiary)', wordBreak: 'break-all' }}>
+                  {finding.fingerprint}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Evidence Card */}

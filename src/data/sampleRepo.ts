@@ -1,5 +1,5 @@
 // ============================================================
-// QuantumGuard AI — FinTech Corp Demo Dataset
+// Qrypto AI Advisor — FinTech Corp Demo Dataset
 // Synthetic repository representing a financial services company
 // ============================================================
 

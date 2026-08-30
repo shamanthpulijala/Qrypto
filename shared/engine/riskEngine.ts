@@ -1,5 +1,5 @@
 // ============================================================
-// QuantumGuard AI — Quantum Risk Engine
+// Qrypto AI Advisor — Quantum Risk Engine
 // Transparent, deterministic risk scoring formula
 // ============================================================
 

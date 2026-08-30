@@ -1,5 +1,5 @@
 // ============================================================
-// QuantumGuard AI — §19 AI Context Builder
+// Qrypto AI Advisor — §19 AI Context Builder
 //
 // Builds structured context object without blindly dumping full DB.
 // Extracts key evidence, top assets, inventory summary, risk scores,
@@ -29,6 +29,7 @@ export interface StructuredAIContext {
     quantumStatus: string;
     classicalStatus: string;
     usage: string;
+    codeExcerpt: string;
   }>;
   topAssets: Array<{
     name: string;
@@ -87,6 +88,9 @@ export function buildAIContext(assessment: Assessment, targetService?: string): 
       quantumStatus: f.quantumStatus,
       classicalStatus: f.classicalStatus,
       usage: f.usage,
+      codeExcerpt: f.category === 'secret' 
+        ? '[REDACTED_SECRET]' 
+        : f.evidence?.matchedText?.substring(0, 150) || '[NO_EXCERPT]',
     }));
 
   // Top services / assets by risk

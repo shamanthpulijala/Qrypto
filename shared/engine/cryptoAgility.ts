@@ -1,5 +1,5 @@
 // ============================================================
-// QuantumGuard AI — Crypto Agility Scorer & Evidence Engine (§32)
+// Qrypto AI Advisor — Crypto Agility Scorer & Evidence Engine (§32)
 // Calculates 5 breakdown scores & concrete evidence linking to findings
 // ============================================================
 

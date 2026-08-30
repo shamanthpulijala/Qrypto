@@ -1,5 +1,5 @@
 // ============================================================
-// QuantumGuard AI — Zustand Assessment Store (v2)
+// Qrypto AI Advisor — Zustand Assessment Store (v2)
 // Dual-mode:
 //   - VITE_API_URL set → backend API (real persistence)
 //   - VITE_API_URL not set → in-browser pipeline (demo mode)
@@ -11,7 +11,6 @@ import { computeQuantumReadinessIndex, computeRiskScore } from '../engine/riskEn
 import { computeCryptoAgilityScore } from '../engine/cryptoAgility';
 import { generateHNDLAssessments } from '../engine/hndlAnalyzer';
 import { generateMigrationRoadmap } from '../engine/migrationPlanner';
-import { injectDemoData } from '../api';
 import { scansApi, findingsApi, isApiConfigured } from '../api/client';
 
 // ─── P1-9: Infer real dependencies between services ─────────
@@ -604,11 +603,6 @@ export const useAppStore = create<AppState>((set, get) => ({
           affectedServices: new Set(result.findings.map(f => f.service)).size,
         },
       };
-
-      injectDemoData(
-        { id: assessment.id, name: assessment.name, description: 'Uploaded Repo Scan', repository: 'uploaded/repo', language: 'unknown', owner: 'user', createdAt: assessment.createdAt },
-        result.findings, services, tasks
-      );
 
       if (result.errors && result.errors.length > 0) {
         set({ isScanning: false, scanProgress: 100, assessment, readinessBreakdown: result.readinessIndex, scanError: `Scan completed with warnings: ${result.errors.join(', ')}` });

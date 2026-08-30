@@ -1,5 +1,5 @@
 // ============================================================
-// QuantumGuard AI — §31 Migration Page
+// Qrypto AI Advisor — §31 Migration Page
 //
 // Shows overall migration progress and an interactive task list:
 //   Priority · Owner · Effort · Dependencies · Status

@@ -226,6 +226,77 @@ describe('P1-B: Cloud KMS Detection', () => {
     );
     expect(findings.length).toBe(0);
   });
+
+  // ── CRITICAL AZURE FALSE POSITIVE PREVENTION (Section 12) ──
+
+  it('does NOT flag the word "vault" alone as Azure Key Vault', () => {
+    const findings = detectCloudKms(
+      'src/storage.ts',
+      `const vaultPath = '/data/secrets';\nconsole.log("Loading from vault");`,
+      REPO, PROJECT,
+    );
+    expect(findings.filter(f => f.algorithm === 'Azure Key Vault').length).toBe(0);
+  });
+
+  it('does NOT flag the word "key" alone as any KMS', () => {
+    const findings = detectCloudKms(
+      'src/utils.ts',
+      `function getKey(id) { return db.find(id); }\nconst key = generateLocalKey();`,
+      REPO, PROJECT,
+    );
+    expect(findings.length).toBe(0);
+  });
+
+  it('does NOT flag the word "secret" alone as any KMS', () => {
+    const findings = detectCloudKms(
+      'src/config.ts',
+      `const secret = process.env.JWT_SECRET;\nconst certificate = loadCert();`,
+      REPO, PROJECT,
+    );
+    expect(findings.filter(f => f.algorithm === 'Azure Key Vault').length).toBe(0);
+  });
+
+  it('does NOT flag a PEM file as Azure Key Vault', () => {
+    const findings = detectCloudKms(
+      'certs/server.pem',
+      `-----BEGIN CERTIFICATE-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCg==\n-----END CERTIFICATE-----`,
+      REPO, PROJECT,
+    );
+    expect(findings.filter(f => f.algorithm === 'Azure Key Vault').length).toBe(0);
+  });
+
+  it('does NOT flag generic filename containing "keyvault" in a comment as Azure KV', () => {
+    const findings = detectCloudKms(
+      'src/helpers.ts',
+      `// TODO: consider switching to keyvault in the future\nconst key = 'abc123';`,
+      REPO, PROJECT,
+    );
+    // Comment-only evidence must not fire with high confidence
+    const azureFindings = findings.filter(f => f.algorithm === 'Azure Key Vault');
+    if (azureFindings.length > 0) {
+      // If it does detect, confidence must be low (below API usage threshold)
+      expect(azureFindings[0].confidence).toBeLessThan(0.75);
+    }
+  });
+
+  it('does NOT flag "certificate" as Azure Key Vault finding', () => {
+    const findings = detectCloudKms(
+      'src/tls.ts',
+      `const cert = fs.readFileSync('./server.crt');\nconst key = fs.readFileSync('./server.key');`,
+      REPO, PROJECT,
+    );
+    expect(findings.filter(f => f.algorithm === 'Azure Key Vault').length).toBe(0);
+  });
+
+  it('does NOT flag non-Azure vault URLs as Azure Key Vault', () => {
+    const findings = detectCloudKms(
+      'config/settings.json',
+      `{ "secrets_backend": "vault", "vault_addr": "https://vault.internal.company.com" }`,
+      REPO, PROJECT,
+    );
+    // Internal HashiCorp Vault URL must not trigger Azure KV
+    expect(findings.filter(f => f.algorithm === 'Azure Key Vault').length).toBe(0);
+  });
 });
 
 // ─── P1-C: Dockerfile / Container ───────────────────────────

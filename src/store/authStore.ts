@@ -1,9 +1,9 @@
 // ============================================================
-// QuantumGuard AI — Auth Store (v2)
+// Qrypto AI Advisor — Auth Store (v2)
 //
 // Dual-mode auth:
 //   - If VITE_API_URL is set → real JWT auth via backend
-//   - Otherwise → client-only demo mode (original behaviour)
+//   - Otherwise → fails gracefully (demo mode removed)
 // ============================================================
 
 import { create } from 'zustand';
@@ -30,24 +30,6 @@ interface AuthState {
   closeLoginModal: () => void;
 }
 
-// ── Demo users (client-only fallback) ────────────────────────
-// These match the backend-registered users for seamless dual-mode auth.
-const DEMO_USERS: Record<string, { password: string; profile: UserProfile }> = {
-  'demo@qrypto.dev': {
-    password: 'DemoPassword123!',
-    profile: {
-      name: 'Demo User', email: 'demo@qrypto.dev', role: 'ANALYST',
-      initials: 'DU', avatarColor: 'linear-gradient(135deg, #22c55e, #14b8a6)',
-    },
-  },
-  'test@qrypto.dev': {
-    password: 'TestPassword123!',
-    profile: {
-      name: 'Test User', email: 'test@qrypto.dev', role: 'ANALYST',
-      initials: 'TU', avatarColor: 'linear-gradient(135deg, #3b82f6, #6366f1)',
-    },
-  },
-};
 
 // ── Session helpers ───────────────────────────────────────────
 function loadUser(): UserProfile | null {
@@ -103,14 +85,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       }
     }
 
-    // Demo fallback mode
-    const match = DEMO_USERS[email.toLowerCase()];
-    if (match && match.password === password) {
-      localStorage.setItem('qg_user', JSON.stringify(match.profile));
-      set({ user: match.profile, showLoginModal: false, loginError: null, isLoading: false });
-      return true;
-    }
-    set({ loginError: 'Invalid email or password.', isLoading: false });
+    set({ loginError: 'Authentication service is unavailable.', isLoading: false });
     return false;
   },
 

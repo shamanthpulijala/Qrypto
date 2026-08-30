@@ -1,5 +1,5 @@
 // ============================================================
-// QuantumGuard AI — NovaBank Demo Dataset (§15 & §16)
+// Qrypto AI Advisor — NovaBank Demo Dataset (§15 & §16)
 // Fictional organization representing NovaBank enterprise architecture
 // ============================================================
 

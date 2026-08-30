@@ -1,5 +1,5 @@
 // ============================================================
-// QuantumGuard AI — §12 Scanning Pipeline
+// Qrypto AI Advisor — §12 Scanning Pipeline
 //
 // Upload → Validate → Extract → Detect Language → Parse →
 // Run Detectors → Normalize → Deduplicate → Confidence →
@@ -38,6 +38,7 @@ export interface PipelineOptions {
   maxFileSizeBytes?: number;       // skip files exceeding this size
   allowedExtensions?: string[];     // only scan these extensions
   onProgress?: (stage: PipelineStage, progress: number, log: string) => void;
+  abortSignal?: AbortSignal;
 }
 
 export type PipelineStage =
@@ -98,7 +99,13 @@ function validate(
   files: PipelineFile[],
   opts: PipelineOptions
 ): { valid: PipelineFile[]; skipped: string[] } {
-  const maxSize = opts.maxFileSizeBytes ?? 500 * 1024 * 1024; // 500 MB default to match upload limits
+  const maxSize = opts.maxFileSizeBytes ?? 50 * 1024 * 1024; // 50 MB default max file size
+  const maxFiles = 10000;
+  
+  if (files.length > maxFiles) {
+    throw new Error(`Scan rejected: Exceeds maximum allowed files (${maxFiles}).`);
+  }
+
   const exts = opts.allowedExtensions ?? DEFAULT_EXTENSIONS;
   const valid: PipelineFile[] = [];
   const skipped: string[] = [];
@@ -227,22 +234,26 @@ export async function runScanPipeline(
   };
 
   // ── Stage 1: Validate ──────────────────────────────────
+  if (opts.abortSignal?.aborted) throw new Error('Scan cancelled by user');
   emit('validate', 5, `Validating ${files.length} submitted file(s)…`);
   const { valid, skipped } = validate(files, opts);
   skipped.forEach(s => emit('validate', 5, `Skipped: ${s}`));
   emit('validate', 10, `${valid.length} file(s) passed validation, ${skipped.length} skipped.`);
 
   // ── Stage 2: Extract ───────────────────────────────────
+  if (opts.abortSignal?.aborted) throw new Error('Scan cancelled by user');
   emit('extract', 15, 'Safely extracting and normalizing file contents…');
   const extracted = extract(valid);
   emit('extract', 20, `Content normalized for ${extracted.length} files.`);
 
   // ── Stage 3: Detect Language ───────────────────────────
+  if (opts.abortSignal?.aborted) throw new Error('Scan cancelled by user');
   emit('detect-language', 25, 'Detecting file languages…');
   const linesTotal = extracted.reduce((acc, f) => acc + f.content.split('\n').length, 0);
   emit('detect-language', 30, `${linesTotal.toLocaleString()} lines queued for scanning.`);
 
   // ── Stage 4: Parse & Prepare ───────────────────────────
+  if (opts.abortSignal?.aborted) throw new Error('Scan cancelled by user');
   emit('parse', 35, 'Preparing scan files and initializing parsers…');
   await initAstParser();
   const scanFileObjects: ScanFile[] = extracted.map(f => ({

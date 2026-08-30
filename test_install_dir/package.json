@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@qrypto/cli": "file:qrypto-cli-1.0.0.tgz"
+  }
+}

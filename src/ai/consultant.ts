@@ -1,5 +1,5 @@
 // ============================================================
-// QuantumGuard AI — §18, §22, & §30 AI Security Consultant
+// Qrypto AI Advisor — §18, §22, & §30 AI Security Consultant
 //
 // Grounded in CBOM scan findings via §19 Context Builder.
 // §20 Rate limiting & §22 Offline Fallback handling.

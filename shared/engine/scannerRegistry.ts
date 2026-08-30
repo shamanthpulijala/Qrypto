@@ -9,6 +9,7 @@ export interface ScannerCapability {
   method: string;
   supportedInputs: string[];
   status: ScannerStatus;
+  limitations: string;
 }
 
 export const SCANNER_REGISTRY: ScannerCapability[] = [
@@ -20,7 +21,8 @@ export const SCANNER_REGISTRY: ScannerCapability[] = [
     doesNotDetect: 'Runtime cryptographic operations, memory-resident keys.',
     method: 'Regex + AST + dependency analysis where supported.',
     supportedInputs: ['Local folder', 'ZIP', 'Repository'],
-    status: 'READY'
+    status: 'READY',
+    limitations: 'Static analysis only; cannot verify runtime crypto state.'
   },
   {
     id: 'ast',
@@ -30,7 +32,8 @@ export const SCANNER_REGISTRY: ScannerCapability[] = [
     doesNotDetect: 'Files in languages without supported tree-sitter grammars.',
     method: 'Tree-sitter AST parsing.',
     supportedInputs: ['.js', '.ts', '.py', '.java', '.go', '.cs'],
-    status: 'READY'
+    status: 'READY',
+    limitations: 'Limited to supported tree-sitter grammars. Performance intensive.'
   },
   {
     id: 'certificates',
@@ -40,7 +43,8 @@ export const SCANNER_REGISTRY: ScannerCapability[] = [
     doesNotDetect: 'Certificates stored in proprietary encrypted keystores without passwords.',
     method: 'Static parsing of PEM/DER files.',
     supportedInputs: ['.pem', '.crt', '.cer', '.der', '.key'],
-    status: 'READY'
+    status: 'READY',
+    limitations: 'Does not verify trust chains or live CA endpoints.'
   },
   {
     id: 'tls',
@@ -50,7 +54,8 @@ export const SCANNER_REGISTRY: ScannerCapability[] = [
     doesNotDetect: 'Live network traffic interception.',
     method: 'Regex + configuration file parsing.',
     supportedInputs: ['Source Code', 'Config Files'],
-    status: 'READY'
+    status: 'READY',
+    limitations: 'Static configuration evidence only. No live handshake testing.'
   },
   {
     id: 'pqc',
@@ -60,7 +65,8 @@ export const SCANNER_REGISTRY: ScannerCapability[] = [
     doesNotDetect: 'Proprietary non-standard quantum algorithms.',
     method: 'Regex + Dependency analysis.',
     supportedInputs: ['Source Code', 'Dependencies'],
-    status: 'READY'
+    status: 'READY',
+    limitations: 'Limited to NIST standardized ML-KEM/ML-DSA parameters.'
   },
   {
     id: 'hsm',
@@ -70,7 +76,8 @@ export const SCANNER_REGISTRY: ScannerCapability[] = [
     doesNotDetect: 'Live HSM connections or HSM internal keys.',
     method: 'Regex + API usage detection.',
     supportedInputs: ['Source Code', 'Config Files'],
-    status: 'PARTIAL'
+    status: 'PARTIAL',
+    limitations: 'Cannot detect physical HSM boundaries or export controls.'
   },
   {
     id: 'cloud-kms',
@@ -80,7 +87,8 @@ export const SCANNER_REGISTRY: ScannerCapability[] = [
     doesNotDetect: 'IAM permissions or live KMS state.',
     method: 'Evidence-based detection (SDK usage, endpoints).',
     supportedInputs: ['Source Code', 'Config Files'],
-    status: 'READY'
+    status: 'READY',
+    limitations: 'Relies on SDK usage evidence. Cannot verify IAM policies.'
   },
   {
     id: 'docker',
@@ -90,7 +98,8 @@ export const SCANNER_REGISTRY: ScannerCapability[] = [
     doesNotDetect: 'Live container introspection or static container archive inspection.',
     method: 'Regex on Dockerfile/compose files.',
     supportedInputs: ['Dockerfile', 'docker-compose.yml'],
-    status: 'PARTIAL'
+    status: 'PARTIAL',
+    limitations: 'Static Dockerfile inspection only. Does not analyze built layers.'
   },
   {
     id: 'binary',
@@ -100,7 +109,8 @@ export const SCANNER_REGISTRY: ScannerCapability[] = [
     doesNotDetect: 'Execution paths or packed/obfuscated code.',
     method: 'Static analysis only. NEVER executes binaries.',
     supportedInputs: ['.dll', '.so', '.exe', '.bin'],
-    status: 'PARTIAL'
+    status: 'PARTIAL',
+    limitations: 'Cannot decompile. Operates on extracted symbol strings only.'
   },
   {
     id: 'combined',
@@ -110,7 +120,8 @@ export const SCANNER_REGISTRY: ScannerCapability[] = [
     doesNotDetect: 'N/A',
     method: 'Unified normalization and deduplication.',
     supportedInputs: ['Local folder', 'ZIP', 'Repository'],
-    status: 'READY'
+    status: 'READY',
+    limitations: 'Requires OS-compatible directory structure.'
   }
 ];
 

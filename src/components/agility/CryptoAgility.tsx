@@ -1,5 +1,5 @@
 // ============================================================
-// QuantumGuard AI — §32 Crypto Agility Page
+// Qrypto AI Advisor — §32 Crypto Agility Page
 //
 // Shows overall agility score, category breakdown, positives/negatives,
 // and concrete evidence mapped from findings (hardcoded calls, etc).

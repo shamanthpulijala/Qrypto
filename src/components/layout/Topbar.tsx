@@ -1,5 +1,5 @@
 // ============================================================
-// QuantumGuard AI — Minimal Topbar §24
+// Qrypto AI Advisor — Minimal Topbar §24
 // Left: Assessment name | Right: Live status + Re-scan + Q-Day toggle
 // ============================================================
 
@@ -35,7 +35,7 @@ export function Topbar() {
           ) : (
             <div className="topbar-assessment-info">
               <Shield size={14} style={{ color: 'var(--accent-violet)' }} />
-              <span className="topbar-org">QuantumGuard AI</span>
+              <span className="topbar-org">Qrypto AI Advisor</span>
             </div>
           )}
         </div>

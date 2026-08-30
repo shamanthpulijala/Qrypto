@@ -1,5 +1,5 @@
 // ============================================================
-// QuantumGuard AI — Command Center Dashboard §21-§26
+// Qrypto AI Advisor — Command Center Dashboard §21-§26
 // Living Cryptographic Command Center with Asymmetric Layout
 // ============================================================
 

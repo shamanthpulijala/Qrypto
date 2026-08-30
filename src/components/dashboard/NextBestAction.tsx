@@ -1,5 +1,5 @@
 // ============================================================
-// QuantumGuard AI — Next Best Action Component §34
+// Qrypto AI Advisor — Next Best Action Component §34
 // Intelligent, action-oriented primary recommendation card
 // ============================================================
 

@@ -1,5 +1,5 @@
 // ============================================================
-// QuantumGuard AI — PQC Knowledge Base
+// Qrypto AI Advisor — PQC Knowledge Base
 // ============================================================
 
 export const PQC_ALGORITHMS = [

@@ -1,5 +1,5 @@
 // ============================================================
-// QuantumGuard AI — Cryptographic Discovery Engine
+// Qrypto AI Advisor — Cryptographic Discovery Engine
 // Deterministic scanner — source of truth, no LLM involved
 // ============================================================
 

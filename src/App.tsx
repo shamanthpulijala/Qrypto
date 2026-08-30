@@ -18,8 +18,12 @@ import { QuantumCursor } from './components/cursor/QuantumCursor';
 import { DashboardBackground } from './components/dashboard/DashboardBackground';
 import { CommandPalette } from './components/common/CommandPalette';
 import { LoginModal } from './components/auth/LoginModal';
+import { PQCRecommendations } from './components/migration/PQCRecommendations';
+import { HybridMigration } from './components/migration/HybridMigration';
 import { useAppStore } from './store/assessmentStore';
 import { useAuthStore } from './store/authStore';
+import { ScannerFilterPage } from './components/common/ScannerFilterPage';
+import { StubPage } from './components/common/StubPage';
 
 // ─── P1-14: Route ↔ Store sync ─────────────────────────────
 // Maps URL paths to the store's currentPage values.
@@ -27,6 +31,7 @@ import { useAuthStore } from './store/authStore';
 //                store → URL (on sidebar click)
 
 const PAGE_ROUTES: Record<string, string> = {
+  landing: '/',
   dashboard: '/dashboard',
   inventory: '/inventory',
   findings: '/findings',
@@ -37,8 +42,32 @@ const PAGE_ROUTES: Record<string, string> = {
   agility: '/agility',
   ai: '/ai',
   reports: '/reports',
-  compliance: '/compliance',
   settings: '/settings',
+  // DISCOVER scanner views
+  algorithms: '/algorithms',
+  secrets: '/secrets',
+  certificates: '/certificates',
+  tls: '/tls',
+  libraries: '/libraries',
+  hsm: '/hsm',
+  cloudkms: '/cloudkms',
+  containers: '/containers',
+  binary: '/binary',
+  depgraph: '/depgraph',
+  // ASSESS
+  quantumrisk: '/quantumrisk',
+  // MIGRATE
+  pqcrecs: '/pqcrecs',
+  hybridmig: '/hybridmig',
+  // REPORT
+  execreport: '/reports',
+  techreport: '/reports',
+  devfindings: '/reports',
+  cbom: '/reports',
+  export: '/reports',
+  // PLATFORM
+  scanhistory: '/scanhistory',
+  auditlog: '/auditlog',
 };
 
 const ROUTE_TO_PAGE: Record<string, string> = Object.fromEntries(
@@ -132,36 +161,49 @@ function App() {
       return (
         <div className="empty-state">
           <div className="empty-state-icon">🛡️</div>
-          <h2>No Assessment Loaded</h2>
-          <p>Return to the landing page to load a demo or start a new scan.</p>
+          <h2>No Scan Loaded</h2>
+          <p>Start a scan from the home page to explore your cryptographic inventory.</p>
           <button className="btn btn-primary mt-4" onClick={() => useAppStore.getState().setCurrentPage('landing')}>
-            Go to Home
+            Start a Scan
           </button>
         </div>
       );
     }
 
     switch (currentPage) {
-      case 'dashboard': return <Dashboard />;
-      case 'inventory': return <Inventory />;
-      case 'findings': return <FindingsList />;
-      case 'qday': return <QDaySimulator />;
-      case 'attackmap': return <AttackMap />;
-      case 'hndl': return <HNDLAnalyzer />;
-      case 'migration': return <MigrationPlanner />;
-      case 'agility': return <CryptoAgility />;
-      case 'ai': return <AIAdvisor />;
-      case 'reports': return <Reports />;
-      case 'compliance':
-        return (
-          <div className="empty-state">
-            <div className="empty-state-icon">🚧</div>
-            <h2>Coming Soon</h2>
-            <p>Compliance mapping module is currently in development.</p>
-          </div>
-        );
-      default:
-        return <Dashboard />;
+      case 'dashboard':   return <Dashboard />;
+      case 'inventory':   return <Inventory />;
+      case 'findings':    return <FindingsList />;
+      case 'qday':        return <QDaySimulator />;
+      case 'attackmap':   return <AttackMap />;
+      case 'hndl':        return <HNDLAnalyzer />;
+      case 'migration':   return <MigrationPlanner />;
+      case 'agility':     return <CryptoAgility />;
+      case 'ai':          return <AIAdvisor />;
+      case 'reports':
+      case 'execreport':
+      case 'techreport':
+      case 'devfindings':
+      case 'cbom':
+      case 'export':      return <Reports />;
+      // Scanner-filtered views — real data, filtered by category
+      case 'algorithms':  return <ScannerFilterPage title="Algorithms" category="all" description="All cryptographic algorithms detected across your codebase." />;
+      case 'secrets':     return <ScannerFilterPage title="Secrets &amp; Keys" category="secret" description="Detected secrets, API keys, and hardcoded credentials." />;
+      case 'certificates':return <ScannerFilterPage title="Certificates / X.509" category="certificate" description="Detected X.509 certificates and public key material." />;
+      case 'tls':         return <ScannerFilterPage title="TLS / Protocols" category="tls" description="Detected TLS/SSL protocol configurations." />;
+      case 'libraries':   return <ScannerFilterPage title="Libraries / Dependencies" category="dependency" description="Detected cryptographic library dependencies." />;
+      case 'hsm':         return <ScannerFilterPage title="HSM / PKCS#11" category="hardware" description="Detected hardware security module references." />;
+      case 'cloudkms':    return <ScannerFilterPage title="Cloud KMS" category="kms" description="Detected cloud key management service integrations." />;
+      case 'containers':  return <ScannerFilterPage title="Containers" category="container" description="Detected cryptographic evidence in container definitions." />;
+      case 'binary':      return <ScannerFilterPage title="Binary Artifacts" category="binary" description="Detected cryptographic references in binary files." />;
+      case 'quantumrisk': return <ScannerFilterPage title="Quantum Risk" category="vulnerable" description="Findings with confirmed quantum-vulnerable algorithm usage." />;
+      // Stub pages — honestly labeled
+      case 'depgraph':   return <StubPage title="Dependency Graph" description="Visual dependency graph is not yet implemented." />;
+      case 'pqcrecs':    return <PQCRecommendations />;
+      case 'hybridmig':  return <HybridMigration />;
+      case 'scanhistory':return <StubPage title="Scan History" description="Scan history requires backend persistence. Configure VITE_API_URL to enable." />;
+      case 'auditlog':   return <StubPage title="Audit Log" description="Audit logging requires backend persistence. Configure VITE_API_URL to enable." />;
+      default:            return <Dashboard />;
     }
   };
 

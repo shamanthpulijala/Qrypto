@@ -1,5 +1,5 @@
 // ============================================================
-// QuantumGuard AI — Vitest Test Setup
+// Qrypto AI Advisor — Vitest Test Setup
 // ============================================================
 
 import '@testing-library/jest-dom';

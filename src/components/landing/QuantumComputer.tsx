@@ -1,5 +1,5 @@
 // ============================================================
-// QuantumGuard AI — 3D Interactive Quantum Computer Hero §08
+// Qrypto AI Advisor — 3D Interactive Quantum Computer Hero §08
 // Cursor-reactive superconducting processor with particles,
 // metallic rings, qubit nodes, and energy fields
 // ============================================================

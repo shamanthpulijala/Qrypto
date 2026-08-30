@@ -8,14 +8,24 @@ export function Settings() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    const key = localStorage.getItem('gemini_api_key');
-    if (key) setApiKey(key);
+    // API keys are stored server-side only. 
+    // We intentionally do NOT fetch them to display in the UI.
+    setApiKey('');
   }, []);
 
-  const handleSave = () => {
-    localStorage.setItem('gemini_api_key', apiKey);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  const handleSave = async () => {
+    try {
+      await fetch('/api/settings/ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey })
+      });
+      setApiKey(''); // Clear from state immediately after sending
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (e) {
+      console.error('Failed to save settings', e);
+    }
   };
 
   return (
@@ -25,7 +35,7 @@ export function Settings() {
           <SettingsIcon size={24} className="sph-icon" />
           <div>
             <h2>Settings</h2>
-            <p>Configure QuantumGuard AI preferences and integrations.</p>
+            <p>Configure Qrypto AI preferences and integrations.</p>
           </div>
         </div>
       </div>
@@ -34,11 +44,11 @@ export function Settings() {
         <div className="card settings-card">
           <h4><Key size={18} /> API Configuration</h4>
           <p className="settings-desc">
-            Enter your Google Gemini API key to enable the AI Security Consultant and Remediation Engine. 
-            This key is stored locally in your browser and never sent to our servers.
+            Enter your AI API key to enable the Qrypto AI Security Consultant. 
+            This key is transmitted securely and stored server-side only. It is never persisted in the browser.
           </p>
           <div className="settings-form">
-            <label>Gemini API Key</label>
+            <label>API Key (OpenRouter or Gemini)</label>
             <input
               type="password"
               className="input"

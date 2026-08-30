@@ -1,5 +1,5 @@
 // ============================================================
-// QuantumGuard AI — AST Detection Layer (P0-7: Revived)
+// Qrypto AI Advisor — AST Detection Layer (P0-7: Revived)
 // Uses web-tree-sitter for semantic analysis of source code.
 // Works in both Node.js (server) and browser environments.
 // Gracefully degrades if tree-sitter is not available.
@@ -279,7 +279,7 @@ export async function enrichWithAst(
     }
 
     // Parse the file
-    // @ts-ignore - Parser constructor exists but types may not expose it
+
     const parser = new Parser();
     parser.setLanguage(language);
     const tree = parser.parse(content);

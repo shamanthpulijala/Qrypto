@@ -35,10 +35,7 @@ export function LoginModal() {
     }
   };
 
-  const fillDemo = (demoEmail: string, demoPassword: string) => {
-    setEmail(demoEmail);
-    setPassword(demoPassword);
-  };
+
 
   if (!showLoginModal) return null;
 
@@ -108,26 +105,7 @@ export function LoginModal() {
             </button>
           </form>
 
-          {/* Demo credentials */}
-          <div className="login-demo">
-            <span className="login-demo-title">Demo accounts</span>
-            <div className="login-demo-accounts">
-              {[
-                { label: 'Demo User', email: 'demo@qrypto.dev', pw: 'DemoPassword123!' },
-                { label: 'Test User', email: 'test@qrypto.dev', pw: 'TestPassword123!' },
-              ].map(a => (
-                <button
-                  key={a.email}
-                  className="login-demo-btn"
-                  onClick={() => fillDemo(a.email, a.pw)}
-                  type="button"
-                >
-                  <span className="demo-role">{a.label}</span>
-                  <span className="demo-email">{a.email}</span>
-                </button>
-              ))}
-            </div>
-          </div>
+
         </div>
       </div>
     </div>

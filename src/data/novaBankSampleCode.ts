@@ -1,5 +1,5 @@
 // ============================================================
-// QuantumGuard AI — §14 Deliberately Vulnerable Sample Repository
+// Qrypto AI Advisor — §14 Deliberately Vulnerable Sample Repository
 // §15 — NovaBank (fictional organization, no real bank data)
 //
 // These are SYNTHETIC source files used as scan input.
@@ -30,7 +30,7 @@ export const NOVABANK_SAMPLE_FILES: SampleSourceFile[] = [
     description: 'RSA key generation (quantum-vulnerable), SHA-1 hash (classically weak)',
     content: `"""
 NovaBank Authentication Service — JWT Signing
-DEMO ONLY — Synthetic vulnerable example for QuantumGuard scanning.
+DEMO ONLY — Synthetic vulnerable example for Qrypto scanning.
 """
 from Crypto.PublicKey import RSA
 from Crypto.Signature import pkcs1_15
@@ -71,7 +71,7 @@ API_KEY = "DEMO_SECRET_DO_NOT_USE"
     description: 'ECDH key exchange (quantum-vulnerable), ECC (quantum-vulnerable)',
     content: `"""
 NovaBank Payment Service — Key Exchange
-DEMO ONLY — Synthetic vulnerable example for QuantumGuard scanning.
+DEMO ONLY — Synthetic vulnerable example for Qrypto scanning.
 """
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric.ec import ECDH, SECP256R1
@@ -104,7 +104,7 @@ payment_public = payment_key.public_key()
     description: 'MD5 (broken), SHA-1 (weak), AES-256 (healthy)',
     content: `"""
 NovaBank Payment Service — Cryptographic Hashing
-DEMO ONLY — Synthetic vulnerable example for QuantumGuard scanning.
+DEMO ONLY — Synthetic vulnerable example for Qrypto scanning.
 
 IMPORTANT: This file contains both problematic AND healthy examples.
 The scanner should correctly distinguish them.
@@ -153,7 +153,7 @@ def hash_audit_log(entry: str) -> str:
     description: 'TLS 1.0 (obsolete), TLS 1.2, TLS 1.3',
     content: `"""
 NovaBank Authentication Service — TLS Configuration
-DEMO ONLY — Synthetic vulnerable example for QuantumGuard scanning.
+DEMO ONLY — Synthetic vulnerable example for Qrypto scanning.
 """
 import ssl
 
@@ -230,7 +230,7 @@ DATA_RETENTION_YEARS = 25
     description: 'RSA signature verification, hardcoded API key, TLS 1.2',
     content: `/**
  * NovaBank Customer API — Authentication & Signature Verification
- * DEMO ONLY — Synthetic vulnerable example for QuantumGuard scanning.
+ * DEMO ONLY — Synthetic vulnerable example for Qrypto scanning.
  */
 import crypto from 'crypto';
 
@@ -269,7 +269,7 @@ export const TLS_OPTIONS = {
     description: 'ECDSA signing (quantum-vulnerable), SHA-256 (healthy)',
     content: `"""
 NovaBank Mobile Backend — Push Notification Signing
-DEMO ONLY — Synthetic vulnerable example for QuantumGuard scanning.
+DEMO ONLY — Synthetic vulnerable example for Qrypto scanning.
 """
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import hashes

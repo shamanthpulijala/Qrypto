@@ -1,5 +1,5 @@
 // ============================================================
-// QuantumGuard AI — §33 Reports Page
+// Qrypto AI Advisor — §33 Reports Page
 //
 // Buttons:
 //   Generate Executive Report
@@ -489,7 +489,7 @@ export function Reports() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `quantumguard-findings-${assessment.organization.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}.json`;
+    a.download = `Qrypto-findings-${assessment.organization.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(url);
     setExportDone(true);

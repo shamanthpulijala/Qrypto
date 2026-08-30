@@ -1,5 +1,5 @@
 // ============================================================
-// QuantumGuard AI — §21 Error Boundary Component
+// Qrypto AI Advisor — §21 Error Boundary Component
 //
 // Prevents dashboard crashes from unexpected rendering errors,
 // malformed data, or missing metadata.
@@ -32,7 +32,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('QuantumGuard UI Error Boundary caught an error:', error, errorInfo);
+    console.error('Qrypto UI Error Boundary caught an error:', error, errorInfo);
     this.setState({ errorInfo });
   }
 
@@ -77,7 +77,7 @@ export class ErrorBoundary extends Component<Props, State> {
           </h3>
 
           <p style={{ color: '#94a3b8', fontSize: '14px', maxWidth: '480px', marginBottom: '20px', lineHeight: 1.5 }}>
-            QuantumGuard prevented a dashboard crash. The system handled an unexpected data format or rendering issue gracefully.
+            Qrypto prevented a dashboard crash. The system handled an unexpected data format or rendering issue gracefully.
           </p>
 
           {this.state.error && (

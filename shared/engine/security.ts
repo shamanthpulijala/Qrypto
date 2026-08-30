@@ -1,5 +1,5 @@
 // ============================================================
-// QuantumGuard AI — §20 Security & Safety Controls
+// Qrypto AI Advisor — §20 Security & Safety Controls
 //
 // Cybersecurity product safety rules:
 // - Path traversal protection
@@ -35,11 +35,30 @@ export function sanitizeFilePath(rawPath: string): string {
   // Strip leading slashes and drive letters (e.g. C:/)
   clean = clean.replace(/^[a-zA-Z]:\//, '').replace(/^\/+/, '');
 
-  // Strip path traversal dots
-  clean = clean.replace(/(^|\/)\.\.(\/|$)/g, '$1$2');
+  // Strip tilde home-dir prefix
+  clean = clean.replace(/^~\//, '');
 
   // Remove unsafe control characters
   clean = clean.replace(/[\x00-\x1F\x7F]/g, '');
+
+  // Iteratively remove path traversal sequences until the string is stable.
+  // A single pass can leave residuals like /../ if the input is ../../
+  let prev = '';
+  while (prev !== clean) {
+    prev = clean;
+    clean = clean.replace(/(^|\/)\.\.(\.|\/|$)/g, '$1');
+    // Remove any remaining double-dots that ended up adjacent to slashes
+    clean = clean.replace(/\/\.\.$/g, '');
+    // Collapse double slashes
+    clean = clean.replace(/\/\//g, '/');
+    // Strip leading slashes again (may be exposed after removal)
+    clean = clean.replace(/^\/+/, '');
+  }
+
+  // Final safety: if the path still contains '..', reject it entirely
+  if (clean.includes('..')) {
+    return 'unsafe_path_rejected.txt';
+  }
 
   return clean || 'unnamed_file.txt';
 }

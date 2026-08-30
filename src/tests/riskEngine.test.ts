@@ -1,5 +1,5 @@
 // ============================================================
-// QuantumGuard AI — §35 Risk Engine Tests
+// Qrypto AI Advisor — §35 Risk Engine Tests
 //
 // Tests for:
 //   - Deterministic score computation

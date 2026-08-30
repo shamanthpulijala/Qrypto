@@ -194,3 +194,100 @@
   background: rgba(0, 212, 255, 0.15);
   color: #fff;
 }
+
+/* ==========================================
+   Dependency Graph View
+   ========================================== */
+.dep-graph-wrapper {
+  padding: 24px;
+  background: var(--glass-bg-heavy);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+}
+
+.dep-graph-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.dep-tree-container {
+  padding-left: 12px;
+  font-family: var(--font-sans);
+}
+
+.dep-node {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.root-node {
+  background: rgba(124, 58, 237, 0.1);
+  border-color: rgba(124, 58, 237, 0.3);
+  color: var(--accent-violet);
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.file-node {
+  background: rgba(0, 212, 255, 0.05);
+  border-color: rgba(0, 212, 255, 0.2);
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+
+.dep-finding-node {
+  background: rgba(0, 0, 0, 0.2);
+  margin-bottom: 8px;
+}
+
+.dep-finding-node.severity-critical { border-color: rgba(239, 68, 68, 0.5); color: #ef4444; }
+.dep-finding-node.severity-high { border-color: rgba(249, 115, 22, 0.5); color: #f97316; }
+.dep-finding-node.severity-medium { border-color: rgba(234, 179, 8, 0.5); color: #eab308; }
+.dep-finding-node.severity-low { border-color: rgba(59, 130, 246, 0.5); color: #3b82f6; }
+.dep-finding-node.severity-info { border-color: rgba(168, 85, 247, 0.5); color: #a855f7; }
+
+.dep-usage-tag {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-left: 8px;
+}
+
+.dep-children {
+  margin-left: 20px;
+  padding-left: 20px;
+  border-left: 1px dashed var(--glass-border);
+}
+
+.dep-sub-children {
+  margin-left: 20px;
+  padding-left: 20px;
+  border-left: 1px dashed var(--glass-border);
+}
+
+.dep-file-group, .dep-item-group {
+  position: relative;
+}
+
+.dep-connector, .dep-sub-connector {
+  position: absolute;
+  left: -20px;
+  top: 15px;
+  width: 16px;
+  height: 1px;
+  border-top: 1px dashed var(--glass-border);
+}

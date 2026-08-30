@@ -1,5 +1,5 @@
 // ============================================================
-// QuantumGuard AI — Core Type Definitions
+// Qrypto AI Advisor — Core Type Definitions
 // ============================================================
 
 export type Language = 'python' | 'java' | 'javascript' | 'typescript' | 'go' | 'yaml' | 'json' | 'xml' | 'unknown';

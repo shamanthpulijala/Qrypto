@@ -1,5 +1,5 @@
 // ============================================================
-// QuantumGuard AI — Risk Pulse Component §33
+// Qrypto AI Advisor — Risk Pulse Component §33
 // Activity stream derived from actual scan findings
 // ============================================================
 

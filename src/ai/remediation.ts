@@ -1,5 +1,5 @@
 // ============================================================
-// QuantumGuard AI — AI Code Remediation Generator
+// Qrypto AI Advisor — AI Code Remediation Generator
 // ============================================================
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
@@ -92,7 +92,7 @@ const BUILTIN_REMEDIATIONS: Record<string, Partial<RemediationResult>> = {
 };
 
 function buildRemediationPrompt(finding: Finding): string {
-  return `You are a cryptographic security engineer generating migration guidance for QuantumGuard AI.
+  return `You are a cryptographic security engineer generating migration guidance for Qrypto AI Advisor.
 
 FINDING:
   ID: ${finding.id}

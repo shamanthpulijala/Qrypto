@@ -5,7 +5,8 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import remarkGfm from 'remark-gfm';
 import { useAppStore } from '../../store/assessmentStore';
-import { askConsultant, SUGGESTED_QUESTIONS } from '../../ai/consultant';
+import { SUGGESTED_QUESTIONS } from '../../ai/consultant';
+import { askAI } from '../../api';
 import './AIAdvisor.css';
 
 interface Message {
@@ -15,7 +16,7 @@ interface Message {
 }
 
 export function AIAdvisor() {
-  const { assessment, geminiApiKey } = useAppStore();
+  const { assessment } = useAppStore();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -46,8 +47,17 @@ export function AIAdvisor() {
     setLoading(true);
 
     try {
-      const response = await askConsultant(query, assessment, geminiApiKey);
-      setMessages(prev => [...prev, { id: Date.now().toString(), role: 'assistant', content: response.answer }]);
+      const response = await askAI(assessment.id, {
+        question: query,
+        chatHistory: messages.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] }))
+      });
+
+      const resData = response.data;
+      if (response.status === 200 && resData) {
+        setMessages(prev => [...prev, { id: Date.now().toString(), role: 'assistant', content: resData.answer }]);
+      } else {
+        throw new Error(response.error || 'Failed to get AI response');
+      }
     } catch (err: any) {
       setMessages(prev => [...prev, { id: Date.now().toString(), role: 'assistant', content: `**Error:** ${err.message}` }]);
     } finally {
@@ -56,8 +66,6 @@ export function AIAdvisor() {
   };
 
   if (!assessment) return null;
-
-  const isOffline = !geminiApiKey || geminiApiKey.trim() === '';
 
   return (
     <div className="ai-advisor animate-fade-in">
@@ -69,12 +77,6 @@ export function AIAdvisor() {
             <p>Grounded in your CBOM. Ask about specific findings or migration strategies.</p>
           </div>
         </div>
-        {isOffline && (
-          <div className="offline-mode-badge">
-            <Info size={14} />
-            <span>Offline Mode (Deterministic Fallback Active)</span>
-          </div>
-        )}
       </div>
 
       <div className="card chat-container">
@@ -154,9 +156,7 @@ export function AIAdvisor() {
             </button>
           </div>
           <div className="chat-disclaimer">
-            {isOffline
-              ? 'ⓘ Currently using offline deterministic rule engine. Configure a Gemini API key in Settings for dynamic LLM responses.'
-              : 'AI recommendations should be verified by a security engineer before implementation.'}
+            'AI recommendations should be verified by a security engineer before implementation.'
           </div>
         </div>
       </div>

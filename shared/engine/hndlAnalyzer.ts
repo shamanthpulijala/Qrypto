@@ -1,5 +1,5 @@
 // ============================================================
-// QuantumGuard AI — HNDL (Harvest Now, Decrypt Later) Analyzer
+// Qrypto AI Advisor — HNDL (Harvest Now, Decrypt Later) Analyzer
 // ============================================================
 
 import type { HNDLAssessment, Finding } from '../types';
