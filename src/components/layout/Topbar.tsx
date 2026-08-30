@@ -55,8 +55,8 @@ export function Topbar() {
                 >
                   {user.initials}
                 </div>
-                <span style={{ fontSize: '0.8rem', color: 'var(--text-primary)', marginLeft: 6 }}>
-                  {user.name}
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-primary)', marginLeft: 8, fontWeight: 600 }}>
+                  {user.name.split(' ')[0]}
                 </span>
               </button>
               {showUserMenu && (

@@ -5,8 +5,9 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Zap, ArrowRight, Upload, FileCode2, AlertCircle, Eye, Check } from 'lucide-react';
+import { Shield, Zap, ArrowRight, Upload, FileCode2, AlertCircle, Eye, Check, LogOut } from 'lucide-react';
 import { useAppStore } from '../../store/assessmentStore';
+import { useAuthStore } from '../../store/authStore';
 import JSZip from 'jszip';
 
 import { QuantumComputer } from './QuantumComputer';
@@ -114,6 +115,7 @@ function useFadeIn() {
 export function Landing() {
   const navigate = useNavigate();
   const { startScan, isScanning, scanProgress, scanLog, scanError, setCurrentPage } = useAppStore();
+  const { openLoginModal, user, logout } = useAuthStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dirInputRef = useRef<HTMLInputElement>(null);
   const dropRef = useRef<HTMLDivElement>(null);
@@ -207,10 +209,27 @@ export function Landing() {
 
   const handleScan = useCallback(() => { if (pendingFiles) startScan(pendingFiles); }, [pendingFiles, startScan]);
 
+  const handleUploadClick = useCallback((type: 'file' | 'dir' | 'zip') => {
+    if (!user) {
+      openLoginModal('login');
+      return;
+    }
+    if (type === 'file' || type === 'zip') fileInputRef.current?.click();
+    else if (type === 'dir') dirInputRef.current?.click();
+  }, [user, openLoginModal]);
+
   // ── Drag and drop ──
   const onDragOver = useCallback((e: React.DragEvent) => { e.preventDefault(); setDragging(true); }, []);
   const onDragLeave = useCallback(() => setDragging(false), []);
-  const onDrop = useCallback((e: React.DragEvent) => { e.preventDefault(); setDragging(false); handleFiles(e.dataTransfer.files); }, [handleFiles]);
+  const onDrop = useCallback((e: React.DragEvent) => { 
+    e.preventDefault(); 
+    setDragging(false); 
+    if (!useAuthStore.getState().user) {
+      openLoginModal('login');
+      return;
+    }
+    handleFiles(e.dataTransfer.files); 
+  }, [handleFiles, openLoginModal]);
 
   // Compute scan steps for cinematic display
   const scanSteps = [
@@ -252,6 +271,13 @@ export function Landing() {
               }}>
                 EXPLORE Q-DAY <Zap size={16} />
               </button>
+              {user && (
+                <button className="btn-hero-secondary" style={{ gap: '10px', background: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)', color: '#f1f5f9' }} onClick={logout}>
+                  <span style={{ width: 24, height: 24, borderRadius: '50%', background: user.avatarColor, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800, color: '#fff', flexShrink: 0, boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>{user.initials}</span>
+                  <span style={{ fontWeight: 600 }}>{user.name.split(' ')[0]}</span>
+                  <LogOut size={14} style={{ opacity: 0.6, marginLeft: '4px' }} />
+                </button>
+              )}
             </div>              <div className="hero-stats">
               <div className="hero-stat">
                 <span className="hero-stat-value">71</span>
@@ -481,15 +507,15 @@ export function Landing() {
                     </div>
                   ) : (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
-                      <button className="cta-select-btn" onClick={() => fileInputRef.current?.click()} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '16px', borderRadius: '8px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', color: 'var(--text-primary)' }}>
+                      <button className="cta-select-btn" onClick={() => handleUploadClick('file')} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '16px', borderRadius: '8px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', color: 'var(--text-primary)' }}>
                         <FileCode2 size={24} color="#6366f1" />
                         <span>📄 FILE</span>
                       </button>
-                      <button className="cta-select-btn" onClick={() => dirInputRef.current?.click()} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '16px', borderRadius: '8px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', color: 'var(--text-primary)' }}>
+                      <button className="cta-select-btn" onClick={() => handleUploadClick('dir')} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '16px', borderRadius: '8px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', color: 'var(--text-primary)' }}>
                         <Upload size={24} color="#22c55e" />
                         <span>📁 FOLDER</span>
                       </button>
-                      <button className="cta-select-btn" onClick={() => fileInputRef.current?.click()} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '16px', borderRadius: '8px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', color: 'var(--text-primary)' }}>
+                      <button className="cta-select-btn" onClick={() => handleUploadClick('zip')} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '16px', borderRadius: '8px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', color: 'var(--text-primary)' }}>
                         <Upload size={24} color="#eab308" />
                         <span>📦 ZIP</span>
                       </button>
