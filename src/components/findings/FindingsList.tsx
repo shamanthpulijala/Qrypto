@@ -55,11 +55,11 @@ export function FindingsList() {
       if (viewFilter === 'secrets') res = res.filter(f => f.category === 'secret');
       if (viewFilter === 'certificates') res = res.filter(f => f.category === 'certificate');
       if (viewFilter === 'tls') res = res.filter(f => f.category === 'tls');
-      if (viewFilter === 'libraries') res = res.filter(f => f.category === 'dependency' || f.category === 'library');
-      if (viewFilter === 'hsm') res = res.filter(f => f.category === 'hardware' || f.category === 'hsm');
-      if (viewFilter === 'cloudkms') res = res.filter(f => f.category === 'cloud-kms' || f.category === 'kms');
-      if (viewFilter === 'containers') res = res.filter(f => f.category === 'container');
-      if (viewFilter === 'binary') res = res.filter(f => f.category === 'binary');
+      if (viewFilter === 'libraries') res = res.filter(f => f.tags?.includes('dependency') || f.tags?.includes('library'));
+      if (viewFilter === 'hsm') res = res.filter(f => f.category === 'hardware-module' || f.tags?.includes('hsm'));
+      if (viewFilter === 'cloudkms') res = res.filter(f => f.category === 'cloud-kms');
+      if (viewFilter === 'containers') res = res.filter(f => f.category === 'container-config' || f.tags?.includes('container'));
+      if (viewFilter === 'binary') res = res.filter(f => f.category === 'binary-artifact' || f.tags?.includes('binary'));
     }
 
     return [...res].sort((a, b) => b.riskScore - a.riskScore);
@@ -279,7 +279,7 @@ export function FindingsList() {
 
 // --- Visual Dependency Graph Component ---
 function DependencyGraphView({ findings }: { findings: Finding[] }) {
-  const deps = findings.filter(f => f.category === 'dependency' || f.category === 'library');
+  const deps = findings.filter(f => f.tags?.includes('dependency') || f.tags?.includes('library'));
   
   if (deps.length === 0) {
     return (
