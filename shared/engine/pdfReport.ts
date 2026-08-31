@@ -13,9 +13,6 @@
 import type { Finding, MigrationTask, CryptoAgilityScore, HNDLAssessment } from '../types';
 import { runMoscaAssessment, type MoscaAssessment } from './mosca';
 
-// jsPDF is imported dynamically to avoid issues in Node test environments.
-// The caller must have jspdf installed.
-
 interface PDFReportData {
   projectName: string;
   organization: string;
@@ -99,10 +96,24 @@ export async function generatePDFReport(
   data: PDFReportData,
   type: ReportType = 'executive',
 ): Promise<Blob> {
-  const { jsPDF } = await import('jspdf');
-  await import('jspdf-autotable');
+  // Dynamic import to avoid issues in Node test environments
+  let jsPDFClass: any;
+  try {
+    const jspdfModule: any = await import('jspdf');
+    jsPDFClass = jspdfModule.jsPDF || jspdfModule.default;
+    if (!jsPDFClass) {
+      // Fallback: find the constructor among all exports
+      jsPDFClass = Object.values(jspdfModule).find((v: any) => typeof v === 'function' && v.prototype?.addPage);
+    }
+    await import('jspdf-autotable');
+  } catch (e) {
+    throw new Error(`Failed to load jsPDF library: ${e instanceof Error ? e.message : String(e)}. Ensure jspdf is installed.`);
+  }
+  if (!jsPDFClass) {
+    throw new Error('jsPDF class not found in module. The library may have an unexpected export structure.');
+  }
 
-  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const doc = new jsPDFClass({ unit: 'mm', format: 'a4' });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 20;
@@ -574,5 +585,17 @@ export async function generatePDFReport(
   }
 
   // Return as Blob for download
-  return doc.output('blob');
+  try {
+    return doc.output('blob');
+  } catch (e) {
+    // Fallback: get data URI and convert to blob
+    const dataUri = doc.output('datauristring');
+    const byteString = atob(dataUri.split(',')[1]);
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+      ia[i] = byteString.charCodeAt(i);
+    }
+    return new Blob([ab], { type: 'application/pdf' });
+  }
 }

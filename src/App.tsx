@@ -14,7 +14,6 @@ import { CryptoAgility } from './components/agility/CryptoAgility';
 import { AIAdvisor } from './components/aiAdvisor/AIAdvisor';
 import { Reports } from './components/reports/Reports';
 import { Settings } from './components/settings/Settings';
-import { QuantumCursor } from './components/cursor/QuantumCursor';
 import { DashboardBackground } from './components/dashboard/DashboardBackground';
 import { CommandPalette } from './components/common/CommandPalette';
 import { LoginModal } from './components/auth/LoginModal';
@@ -120,7 +119,6 @@ function App() {
   if (!user && !assessment && !isScanning && currentPage !== 'landing' && currentPage !== 'settings') {
     return (
       <>
-        <QuantumCursor />
         <Landing />
         <LoginModal />
       </>
@@ -208,12 +206,11 @@ function App() {
   };
 
   if (currentPage === 'landing') {
-    return <><QuantumCursor /><Landing /><LoginModal /></>;
+    return <><Landing /><LoginModal /></>;
   }
 
   return (
     <div className="app-shell">
-      <QuantumCursor />
       <DashboardBackground />
       <CommandPalette />
       <LoginModal />

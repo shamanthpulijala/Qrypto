@@ -94,7 +94,7 @@ const store: InMemoryStore = {
   tasks: new Map(),
   simulations: new Map(),
   scans: new Map(),
-  aiApiKey: null,
+  aiApiKey: (import.meta as any).env?.VITE_OPENROUTER_API_KEY || null,
 };
 
 // ─── API Response Wrapper ────────────────────────────────────

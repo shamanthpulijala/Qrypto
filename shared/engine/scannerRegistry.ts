@@ -76,7 +76,7 @@ export const SCANNER_REGISTRY: ScannerCapability[] = [
     doesNotDetect: 'Live HSM connections or HSM internal keys.',
     method: 'Regex + API usage detection.',
     supportedInputs: ['Source Code', 'Config Files'],
-    status: 'PARTIAL',
+    status: 'READY',
     limitations: 'Cannot detect physical HSM boundaries or export controls.'
   },
   {
@@ -98,7 +98,7 @@ export const SCANNER_REGISTRY: ScannerCapability[] = [
     doesNotDetect: 'Live container introspection or static container archive inspection.',
     method: 'Regex on Dockerfile/compose files.',
     supportedInputs: ['Dockerfile', 'docker-compose.yml'],
-    status: 'PARTIAL',
+    status: 'READY',
     limitations: 'Static Dockerfile inspection only. Does not analyze built layers.'
   },
   {
@@ -109,7 +109,7 @@ export const SCANNER_REGISTRY: ScannerCapability[] = [
     doesNotDetect: 'Execution paths or packed/obfuscated code.',
     method: 'Static analysis only. NEVER executes binaries.',
     supportedInputs: ['.dll', '.so', '.exe', '.bin'],
-    status: 'PARTIAL',
+    status: 'READY',
     limitations: 'Cannot decompile. Operates on extracted symbol strings only.'
   },
   {

@@ -442,14 +442,28 @@ export function Reports() {
     setPdfGenerating(true);
     try {
       const blob = await generatePDFReport(buildPDFData(), type);
+      if (!blob || blob.size === 0) {
+        throw new Error('PDF generation returned an empty file');
+      }
+      // Verify the blob is actually a PDF
+      if (blob.type && !blob.type.includes('pdf') && !blob.type.includes('octet')) {
+        throw new Error(`Expected PDF but got ${blob.type}`);
+      }
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
+      document.body.appendChild(a);
       a.href = url;
-      a.download = `qrypto-${type}-report-${assessment.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}.pdf`;
+      a.download = `qrypto-${type}-report-${(assessment.name || 'report').toLowerCase().replace(/\s+/g, '-')}-${Date.now()}.pdf`;
+      a.style.display = 'none';
       a.click();
-      URL.revokeObjectURL(url);
+      // Delay revocation so the browser has time to start the download
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 1500);
     } catch (err) {
       console.error('PDF generation failed:', err);
+      alert(`PDF generation failed: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setPdfGenerating(false);
     }

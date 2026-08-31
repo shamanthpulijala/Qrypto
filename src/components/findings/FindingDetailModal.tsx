@@ -11,7 +11,7 @@
 // ============================================================
 
 import React, { useState } from 'react';
-import { X, ShieldAlert, Code2, Sparkles, Copy, Check, ArrowRight, ExternalLink } from 'lucide-react';
+import { X, ShieldAlert, Code2, Sparkles, Copy, Check, ArrowRight, ExternalLink, Zap } from 'lucide-react';
 import type { Finding } from '../../types';
 import { scoreToColor } from '../../engine/riskEngine';
 import { getCodeRemediationGuide } from '../../api';
@@ -168,13 +168,93 @@ export function FindingDetailModal({ finding, onClose }: Props) {
             <p>{getBusinessImpact(finding)}</p>
           </div>
 
-          {/* Section 3: Recommended Migration (§28) */}
+          {/* Section 3: Quantum Migration (§03) */}
+          <div className="fdm-section quantum-migration-section">
+            <h3><Zap size={15} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 6 }} />3. Quantum Migration</h3>
+            <div className="qm-grid">
+              <div className="qm-card">
+                <span className="qm-label">Current Algorithm</span>
+                <span className="qm-value mono">{finding.algorithm}</span>
+              </div>
+              <div className="qm-card">
+                <span className="qm-label">Current Usage</span>
+                <span className="qm-value">{finding.service}{finding.category ? ` (${finding.category})` : ''}</span>
+              </div>
+              <div className="qm-card">
+                <span className="qm-label">Quantum Status</span>
+                <span className={`quantum-badge qb-${finding.quantumStatus}`}>{finding.quantumStatus.replace(/-/g, ' ').toUpperCase()}</span>
+              </div>
+              <div className="qm-card qm-wide">
+                <span className="qm-label">Threat</span>
+                <span className="qm-value">
+                  {finding.quantumStatus === 'vulnerable'
+                    ? `${finding.algorithm} is vulnerable to Shor's algorithm on a Cryptographically-Relevant Quantum Computer (CRQC). ${
+                        finding.algorithm.toUpperCase().includes('RSA') || finding.algorithm.toUpperCase().includes('ECC') || finding.algorithm.toUpperCase().includes('ECDH')
+                          ? 'Integer factorization / discrete logarithm can be solved in polynomial time.'
+                          : finding.algorithm.toUpperCase().includes('MD5') || finding.algorithm.toUpperCase().includes('SHA-1')
+                          ? 'Grover\'s algorithm reduces effective hash security by half, though classical collision attacks already exist.'
+                          : 'Classical security assumptions may not hold under quantum computation.'
+                      }`
+                    : finding.quantumStatus === 'classical-weak'
+                    ? `${finding.algorithm} has known classical vulnerabilities. While not directly broken by quantum algorithms, it should be replaced with modern, quantum-resistant alternatives.`
+                    : finding.quantumStatus === 'quantum-resistant'
+                    ? `${finding.algorithm} is considered quantum-resistant under current cryptographic analysis.`
+                    : `${finding.algorithm} quantum status requires evaluation.`
+                  }
+                </span>
+              </div>
+              <div className="qm-card">
+                <span className="qm-label">Recommended PQC Target</span>
+                <span className="qm-value highlight-text">{
+                  finding.recommendedAlgorithm || (
+                    // Usage-aware recommendation based on algorithm category
+                    finding.category === 'certificate' || finding.category === 'signature'
+                      ? 'ML-DSA-65 (FIPS 204)'
+                      : finding.category === 'secret'
+                      ? 'N/A — Rotate and use secrets manager'
+                      : finding.category === 'tls'
+                      ? 'Hybrid ML-KEM-768 + X25519 (TLS 1.3)'
+                      : 'ML-KEM-768 (FIPS 203)'
+                  )
+                }</span>
+              </div>
+              <div className="qm-card qm-wide">
+                <span className="qm-label">Reason</span>
+                <span className="qm-value">
+                  {finding.recommendedAlgorithm
+                    ? `Recommended based on detected usage pattern: ${finding.algorithm} used for ${finding.service || finding.category || 'general purpose'}.`
+                    : finding.category === 'certificate' || finding.category === 'signature'
+                    ? `ML-DSA-65 selected because ${finding.algorithm} is used for digital signatures. ML-DSA (CRYSTALS-Dilithium) is NIST's primary standard for post-quantum digital signatures (FIPS 204).`
+                    : finding.category === 'tls'
+                    ? `Hybrid ML-KEM-768 + X25519 selected because ${finding.algorithm} is used in TLS key exchange. Hybrid mode provides defense-in-depth: if either algorithm is broken, the other maintains security.`
+                    : finding.category === 'secret'
+                    ? 'Secret material must be rotated and stored in a centralized secrets manager. No PQC replacement needed — the issue is secret exposure, not algorithm weakness.'
+                    : `ML-KEM-768 (CRYSTALS-Kyber) selected as NIST's primary standard for post-quantum key encapsulation (FIPS 203), providing NIST Level 3 security (approximately equivalent to AES-192).`
+                  }
+                </span>
+              </div>
+              {finding.confidence !== undefined && (
+                <div className="qm-card">
+                  <span className="qm-label">Confidence</span>
+                  <span className="qm-value">{Math.round(finding.confidence * 100)}%</span>
+                </div>
+              )}
+              {finding.evidence?.detectionLayers && (
+                <div className="qm-card">
+                  <span className="qm-label">Evidence</span>
+                  <span className="qm-value" style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8rem' }}>{finding.evidence.detectionLayers.join(', ')}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Section 4: Recommended Migration (§28) */}
           <div className="fdm-section">
-            <h3>3. Recommended Migration Strategy</h3>
+            <h3>4. Migration Strategy</h3>
             <div className="rec-box">
               <div className="rec-row">
                 <strong>Recommended Target:</strong>
-                <span className="highlight-text">{finding.recommendedAlgorithm || 'ML-KEM / ML-DSA (NIST PQC Standard)'}</span>
+                <span className="highlight-text">{finding.recommendedAlgorithm || 'ML-KEM-768 / ML-DSA-65 (NIST PQC Standard)'}</span>
               </div>
               <div className="rec-row">
                 <strong>Migration Strategy:</strong>
@@ -183,9 +263,9 @@ export function FindingDetailModal({ finding, onClose }: Props) {
             </div>
           </div>
 
-          {/* Section 4: Code Context (§28) */}
+          {/* Section 5: Code Context (§28) */}
           <div className="fdm-section">
-            <h3>4. Code Context</h3>
+            <h3>5. Code Context</h3>
             <div className="code-context-box">
               <div className="cc-header">
                 <span>{finding.file}</span>
@@ -200,10 +280,10 @@ export function FindingDetailModal({ finding, onClose }: Props) {
             </div>
           </div>
 
-          {/* Section 5: Generate Remediation (§28) */}
+          {/* Section 6: Generate Remediation (§28) */}
           <div className="fdm-section remediation-section">
             <div className="rem-header">
-              <h3>5. Code Remediation Example</h3>
+              <h3>6. Code Remediation Example</h3>
               {!remediationCode && (
                 <button className="btn btn-primary btn-sm" onClick={handleGenerateRemediation}>
                   <Sparkles size={14} /> Generate Code Example

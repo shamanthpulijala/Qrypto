@@ -9,36 +9,48 @@ import {
   LayoutDashboard, Search, Network, AlertTriangle, Zap,
   Map, Bot, FileText, Shield, BarChart3, Settings, LogOut,
   History, ScrollText, PanelLeftClose, PanelLeftOpen,
+  Key, Lock, Wifi, Library, HardDrive, Cloud, Box, Binary, GitBranch,
+  Download, BookOpen, ShieldCheck, CheckCircle2, Layers,
 } from 'lucide-react';
 import { useAppStore } from '../../store/assessmentStore';
 import { useAuthStore } from '../../store/authStore';
 import './Sidebar.css';
 
 const NAV_ITEMS = [
-  // DISCOVER
+  // ─── DISCOVER ──────────────────────────────────────────
   { id: 'dashboard',    icon: LayoutDashboard, label: 'Dashboard',             group: 'discover', status: 'ready' },
   { id: 'landing',      icon: Zap,             label: 'Scan',                  group: 'discover', status: 'ready' },
   { id: 'inventory',    icon: Search,          label: 'Inventory',             group: 'discover', status: 'ready' },
+  { id: 'secrets',      icon: Key,             label: 'Secrets & Keys',        group: 'discover', status: 'ready' },
+  { id: 'certificates', icon: Lock,            label: 'Certificates',          group: 'discover', status: 'ready' },
+  { id: 'tls',          icon: Wifi,            label: 'TLS / Protocols',       group: 'discover', status: 'ready' },
+  { id: 'libraries',    icon: Library,         label: 'Libraries / Deps',      group: 'discover', status: 'ready' },
+  { id: 'hsm',          icon: HardDrive,       label: 'HSM / PKCS#11',        group: 'discover', status: 'ready' },
+  { id: 'cloudkms',     icon: Cloud,           label: 'Cloud KMS',             group: 'discover', status: 'ready' },
+  { id: 'containers',   icon: Box,             label: 'Containers',            group: 'discover', status: 'ready' },
+  { id: 'binary',       icon: Binary,          label: 'Binary Artifacts',      group: 'discover', status: 'ready' },
+  { id: 'depgraph',     icon: GitBranch,       label: 'Dependency Graph',      group: 'discover', status: 'ready' },
 
-  // ASSESS
+  // ─── ASSESS ────────────────────────────────────────────
   { id: 'findings',     icon: AlertTriangle,   label: 'Findings',              group: 'assess',   status: 'ready' },
-  { id: 'quantumrisk',  icon: AlertTriangle,   label: 'Quantum Risk',          group: 'assess',   status: 'partial' },
+  { id: 'quantumrisk',  icon: AlertTriangle,   label: 'Quantum Risk',          group: 'assess',   status: 'ready' },
   { id: 'hndl',         icon: Shield,          label: 'Mosca / HNDL',          group: 'assess',   status: 'ready' },
   { id: 'attackmap',    icon: Network,         label: 'Attack Map',            group: 'assess',   status: 'ready' },
   { id: 'qday',         icon: Zap,             label: 'Q-Day Assumptions',     group: 'assess',   status: 'ready' },
 
-  // MIGRATE
-  { id: 'pqcrecs',      icon: Map,             label: 'PQC Recommendations',   group: 'migrate',  status: 'partial' },
-  { id: 'hybridmig',    icon: Map,             label: 'Hybrid Migration',      group: 'migrate',  status: 'partial' },
+  // ─── MIGRATE ───────────────────────────────────────────
+  { id: 'pqcrecs',      icon: ShieldCheck,     label: 'PQC Recommendations',   group: 'migrate',  status: 'ready' },
+  { id: 'hybridmig',    icon: Layers,          label: 'Hybrid Migration',      group: 'migrate',  status: 'ready' },
   { id: 'migration',    icon: Map,             label: 'Migration Roadmap',     group: 'migrate',  status: 'ready' },
   { id: 'agility',      icon: BarChart3,       label: 'Crypto Agility',        group: 'migrate',  status: 'ready' },
 
-  // REPORT
-  { id: 'reports',      icon: FileText,        label: 'Reports',               group: 'report',   status: 'partial' },
+  // ─── REPORT ────────────────────────────────────────────
+  { id: 'reports',      icon: FileText,        label: 'Reports',               group: 'report',   status: 'ready' },
+  { id: 'scanhistory',  icon: History,         label: 'Scan History',          group: 'report',   status: 'ready' },
 
-  // PLATFORM
-  { id: 'scanhistory',  icon: History,         label: 'Scan History',          group: 'platform', status: 'partial' },
-  { id: 'auditlog',     icon: ScrollText,      label: 'Audit Log',             group: 'platform', status: 'partial' },
+  // ─── SECURITY ──────────────────────────────────────────
+  { id: 'ai',           icon: Bot,             label: 'AI Security Advisor',   group: 'security', status: 'ready' },
+  { id: 'auditlog',     icon: ScrollText,      label: 'Audit Log',             group: 'security', status: 'ready' },
 ];
 
 const GROUP_LABELS: Record<string, string> = {
@@ -46,7 +58,7 @@ const GROUP_LABELS: Record<string, string> = {
   assess: 'ASSESS',
   migrate: 'MIGRATE',
   report: 'REPORT',
-  platform: 'PLATFORM',
+  security: 'SECURITY',
 };
 
 const PAGE_ROUTES: Record<string, string> = {
@@ -94,7 +106,7 @@ export function Sidebar() {
     if (route) navigate(route);
   };
 
-  const groups = ['discover', 'assess', 'migrate', 'report', 'platform'];
+  const groups = ['discover', 'assess', 'migrate', 'report', 'security'];
 
   return (
     <aside className={`sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
@@ -131,7 +143,7 @@ export function Sidebar() {
                 // Scan (landing) and Dashboard are always accessible.
                 // Partial items are navigable but visually flagged.
                 // Other items require an assessment.
-                const alwaysOn = item.id === 'dashboard' || item.id === 'landing';
+                const alwaysOn = item.id === 'dashboard' || item.id === 'landing' || item.id === 'ai' || item.id === 'scanhistory' || item.id === 'auditlog' || item.id === 'depgraph';
                 const isDisabled = !alwaysOn && !assessment && !isPartial;
 
                 return (

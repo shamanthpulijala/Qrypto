@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Settings as SettingsIcon, Key, Save, Cloud, Server, AlertTriangle, CheckCircle2, Trash2 } from 'lucide-react';
+import { setAIApiKey } from '../../api';
 import './Settings.css';
 
 const AWS_KEY_STORAGE_KEY = 'qg_aws_access_key_id';
@@ -28,11 +29,11 @@ export function Settings() {
 
   const handleSave = async () => {
     try {
-      await fetch('/api/settings/ai', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ apiKey })
-      });
+      setAIApiKey({ apiKey });
+      // Also persist to localStorage so it survives page reloads
+      if (apiKey.trim()) {
+        localStorage.setItem('qg_gemini_key', apiKey.trim());
+      }
       setApiKey('');
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);

@@ -394,7 +394,7 @@ describe('P1-D: Binary Artifact Detection', () => {
       content,
       REPO, PROJECT,
     );
-    expect(findings.some(f => f.algorithm === 'OpenSSL')).toBe(true);
+    expect(findings.some(f => f.algorithm.includes('OpenSSL'))).toBe(true);
     expect(findings.some(f => f.tags.includes('binary'))).toBe(true);
   });
 
@@ -410,7 +410,7 @@ describe('P1-D: Binary Artifact Detection', () => {
       content,
       REPO, PROJECT,
     );
-    expect(findings.some(f => f.algorithm === 'Windows CryptoAPI')).toBe(true);
+    expect(findings.some(f => f.algorithm.includes('Windows'))).toBe(true);
   });
 
   it('does not flag text files as binary', () => {

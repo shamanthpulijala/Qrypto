@@ -5,12 +5,13 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Zap, ArrowRight, Upload, FileCode2, AlertCircle, Eye, Check, LogOut } from 'lucide-react';
+import { Shield, Zap, ArrowRight, FileCode2, AlertCircle, Eye, Check, LogOut, ChevronDown, ChevronUp, FolderOpen, FileArchive, Globe } from 'lucide-react';
 import { useAppStore } from '../../store/assessmentStore';
 import { useAuthStore } from '../../store/authStore';
 import JSZip from 'jszip';
 
 import { SCANNER_REGISTRY } from '../../../shared/engine/scannerRegistry';
+import type { ScannerCapability } from '../../../shared/engine/scannerRegistry';
 import './Landing.css';
 
 // ─── Algorithm classification shown pre-scan §10 / §38.1 ──────
@@ -46,16 +47,36 @@ const CRYPTO_LABELS = [
 
 // Removed old DISCOVERY_NODES in favor of actual scanner capability registry
 
-// ─── Risk model factors §14 ──────────────────────────────────
+// ─── Risk model factors §14 / §38.3 ──────────────────────────
 // These show the model's weight distribution — the fill bar represents
 // the relative weight of each factor, not a measured value.
-const RISK_FACTORS = [
-  { name: 'Quantum Vulnerability', weight: '30%', fill: 30, color: '#F5484B' },
-  { name: 'Business Criticality', weight: '20%', fill: 20, color: '#FF8A3D' },
-  { name: 'Internet Exposure', weight: '15%', fill: 15, color: '#F5B84D' },
-  { name: 'Confidentiality Lifetime', weight: '15%', fill: 15, color: 'var(--accent-primary)' },
-  { name: 'Data Sensitivity', weight: '10%', fill: 10, color: '#4DD0E1' },
-  { name: 'Migration Difficulty', weight: '10%', fill: 10, color: 'var(--accent-classical)' },
+//
+// Colour encodes CATEGORY, not position in a rotation (§38.3):
+//   · threat  — how much this factor raises exposure → severity scale
+//   · context — data & architecture properties       → one muted tone
+// A reader can therefore tell what kind of factor they are looking at
+// without reading the label.
+const RISK_FACTOR_GROUPS = [
+  {
+    id: 'threat',
+    label: 'Threat-correlated factors',
+    note: 'Scaled on the severity ramp — higher means more exposure.',
+    factors: [
+      { name: 'Quantum Vulnerability', pct: 30, color: 'var(--severity-critical)' },
+      { name: 'Business Criticality', pct: 20, color: 'var(--severity-high)' },
+      { name: 'Internet Exposure', pct: 15, color: 'var(--severity-medium)' },
+    ],
+  },
+  {
+    id: 'context',
+    label: 'Data & architecture factors',
+    note: 'Properties of the asset itself — one tone, because they are one kind of input.',
+    factors: [
+      { name: 'Confidentiality Lifetime', pct: 15, color: 'var(--accent-classical)' },
+      { name: 'Data Sensitivity', pct: 10, color: 'var(--accent-classical)' },
+      { name: 'Migration Difficulty', pct: 10, color: 'var(--accent-classical)' },
+    ],
+  },
 ];
 
 // ─── Migration transforms §18 ────────────────────────────────
@@ -111,6 +132,72 @@ function useFadeIn() {
     return () => obs.disconnect();
   }, []);
   return ref;
+}
+
+// ─── §38.2 Scanner capability card ────────────────────────────
+// Every card carries the SAME subsections in the SAME order, so the
+// grid reads as a comparison table rather than six differently-shaped
+// blurbs. The two long fields (LIMITATIONS, METHOD) sit behind one
+// consistent disclosure, which is what keeps card heights equal —
+// previously some cards ran twice as long as others.
+//
+// Status is legible before you read the chip: PARTIAL scanners dim
+// their content, so scanning the grid tells you what is production-
+// ready without parsing text (§38.2).
+function ScannerCard({ scanner }: { scanner: ScannerCapability }) {
+  const [showConstraints, setShowConstraints] = useState(false);
+  const ready = scanner.status === 'READY';
+
+  return (
+    <article className={`scanner-card ${ready ? 'is-ready' : 'is-partial'}`}>
+      <header className="sc-head">
+        <h3 className="sc-name">{scanner.name}</h3>
+        <span className={`sc-status ${scanner.status.toLowerCase()}`}>{scanner.status}</span>
+      </header>
+
+      <p className="sc-desc">{scanner.description}</p>
+
+      <dl className="sc-spec">
+        <div className="sc-spec-row">
+          <dt className="section-label">Inputs</dt>
+          <dd className="sc-spec-val mono">{scanner.supportedInputs.join(' · ')}</dd>
+        </div>
+        <div className="sc-spec-row">
+          <dt className="section-label">Detects</dt>
+          <dd className="sc-spec-val">{scanner.detects}</dd>
+        </div>
+        <div className="sc-spec-row">
+          <dt className="section-label">Does not detect</dt>
+          <dd className="sc-spec-val">{scanner.doesNotDetect}</dd>
+        </div>
+      </dl>
+
+      <div className="sc-foot">
+        <button
+          type="button"
+          className="sc-disclose"
+          aria-expanded={showConstraints}
+          onClick={() => setShowConstraints(v => !v)}
+        >
+          {showConstraints ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          {showConstraints ? 'Hide constraints' : 'Constraints & method'}
+        </button>
+
+        {showConstraints && (
+          <dl className="sc-spec sc-spec-extra">
+            <div className="sc-spec-row">
+              <dt className="section-label">Limitations</dt>
+              <dd className="sc-spec-val">{scanner.limitations}</dd>
+            </div>
+            <div className="sc-spec-row">
+              <dt className="section-label">Method</dt>
+              <dd className="sc-spec-val mono">{scanner.method}</dd>
+            </div>
+          </dl>
+        )}
+      </div>
+    </article>
+  );
 }
 
 // ─── Main Component ───────────────────────────────────────────
@@ -273,10 +360,10 @@ export function Landing() {
                 EXPLORE Q-DAY <Zap size={16} />
               </button>
               {user && (
-                <button className="btn-hero-secondary" style={{ gap: '10px', background: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)', color: '#f1f5f9' }} onClick={logout}>
-                  <span style={{ width: 24, height: 24, borderRadius: '50%', background: user.avatarColor, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800, color: '#fff', flexShrink: 0, boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>{user.initials}</span>
-                  <span style={{ fontWeight: 600 }}>{user.name.split(' ')[0]}</span>
-                  <LogOut size={14} style={{ opacity: 0.6, marginLeft: '4px' }} />
+                <button className="btn-hero-secondary hero-user" onClick={logout}>
+                  <span className="hero-user-avatar" style={{ background: user.avatarColor }}>{user.initials}</span>
+                  <span className="hero-user-name">{user.name.split(' ')[0]}</span>
+                  <LogOut size={14} className="hero-user-out" />
                 </button>
               )}
             </div>              <div className="hero-stats">
@@ -335,40 +422,9 @@ export function Landing() {
         <p className="section-desc">
           Qrypto maps your cryptographic dependencies across multiple dimensions. Here is what is currently supported.
         </p>
-        <div className="scanners-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px', marginTop: '40px' }}>
+        <div className="scanners-grid">
           {SCANNER_REGISTRY.map(scanner => (
-            <div key={scanner.id} className="scanner-card" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', padding: '24px', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-primary)' }}>{scanner.name}</h3>
-                <span className={`scanner-status ${scanner.status.toLowerCase()}`} style={{ fontSize: '0.7rem', padding: '4px 8px', borderRadius: '4px', background: scanner.status === 'READY' ? 'rgba(76, 175, 109, 0.1)' : 'rgba(245, 184, 77, 0.1)', color: scanner.status === 'READY' ? '#4CAF6D' : '#F5B84D' }}>
-                  {scanner.status}
-                </span>
-              </div>
-              <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>{scanner.description}</p>
-              
-              <div style={{ marginTop: 'auto' }}>
-                <div style={{ marginBottom: '12px' }}>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', marginBottom: '4px' }}>Inputs</div>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{scanner.supportedInputs.join(', ')}</div>
-                </div>
-                <div style={{ marginBottom: '12px' }}>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', marginBottom: '4px' }}>Detects</div>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{scanner.detects}</div>
-                </div>
-                <div style={{ marginBottom: '12px' }}>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', marginBottom: '4px' }}>Does Not Detect</div>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{scanner.doesNotDetect}</div>
-                </div>
-                <div style={{ marginBottom: '12px' }}>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', marginBottom: '4px' }}>Limitations</div>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{scanner.limitations}</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', marginBottom: '4px' }}>Method</div>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{scanner.method}</div>
-                </div>
-              </div>
-            </div>
+            <ScannerCard key={scanner.id} scanner={scanner} />
           ))}
         </div>
       </div>
@@ -384,13 +440,21 @@ export function Landing() {
           based on quantum vulnerability, business context, and migration complexity.
         </p>
         <div className="risk-formula">
-          {RISK_FACTORS.map(f => (
-            <div key={f.name} className="risk-factor">
-              <span className="risk-factor-weight">{f.weight}</span>
-              <span className="risk-factor-name">{f.name}</span>
-              <div className="risk-factor-bar">
-                <div className="risk-factor-bar-fill" style={{ width: `${f.fill}%`, background: f.color }} />
+          {RISK_FACTOR_GROUPS.map(g => (
+            <div key={g.id} className={`risk-group risk-group-${g.id}`}>
+              <div className="risk-group-head">
+                <span className="section-label">{g.label}</span>
+                <span className="risk-group-note">{g.note}</span>
               </div>
+              {g.factors.map(f => (
+                <div key={f.name} className="risk-factor">
+                  <span className="risk-factor-weight mono">{f.pct}%</span>
+                  <span className="risk-factor-name">{f.name}</span>
+                  <div className="risk-factor-bar">
+                    <div className="risk-factor-bar-fill" style={{ width: `${f.pct}%`, background: f.color }} />
+                  </div>
+                </div>
+              ))}
             </div>
           ))}
         </div>
@@ -418,11 +482,16 @@ export function Landing() {
           ))}
         </div>
         <div className="hndl-result">
-          <div>
-            <div className="hndl-risk-label">CONFIDENTIALITY LIFETIME</div>
-            <div className="hndl-risk-value">{HNDL_LIFETIME_YEARS[selectedHndl]}+ years</div>
+          <div className="hndl-result-figure">
+            <div className="hndl-risk-label section-label">Confidentiality lifetime</div>
+            {/* §38.4 — one line: figure at --text-xl, unit as a smaller
+                suffix beside it, not a second display-sized line. */}
+            <div className="hndl-risk-value">
+              <span className="hndl-risk-num mono">{HNDL_LIFETIME_YEARS[selectedHndl]}+</span>
+              <span className="hndl-risk-unit">years</span>
+            </div>
           </div>
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+          <p className="hndl-result-text">
             {selectedHndl} typically requires {HNDL_LIFETIME_YEARS[selectedHndl]}+ years of confidentiality.
             If protected by quantum-vulnerable algorithms (RSA, ECC), data intercepted today
             may be decryptable when cryptographically relevant quantum computers arrive.
@@ -445,7 +514,7 @@ export function Landing() {
               <span className="migration-from">{m.from}</span>
               <span className="migration-arrow">→</span>
               <span className="migration-to">{m.to}</span>
-              <span className="migration-nist" style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>{m.nist}</span>
+              <span className="migration-nist mono">{m.nist}</span>
             </div>
           ))}
         </div>
@@ -487,48 +556,67 @@ export function Landing() {
               <p className="section-desc" style={{ textAlign: 'center', margin: '0 auto 0' }}>
                 Upload a ZIP archive or individual source file. Everything is processed entirely in your browser.
               </p>
-              <div className="upload-card">
+              {/* Drag-and-drop was already implemented in this component but
+                  no element consumed the handlers, so dropping a ZIP did
+                  nothing. Wiring them to the card restores the behaviour
+                  without touching handleFiles itself. */}
+              <div
+                ref={dropRef}
+                className={`upload-card ${dragging ? 'dragging' : ''}`}
+                onDragOver={onDragOver}
+                onDragLeave={onDragLeave}
+                onDrop={onDrop}
+              >
                 <div className="upload-card-header">
                   <FileCode2 size={20} className="upload-header-icon" />
                   <div>
                     <h3>Scan Your Repository</h3>
-                    <p>Upload a ZIP archive or individual source file</p>
+                    <p>Drop a ZIP archive here, or choose a source below</p>
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', margin: '24px 0' }}>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '1px' }}>Profile: COMBINED ENTERPRISE SCAN</div>
-                  
+                <div className="upload-body">
+                  <div className="upload-profile section-label">Profile: Combined enterprise scan</div>
+
                   {fileSummary ? (
-                    <div className="drop-zone-ready" style={{ border: '1px solid var(--border)', borderRadius: '8px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div className="dz-file-icon" style={{ fontSize: '1.5rem' }}>📦</div>
-                        <div className="dz-file-info" style={{ display: 'flex', flexDirection: 'column' }}>
-                          <span className="dz-file-name" style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{fileSummary.name}</span>
-                          <span className="dz-file-count" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{fileSummary.count} file{fileSummary.count !== 1 ? 's' : ''} ready to scan</span>
-                        </div>
+                    <div className="drop-zone-ready">
+                      <FileArchive size={20} className="dz-file-icon" aria-hidden />
+                      <div className="dz-file-info">
+                        <span className="dz-file-name">{fileSummary.name}</span>
+                        <span className="dz-file-count">{fileSummary.count} file{fileSummary.count !== 1 ? 's' : ''} ready to scan</span>
                       </div>
-                      <button className="dz-change-btn" style={{ background: 'rgba(255,255,255,0.05)', border: 'none', padding: '6px 12px', borderRadius: '6px', color: 'var(--text-secondary)', cursor: 'pointer' }} onClick={() => { setPendingFiles(null); setFileSummary(null); }}>
+                      <button className="dz-change-btn" onClick={() => { setPendingFiles(null); setFileSummary(null); }}>
                         Clear
                       </button>
                     </div>
                   ) : (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
-                      <button className="cta-select-btn" onClick={() => handleUploadClick('file')} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '16px', borderRadius: '8px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', color: 'var(--text-primary)' }}>
-                        <FileCode2 size={24} color="#6366f1" />
-                        <span>📄 FILE</span>
+                    /* §38.5 — one icon colour, one stroke width, one size.
+                       Four unrelated hues here was the clearest "a machine
+                       picked these" tell on the page. Colour arrives only on
+                       hover, and it is the single accent, not four. */
+                    <div className="upload-sources">
+                      <button className="upload-source" onClick={() => handleUploadClick('file')}>
+                        <FileCode2 size={20} aria-hidden />
+                        <span className="us-label">File</span>
+                        <span className="us-hint">Single source file</span>
                       </button>
-                      <button className="cta-select-btn" onClick={() => handleUploadClick('dir')} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '16px', borderRadius: '8px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', color: 'var(--text-primary)' }}>
-                        <Upload size={24} color="#4CAF6D" />
-                        <span>📁 FOLDER</span>
+                      <button className="upload-source" onClick={() => handleUploadClick('dir')}>
+                        <FolderOpen size={20} aria-hidden />
+                        <span className="us-label">Folder</span>
+                        <span className="us-hint">Whole project tree</span>
                       </button>
-                      <button className="cta-select-btn" onClick={() => handleUploadClick('zip')} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '16px', borderRadius: '8px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', color: 'var(--text-primary)' }}>
-                        <Upload size={24} color="#F5B84D" />
-                        <span>📦 ZIP</span>
+                      <button className="upload-source" onClick={() => handleUploadClick('zip')}>
+                        <FileArchive size={20} aria-hidden />
+                        <span className="us-label">ZIP</span>
+                        <span className="us-hint">Archive up to 500 MB</span>
                       </button>
-                      <button className="cta-select-btn" onClick={() => alert('Repository integration requires backend authentication. Local mode active.')} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '16px', borderRadius: '8px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', color: 'var(--text-primary)' }}>
-                        <Shield size={24} color="#F5484B" />
-                        <span>🌐 REPOSITORY</span>
+                      <button
+                        className="upload-source is-unavailable"
+                        onClick={() => setUploadError('Repository connect requires a configured backend. Local file and ZIP scanning is available now.')}
+                      >
+                        <Globe size={20} aria-hidden />
+                        <span className="us-label">Repository</span>
+                        <span className="us-hint">Requires backend</span>
                       </button>
                     </div>
                   )}
