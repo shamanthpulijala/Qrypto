@@ -5,7 +5,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Zap, ArrowRight, FileCode2, AlertCircle, Eye, Check, LogOut, ChevronDown, ChevronUp, FolderOpen, FileArchive, Globe } from 'lucide-react';
+import { Shield, Zap, ArrowRight, FileCode2, AlertCircle, Eye, Check, LogOut, ChevronDown, ChevronUp, FolderOpen, FileArchive } from 'lucide-react';
 import { useAppStore } from '../../store/assessmentStore';
 import { useAuthStore } from '../../store/authStore';
 
@@ -533,7 +533,7 @@ export function Landing() {
                 <div className="upload-card-header">
                   <FileCode2 size={20} className="upload-header-icon" />
                   <div>
-                    <h3>Scan Your Repository</h3>
+                    <h3>Scan Your Codebase</h3>
                     <p>Drop a ZIP archive here, or choose a source below</p>
                   </div>
                 </div>
@@ -573,14 +573,7 @@ export function Landing() {
                         <span className="us-label">ZIP</span>
                         <span className="us-hint">Archive up to 500 MB</span>
                       </button>
-                      <button
-                        className="upload-source is-unavailable"
-                        onClick={() => setUploadError('Repository connect requires a configured backend. Local file and ZIP scanning is available now.')}
-                      >
-                        <Globe size={20} aria-hidden />
-                        <span className="us-label">Repository</span>
-                        <span className="us-hint">Requires backend</span>
-                      </button>
+
                     </div>
                   )}
 
