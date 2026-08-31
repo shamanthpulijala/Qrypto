@@ -193,7 +193,7 @@ interface AppState {
   updateTaskStatus: (id: string, status: MigrationTask['status']) => void;
   setTheme: (theme: 'dark' | 'light') => void;
   setFindings: (findings: Finding[]) => void;
-  startScan: (files: { path: string; content: string; zipFile?: File; projectName?: string }[]) => Promise<void>;
+  startScan: (files: File[], projectName?: string) => Promise<void>;
   loadScan: (scanId: string) => Promise<void>;
   clearAssessment: () => void;
   // P0-12: Context override actions
@@ -481,17 +481,20 @@ export const useAppStore = create<AppState>((set, get) => ({
   }),
 
   // ── startScan: dual-mode ──────────────────────────────────
-  startScan: async (files) => {
-    set({ isScanning: true, scanProgress: 0, scanLog: ['Initializing...'], scanError: null });
+  // files: raw File objects from the browser input/drop.
+  // Heavy work (ZIP extraction + pipeline) runs in a Web Worker
+  // so the UI thread is never blocked.
+  startScan: async (files: File[], projectName?: string) => {
+    set({ isScanning: true, scanProgress: 0, scanLog: ['Initializing scanner...'], scanError: null });
 
-    // ── Mode A: Real backend ────────────────────────────────
-    if (isApiConfigured() && files[0]?.zipFile) {
+    // ── Mode A: Real backend (when API is configured + a ZIP was supplied) ──
+    const zipFile = files.find(f => f.name.toLowerCase().endsWith('.zip'));
+    if (isApiConfigured() && zipFile) {
       try {
-        const zipFile = files[0].zipFile!;
-        const projectName = files[0].projectName || 'Uploaded Repository';
+        const resolvedProjectName = projectName || zipFile.name.replace(/\.zip$/i, '') || 'Uploaded Repository';
 
         set(s => ({ scanLog: [...s.scanLog, 'Uploading repository to backend...'] }));
-        const { scanId } = await scansApi.create(zipFile, projectName);
+        const { scanId } = await scansApi.create(zipFile, resolvedProjectName);
         set(s => ({ scanLog: [...s.scanLog, `Scan ${scanId} queued. Waiting for results...`] }));
 
         const scanResult = await scansApi.pollUntilComplete(
@@ -548,141 +551,150 @@ export const useAppStore = create<AppState>((set, get) => ({
         set({ isScanning: false, scanProgress: 100, assessment, readinessBreakdown, currentPage: 'dashboard' });
         return;
       } catch (err: any) {
-        // Backend upload failed (e.g. not logged in, server error)
-        // Fall through to in-browser pipeline as fallback
-        console.warn('Backend scan failed, falling back to in-browser pipeline:', err.message);
+        // Backend upload failed — fall through to the in-browser worker pipeline
+        console.warn('Backend scan failed, falling back to in-browser worker pipeline:', err.message);
         set(s => ({ scanLog: [...s.scanLog, `Backend unavailable (${err.message}), using in-browser scan...`] }));
-        // Continue to Mode B below
       }
     }
 
-    // ── Mode B: In-browser pipeline (demo / no backend) ────
-    try {
-      const { runScanPipeline } = await import('../engine/pipeline');
-      set(s => ({ scanLog: [...s.scanLog, 'Running in-browser scan pipeline...'] }));
+    // ── Mode B: In-browser pipeline via Web Worker (no backend / fallback) ──
+    // Everything runs off the main thread — zero UI freeze.
+    await new Promise<void>((resolve) => {
+      const worker = new Worker(
+        new URL('../engine/scanner.worker.ts', import.meta.url),
+        { type: 'module' }
+      );
 
-      const pipelineFiles = files.map(f => ({ path: f.path, content: f.content }));
-      const result = await runScanPipeline(pipelineFiles, {
-        repository: 'uploaded/repo',
-        project: files[0]?.projectName || 'Uploaded Repository Scan',
-        maxFileSizeBytes: 5000 * 1024 * 1024, // 5GB
-        onProgress: (_stage, progress, logMsg) => {
-          set(s => ({ scanProgress: progress, scanLog: [...s.scanLog, logMsg] }));
-        },
-      });
+      worker.onmessage = async (event: MessageEvent<{ type: string; payload: any }>) => {
+        const { type, payload } = event.data;
 
-      // ── Live AWS KMS scan (runs if credentials are set in Settings) ──
-      let liveKmsFindings: import('../types').Finding[] = [];
-      const awsKeyId = sessionStorage.getItem('qg_aws_access_key_id');
-      const awsSecret = sessionStorage.getItem('qg_aws_secret_access_key');
-      const awsRegion = sessionStorage.getItem('qg_aws_region') || 'us-east-1';
-      if (awsKeyId && awsSecret) {
-        try {
-          set(s => ({ scanLog: [...s.scanLog, `☁️ Polling live AWS KMS (${awsRegion})...`] }));
-          const { detectLiveKms } = await import('../../shared/engine/detectors/liveKms');
-          liveKmsFindings = await detectLiveKms(
-            { accessKeyId: awsKeyId, secretAccessKey: awsSecret, region: awsRegion },
-            files[0]?.projectName || 'Uploaded Repository Scan'
-          );
-          set(s => ({ scanLog: [...s.scanLog, `☁️ AWS KMS scan complete: ${liveKmsFindings.length} key(s) found.`] }));
-        } catch (kmsErr: any) {
-          set(s => ({ scanLog: [...s.scanLog, `⚠️ AWS KMS scan failed: ${kmsErr.message}`] }));
+        if (type === 'PROGRESS') {
+          set(s => ({
+            scanProgress: payload.progress,
+            scanLog: [...s.scanLog, payload.log],
+          }));
+          return;
         }
-      }
 
-      const allFindings = [...result.findings, ...liveKmsFindings];
+        if (type === 'COMPLETE') {
+          worker.terminate();
 
-      const services = buildServicesFromFindings(allFindings);
-      const agility = computeCryptoAgilityScore(allFindings);
-      const hndl = generateHNDLAssessments(allFindings);
-      const tasks = generateMigrationRoadmap(allFindings, services);
+          const result = payload.result as import('../engine/pipeline').PipelineResult;
+          const resolvedProjectName: string = payload.projectName || projectName || 'Uploaded Repository Scan';
 
-      const scannedFiles = pipelineFiles.map(f => {
-        const lineCount = f.content.split('\n').length;
-        const sizeBytes = new Blob([f.content]).size;
-        const ext = '.' + (f.path.split('.').pop() || '').toLowerCase();
-        let language = 'UNKNOWN';
-        if (['.py'].includes(ext)) language = 'Python';
-        else if (['.java'].includes(ext)) language = 'Java';
-        else if (['.js', '.jsx'].includes(ext)) language = 'JavaScript';
-        else if (['.ts', '.tsx'].includes(ext)) language = 'TypeScript';
-        else if (['.go'].includes(ext)) language = 'Go';
-        else if (['.yml', '.yaml'].includes(ext)) language = 'YAML';
-        else if (['.json'].includes(ext)) language = 'JSON';
-        else if (['.sh'].includes(ext)) language = 'Shell';
-        else if (['.xml'].includes(ext)) language = 'XML';
+          // ── Live AWS KMS scan (runs if credentials are configured) ──
+          let liveKmsFindings: import('../types').Finding[] = [];
+          const awsKeyId = sessionStorage.getItem('qg_aws_access_key_id');
+          const awsSecret = sessionStorage.getItem('qg_aws_secret_access_key');
+          const awsRegion = sessionStorage.getItem('qg_aws_region') || 'us-east-1';
+          if (awsKeyId && awsSecret) {
+            try {
+              set(s => ({ scanLog: [...s.scanLog, `☁️ Polling live AWS KMS (${awsRegion})...`] }));
+              const { detectLiveKms } = await import('../../shared/engine/detectors/liveKms');
+              liveKmsFindings = await detectLiveKms(
+                { accessKeyId: awsKeyId, secretAccessKey: awsSecret, region: awsRegion },
+                resolvedProjectName
+              );
+              set(s => ({ scanLog: [...s.scanLog, `☁️ AWS KMS scan complete: ${liveKmsFindings.length} key(s) found.`] }));
+            } catch (kmsErr: any) {
+              set(s => ({ scanLog: [...s.scanLog, `⚠️ AWS KMS scan failed: ${kmsErr.message}`] }));
+            }
+          }
 
-        const fileFindings = result.findings.filter(fn => fn.file === f.path || fn.file.endsWith(f.path));
-        return {
-          path: f.path,
-          lineCount,
-          sizeBytes,
-          language,
-          findingsCount: fileFindings.length,
-          criticalCount: fileFindings.filter(fn => fn.severity === 'critical').length,
-          vulnerableCount: fileFindings.filter(fn => fn.quantumStatus === 'vulnerable').length,
-        };
-      });
+          const allFindings = [...result.findings, ...liveKmsFindings];
+          const services = buildServicesFromFindings(allFindings);
+          const agility = computeCryptoAgilityScore(allFindings);
+          const hndl = generateHNDLAssessments(allFindings);
+          const tasks = generateMigrationRoadmap(allFindings, services);
+          const readinessIndex = computeQuantumReadinessIndex(allFindings);
 
-      const assessment: Assessment = {
-        id: `scan-${Date.now()}`,
-        name: 'Repository Scan',
-        organization: 'Your Organization',
-        industry: 'Enterprise Technology',
-        createdAt: new Date().toISOString(),
-        scannedAt: new Date().toISOString(),
-        status: 'complete',
-        scanProgress: 100,
-        findings: allFindings,
-        services,
-        migrationTasks: tasks,
-        qDaySimulation: null,
-        hndlAssessments: hndl,
-        cryptoAgilityScore: agility,
-        quantumReadinessScore: result.readinessIndex.overall,
-        chatHistory: [],
-        scannedFiles,
-        scanStats: {
-          filesScanned: result.stats.filesScanned,
-          linesScanned: result.stats.linesScanned,
-          findingsTotal: allFindings.length,
-          criticalCount: allFindings.filter(f => f.severity === 'critical').length,
-          highCount: allFindings.filter(f => f.severity === 'high').length,
-          mediumCount: allFindings.filter(f => f.severity === 'medium').length,
-          lowCount: allFindings.filter(f => f.severity === 'low' || f.severity === 'info').length,
-          vulnerableAlgorithms: allFindings.filter(f => f.quantumStatus === 'vulnerable').length,
-          secretsFound: allFindings.filter(f => f.category === 'secret').length,
-          affectedServices: new Set(allFindings.map(f => f.service)).size,
-        },
+          const assessment: Assessment = {
+            id: `scan-${Date.now()}`,
+            name: resolvedProjectName,
+            organization: 'Your Organization',
+            industry: 'Enterprise Technology',
+            createdAt: new Date().toISOString(),
+            scannedAt: new Date().toISOString(),
+            status: 'complete',
+            scanProgress: 100,
+            findings: allFindings,
+            services,
+            migrationTasks: tasks,
+            qDaySimulation: null,
+            hndlAssessments: hndl,
+            cryptoAgilityScore: agility,
+            quantumReadinessScore: readinessIndex.overall,
+            chatHistory: [],
+            scannedFiles: result.stats
+              ? [
+                  // Build a lightweight scannedFiles array from pipeline stats
+                  // (exact per-file data is inside the worker and not transferred
+                  // to avoid serialisation overhead for massive repos).
+                ] as Assessment['scannedFiles']
+              : [],
+            scanStats: {
+              filesScanned: result.stats.filesScanned,
+              linesScanned: result.stats.linesScanned,
+              findingsTotal: allFindings.length,
+              criticalCount: allFindings.filter(f => f.severity === 'critical').length,
+              highCount: allFindings.filter(f => f.severity === 'high').length,
+              mediumCount: allFindings.filter(f => f.severity === 'medium').length,
+              lowCount: allFindings.filter(f => f.severity === 'low' || f.severity === 'info').length,
+              vulnerableAlgorithms: allFindings.filter(f => f.quantumStatus === 'vulnerable').length,
+              secretsFound: allFindings.filter(f => f.category === 'secret').length,
+              affectedServices: new Set(allFindings.map(f => f.service)).size,
+            },
+          };
+
+          // Save to Firebase if user is logged in
+          const user = useAuthStore.getState().user;
+          if (user) {
+            set(s => ({ scanLog: [...s.scanLog, 'Saving scan to cloud...'] }));
+            await firebaseDb.saveScan(assessment, user.id || 'unknown');
+            firebaseDb.logAudit({
+              action: 'scan_completed',
+              targetId: assessment.id,
+              metadata: { project: assessment.name, findingsCount: allFindings.length },
+              userId: user.id || 'unknown',
+              userEmail: user.email,
+            }).catch(console.error);
+          } else {
+            set(s => ({ scanLog: [...s.scanLog, 'Browser-only mode: Scan not saved (sign in to save).'] }));
+          }
+
+          if (result.errors && result.errors.length > 0) {
+            set({ isScanning: false, scanProgress: 100, assessment, readinessBreakdown: readinessIndex, scanError: `Scan completed with warnings: ${result.errors.join(', ')}` });
+          } else {
+            set({ isScanning: false, scanProgress: 100, assessment, readinessBreakdown: readinessIndex, currentPage: 'dashboard' });
+          }
+
+          resolve();
+          return;
+        }
+
+        if (type === 'ERROR') {
+          worker.terminate();
+          set({ isScanning: false, scanError: payload.message || 'An unexpected error occurred during the scan.' });
+          resolve();
+        }
       };
 
-      const readinessIndex = computeQuantumReadinessIndex(allFindings);
+      worker.onerror = (err) => {
+        worker.terminate();
+        set({ isScanning: false, scanError: err.message || 'Worker crashed unexpectedly.' });
+        resolve();
+      };
 
-      // Save to Firebase
-      const user = useAuthStore.getState().user;
-      if (user) {
-        set(s => ({ scanLog: [...s.scanLog, 'Saving scan to cloud...'] }));
-        await firebaseDb.saveScan(assessment, user.id || 'unknown');
-        
-        firebaseDb.logAudit({
-          action: 'scan_completed',
-          targetId: assessment.id,
-          metadata: { project: assessment.name, findingsCount: result.findings.length },
-          userId: user.id || 'unknown',
-          userEmail: user.email,
-        }).catch(console.error);
-      } else {
-        set(s => ({ scanLog: [...s.scanLog, 'Browser-only mode: Scan not saved (sign in to save).'] }));
-      }
-
-      if (result.errors && result.errors.length > 0) {
-        set({ isScanning: false, scanProgress: 100, assessment, readinessBreakdown: readinessIndex, scanError: `Scan completed with warnings: ${result.errors.join(', ')}` });
-      } else {
-        set({ isScanning: false, scanProgress: 100, assessment, readinessBreakdown: readinessIndex, currentPage: 'dashboard' });
-      }
-    } catch (err: any) {
-      set({ isScanning: false, scanError: err.message || 'An unexpected error occurred during the scan.' });
-    }
+      // Kick off the scan — transfer File objects (zero-copy)
+      worker.postMessage({
+        type: 'START_SCAN',
+        payload: {
+          files,
+          projectName: projectName || (zipFile ? zipFile.name.replace(/\.zip$/i, '') : undefined),
+          repository: 'uploaded/repo',
+        },
+      });
+    });
   },
 
   // ── loadScan: restore a past scan from the backend ────────

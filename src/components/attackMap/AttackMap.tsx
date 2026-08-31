@@ -59,7 +59,7 @@ const nodeTypes = { service: ServiceNodeComponent };
 
 // ─── Main Component ───────────────────────────────────────────
 
-export function AttackMap() {
+export function AttackMap({ embedded = false }: { embedded?: boolean }) {
   const { assessment, qdayActive, runQDaySimulation, resetQDaySimulation } = useAppStore();
   const [nodes, setNodes] = useState<Node[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
@@ -132,8 +132,8 @@ export function AttackMap() {
         if (!filteredIds.has(dep)) return;
 
         const isQDayAffected = qdayActive &&
-                               qDaySimulation?.affectedServices.some(s => s.id === svc.id) &&
-                               qDaySimulation?.affectedServices.some(s => s.id === dep);
+          qDaySimulation?.affectedServices.some(s => s.id === svc.id) &&
+          qDaySimulation?.affectedServices.some(s => s.id === dep);
 
         initialEdges.push({
           id: `e-${dep}-${svc.id}`,
@@ -170,50 +170,51 @@ export function AttackMap() {
 
   return (
     <div className="attack-map-page animate-fade-in">
-      <div className="am-header">
-        <div className="amh-left">
-          <Network size={24} className="amh-icon" />
-          <div>
-            <h2>Attack Path &amp; Dependency Graph</h2>
-            <p>Visualize how quantum vulnerabilities propagate through service dependencies.</p>
-          </div>
-        </div>
-
-        <div className="amh-controls">
-          {/* Search */}
-          <div className="search-box">
-            <Search size={14} className="search-icon" />
-            <input
-              type="text"
-              placeholder="Search service or crypto..."
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              className="input search-input"
-            />
+      {!embedded && (
+        <div className="am-header">
+          <div className="amh-left">
+            <div className="amh-icon-wrap">
+              <Network size={20} className="amh-icon" />
+            </div>
+            <div>
+              <h2>Attack Path &amp; Dependency Graph</h2>
+              <p>Visualize how quantum vulnerabilities propagate through service dependencies.</p>
+            </div>
           </div>
 
-          {/* Risk filter */}
-          <select
-            value={riskFilter}
-            onChange={e => setRiskFilter(e.target.value as any)}
-            className="input filter-select"
-          >
-            <option value="all">All Risks</option>
-            <option value="high">High Risk (60+)</option>
-            <option value="vulnerable">Quantum Vulnerable</option>
-            <option value="qday">Q-Day Impacted</option>
-          </select>
-
-          {/* Q-Day Simulation Toggle */}
-          <button
-            className={`btn ${qdayActive ? 'btn-danger' : 'btn-secondary'} qday-toggle-btn`}
-            onClick={() => qdayActive ? resetQDaySimulation() : runQDaySimulation()}
-          >
-            <Zap size={14} />
-            {qdayActive ? 'Reset Q-Day' : 'Q-Day Simulation'}
-          </button>
+          <div className="amh-controls">
+            <div className="search-box">
+              <Search size={13} className="search-icon" />
+              <input
+                type="text"
+                placeholder="Search service or crypto..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="search-input"
+              />
+            </div>
+            <div className="amh-divider" />
+            <select
+              value={riskFilter}
+              onChange={e => setRiskFilter(e.target.value as any)}
+              className="input filter-select"
+            >
+              <option value="all">All Risks</option>
+              <option value="high">High Risk (60+)</option>
+              <option value="vulnerable">Quantum Vulnerable</option>
+              <option value="qday">Q-Day Impacted</option>
+            </select>
+            <div className="amh-divider" />
+            <button
+              className={`btn btn-qday ${qdayActive ? 'active' : ''}`}
+              onClick={() => qdayActive ? resetQDaySimulation() : runQDaySimulation()}
+            >
+              <Zap size={13} />
+              {qdayActive ? 'Reset Q-Day' : 'Q-Day Simulation'}
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="map-layout">
         <div className="card map-container">

@@ -23,6 +23,13 @@ export async function initAstParser(): Promise<boolean> {
   if (parserInitialized) return true;
   if (initFailed) return false;
 
+  // Tree-sitter WASM loading is highly fragile inside a bundled Web Worker.
+  // We explicitly disable it when running off the main thread.
+  if (typeof (globalThis as any).importScripts === 'function') {
+    initFailed = true;
+    return false;
+  }
+
   try {
     // Dynamic import to handle both Node.js and browser environments
     const mod = await import('web-tree-sitter');

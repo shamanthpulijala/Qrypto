@@ -52,13 +52,22 @@
   box-shadow: var(--glass-shadow);
 }
 
+/* ── Orbital gauge ───────────────────────────────────────────── */
+.orbital-gauge-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+}
+
 .orbital-gauge-container {
   position: relative;
-  width: 220px;
-  height: 220px;
+  width: 200px;
+  height: 200px;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .orbital-svg {
@@ -81,11 +90,28 @@
 
 .orbital-center {
   position: absolute;
+  inset: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
+  pointer-events: none;
+  /* Constrain to the innermost ring's clear area (~46px radius = 92px diameter
+     at SVG 220 units over 200px container = 0.91px/unit → 84px clear diameter) */
+  max-width: 76px;
+  margin: auto;
+}
+
+/* Status badge — rendered BELOW the gauge, never inside it */
+.orbital-status-badge {
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px var(--space-3);
+  border-radius: var(--radius-xs);
+  white-space: nowrap;
 }
 
 .orbital-score {

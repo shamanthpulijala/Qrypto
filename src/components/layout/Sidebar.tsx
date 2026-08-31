@@ -21,15 +21,6 @@ const NAV_ITEMS = [
   { id: 'dashboard',    icon: LayoutDashboard, label: 'Dashboard',             group: 'discover', status: 'ready' },
   { id: 'landing',      icon: Zap,             label: 'Scan',                  group: 'discover', status: 'ready' },
   { id: 'inventory',    icon: Search,          label: 'Inventory',             group: 'discover', status: 'ready' },
-  { id: 'secrets',      icon: Key,             label: 'Secrets & Keys',        group: 'discover', status: 'ready' },
-  { id: 'certificates', icon: Lock,            label: 'Certificates',          group: 'discover', status: 'ready' },
-  { id: 'tls',          icon: Wifi,            label: 'TLS / Protocols',       group: 'discover', status: 'ready' },
-  { id: 'libraries',    icon: Library,         label: 'Libraries / Deps',      group: 'discover', status: 'ready' },
-  { id: 'hsm',          icon: HardDrive,       label: 'HSM / PKCS#11',        group: 'discover', status: 'ready' },
-  { id: 'cloudkms',     icon: Cloud,           label: 'Cloud KMS',             group: 'discover', status: 'ready' },
-  { id: 'containers',   icon: Box,             label: 'Containers',            group: 'discover', status: 'ready' },
-  { id: 'binary',       icon: Binary,          label: 'Binary Artifacts',      group: 'discover', status: 'ready' },
-  { id: 'depgraph',     icon: GitBranch,       label: 'Dependency Graph',      group: 'discover', status: 'ready' },
 
   // ─── ASSESS ────────────────────────────────────────────
   { id: 'findings',     icon: AlertTriangle,   label: 'Findings',              group: 'assess',   status: 'ready' },

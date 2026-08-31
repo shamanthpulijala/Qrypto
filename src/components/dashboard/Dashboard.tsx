@@ -40,59 +40,74 @@ function QuantumCore({ score, discoveryScore, agilityScore, migrationScore, cert
   // discoveryScore: % of files with findings (completeness of inventory)
   // agilityScore: crypto-agility score from engine (0-100)
   // migrationScore: % of findings remediated or PQC-safe
-  // certScore: % of TLS/cert findings that are adequate or better
+  // 4 rings so the innermost (r=46) gives ~90px clear diameter — enough for score text
   const rings = [
-    { name: 'Discovery', score: discoveryScore, radius: 95, color: '#4DD0E1' },
-    { name: 'Risk', score: Math.max(10, 100 - (score * 0.8)), radius: 82, color: '#F5484B' },
-    { name: 'Crypto Agility', score: agilityScore, radius: 69, color: '#14b8a6' },
-    { name: 'Migration', score: migrationScore, radius: 56, color: 'var(--accent-classical)' },
-    { name: 'Certificates', score: certScore, radius: 43, color: '#3b82f6' },
+    { name: 'Discovery',     score: discoveryScore,                       radius: 88, color: '#4DD0E1' },
+    { name: 'Risk',          score: Math.max(10, 100 - (score * 0.8)),    radius: 74, color: '#F5484B' },
+    { name: 'Crypto Agility',score: agilityScore,                         radius: 60, color: '#14b8a6' },
+    { name: 'Migration',     score: migrationScore,                       radius: 46, color: '#5B7FA6' },
   ];
 
-  const statusText = score >= 80 ? 'PROTECTED' : score >= 50 ? 'MODERATE EXPOSURE' : 'CRITICAL RISK';
+  const statusText = score >= 80 ? 'PROTECTED' : score >= 50 ? 'MODERATE' : 'CRITICAL RISK';
   const statusColor = score >= 80 ? '#4CAF6D' : score >= 50 ? '#F5B84D' : '#F5484B';
 
   return (
     <div className="quantum-core-card">
-      <div style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.12em', color: 'var(--accent-violet)', marginBottom: '0.75rem' }}>
-        QUANTUM READINESS CORE
-      </div>
+      <div className="qc-label">Quantum Readiness Core</div>
 
-      <div className="orbital-gauge-container">
-        <svg viewBox="0 0 220 220" className="orbital-svg">
-          {rings.map((ring) => {
-            const circumference = 2 * Math.PI * ring.radius;
-            const strokeDashoffset = circumference - (ring.score / 100) * circumference;
-            return (
-              <circle
-                key={ring.name}
-                cx="110"
-                cy="110"
-                r={ring.radius}
-                className="orbital-ring"
-                stroke={ring.color}
-                strokeWidth="5"
-                strokeDasharray={circumference}
-                strokeDashoffset={strokeDashoffset}
-                opacity={hoveredRing && hoveredRing !== ring.name ? 0.3 : 0.85}
-                onMouseEnter={() => setHoveredRing(`${ring.name}: ${Math.round(ring.score)}/100`)}
-                onMouseLeave={() => setHoveredRing(null)}
-              />
-            );
-          })}
-        </svg>
+      {/* Gauge — status badge lives OUTSIDE the SVG so it never overlaps rings */}
+      <div className="orbital-gauge-wrapper">
+        <div className="orbital-gauge-container">
+          <svg viewBox="0 0 220 220" className="orbital-svg">
+            {rings.map((ring) => {
+              const circumference = 2 * Math.PI * ring.radius;
+              const strokeDashoffset = circumference - (ring.score / 100) * circumference;
+              return (
+                <circle
+                  key={ring.name}
+                  cx="110"
+                  cy="110"
+                  r={ring.radius}
+                  className="orbital-ring"
+                  stroke={ring.color}
+                  strokeWidth="4"
+                  strokeDasharray={circumference}
+                  strokeDashoffset={strokeDashoffset}
+                  opacity={hoveredRing && hoveredRing !== ring.name ? 0.15 : 0.9}
+                  onMouseEnter={() => setHoveredRing(`${ring.name}: ${Math.round(ring.score)}/100`)}
+                  onMouseLeave={() => setHoveredRing(null)}
+                />
+              );
+            })}
+          </svg>
 
-        <div className="orbital-center">
-          <span className="orbital-score">{displayedScore}</span>
-          <span className="orbital-max">/100</span>
-          <span className="orbital-status" style={{ color: statusColor, background: `${statusColor}18` }}>
-            {statusText}
-          </span>
+          {/* Only score + unit in center — no status badge here */}
+          <div className="orbital-center">
+            <span className="orbital-score">{displayedScore}</span>
+            <span className="orbital-max">/100</span>
+          </div>
+        </div>
+
+        {/* Status badge below the gauge, fully outside the SVG */}
+        <div
+          className="orbital-status-badge"
+          style={{ color: statusColor, background: `${statusColor}14`, border: `1px solid ${statusColor}40` }}
+        >
+          {statusText}
         </div>
       </div>
 
       <div className="orbital-tooltip">
-        {hoveredRing ? hoveredRing : 'Hover orbital rings to inspect sub-metrics'}
+        {hoveredRing ?? 'Hover rings to inspect sub-metrics'}
+      </div>
+
+      <div className="orbital-legend">
+        {rings.map(r => (
+          <div key={r.name} className="orbital-legend-item">
+            <span className="ol-dot" style={{ background: r.color }} />
+            {r.name}
+          </div>
+        ))}
       </div>
     </div>
   );

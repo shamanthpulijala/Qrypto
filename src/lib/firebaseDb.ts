@@ -1,4 +1,4 @@
-import { collection, addDoc, getDocs, query, orderBy, limit, serverTimestamp, doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, orderBy, limit, serverTimestamp, doc, setDoc, getDoc, updateDoc, writeBatch } from 'firebase/firestore';
 import { db } from './firebase';
 import type { Assessment } from '../types';
 
@@ -35,10 +35,25 @@ export const firebaseDb = {
 
     const chunksCol = collection(docRef, 'payloads');
     
+    let batch = writeBatch(db);
+    let batchCount = 0;
+
     for (let i = 0; i < cleanPayloadStr.length; i += CHUNK_SIZE) {
       const chunkStr = cleanPayloadStr.slice(i, i + CHUNK_SIZE);
       const chunkRef = doc(chunksCol, `chunk_${i}`);
-      await setDoc(chunkRef, { index: i, data: chunkStr });
+      batch.set(chunkRef, { index: i, data: chunkStr });
+      batchCount++;
+      
+      // Firestore batch limit is 500; we commit at 400 to be safe
+      if (batchCount >= 400) {
+        await batch.commit();
+        batch = writeBatch(db);
+        batchCount = 0;
+      }
+    }
+    
+    if (batchCount > 0) {
+      await batch.commit();
     }
   },
 
@@ -117,11 +132,25 @@ export const firebaseDb = {
         const CHUNK_SIZE = 900 * 1024;
         const chunksCol = collection(docRef, 'payloads');
         
+        let batch = writeBatch(db);
+        let batchCount = 0;
+
         // Rewrite chunks
         for (let i = 0; i < cleanPayloadStr.length; i += CHUNK_SIZE) {
           const chunkStr = cleanPayloadStr.slice(i, i + CHUNK_SIZE);
           const chunkRef = doc(chunksCol, `chunk_${i}`);
-          await setDoc(chunkRef, { index: i, data: chunkStr });
+          batch.set(chunkRef, { index: i, data: chunkStr });
+          batchCount++;
+          
+          if (batchCount >= 400) {
+            await batch.commit();
+            batch = writeBatch(db);
+            batchCount = 0;
+          }
+        }
+        
+        if (batchCount > 0) {
+          await batch.commit();
         }
       }
     }

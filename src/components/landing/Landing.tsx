@@ -8,7 +8,6 @@ import { useNavigate } from 'react-router-dom';
 import { Shield, Zap, ArrowRight, FileCode2, AlertCircle, Eye, Check, LogOut, ChevronDown, ChevronUp, FolderOpen, FileArchive, Globe } from 'lucide-react';
 import { useAppStore } from '../../store/assessmentStore';
 import { useAuthStore } from '../../store/authStore';
-import JSZip from 'jszip';
 
 import { SCANNER_REGISTRY } from '../../../shared/engine/scannerRegistry';
 import type { ScannerCapability } from '../../../shared/engine/scannerRegistry';
@@ -99,26 +98,11 @@ const HNDL_LIFETIME_YEARS: Record<string, number> = {
   'Source Code': 10, 'Customer Data': 10, 'Intellectual Property': 20,
 };
 
-const SUPPORTED_EXT = ['.zip', '.py', '.java', '.js', '.ts', '.jsx', '.tsx', '.go', '.yml', '.yaml', '.json', '.xml', '.sh', '.conf', '.env', '.properties', '.gradle', '.toml', '.tf', '.pem', '.key', '.crt', '.p12', '.pfx', '.jks', '.dll', '.so', '.dylib', '.exe', '.bin', '.dockerfile'];
-const MAX_UPLOAD_SIZE = 500 * 1024 * 1024;
-const MAX_FILES = 2000;
 
-function formatFileSize(bytes: number): string {
-  if (!Number.isFinite(bytes) || bytes <= 0) return '0 MB';
-  const mb = bytes / (1024 * 1024);
-  return mb >= 1 ? `${mb.toFixed(1)} MB` : `${(bytes / 1024).toFixed(1)} KB`;
-}
-
-async function readFileText(file: File): Promise<string> {
-  const buffer = await file.arrayBuffer();
-  const bytes = new Uint8Array(buffer);
-  const decoder = new TextDecoder('utf-8', { fatal: false });
-  return decoder.decode(bytes).replace(/\u0000/g, '');
-}
-
-interface FileEntry { path: string; content: string; }
+const MAX_UPLOAD_SIZE = 500 * 1024 * 1024; // 500 MB per file
 
 // ─── Intersection Observer hook ───────────────────────────────
+
 function useFadeIn() {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -212,7 +196,7 @@ export function Landing() {
   const [dragging, setDragging] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [fileSummary, setFileSummary] = useState<{ name: string; count: number } | null>(null);
-  const [pendingFiles, setPendingFiles] = useState<FileEntry[] | null>(null);
+  const [pendingFiles, setPendingFiles] = useState<File[] | null>(null);
   const [selectedHndl, setSelectedHndl] = useState('Medical Records');
 
   // Fade-in refs
@@ -223,79 +207,58 @@ export function Landing() {
   const uploadRef = useFadeIn();
   const accuracyRef = useFadeIn();
 
-  // ── File processing ──
-  interface FileEntry {
-    path: string;
-    content: string;
-    zipFile?: File;
-    projectName?: string;
-  }
+  // ── File processing ────────────────────────────────────────
+  // We deliberately do NOT read file contents on the main thread.
+  // All extraction and scanning runs in scanner.worker.ts.
+  // Here we only validate, count, and summarise.
 
-  const processZip = useCallback(async (file: File): Promise<FileEntry[]> => {
-    if (file.size > MAX_UPLOAD_SIZE) throw new Error(`ZIP file too large (max 500 MB). Got ${formatFileSize(file.size)}.`);
-    const zip = await JSZip.loadAsync(file);
-    const entries: FileEntry[] = [];
-    const jobs: Promise<void>[] = [];
-    zip.forEach((relativePath, zipEntry) => {
-      if (zipEntry.dir) return;
-      if (relativePath.includes('..')) return;
-      const lower = relativePath.toLowerCase();
-      const isContainerConfig = lower.includes('dockerfile') || lower.includes('compose');
-      const isSupported = SUPPORTED_EXT.some(ext => lower.endsWith(ext)) || isContainerConfig || !lower.includes('.') || lower.endsWith('.zip');
-      if (!isSupported) return;
-      if (entries.length >= MAX_FILES) return;
-      jobs.push(zipEntry.async('string').then(content => { entries.push({ path: relativePath, content }); }).catch(() => { }));
-    });
-    await Promise.all(jobs);
-    if (entries.length === 0) throw new Error('No uploadable files were found in the ZIP.');
-    if (entries.length > 0) {
-      entries[0].zipFile = file;
-      entries[0].projectName = file.name.replace(/\.zip$/i, '');
-    }
-    return entries;
-  }, []);
+  const SUPPORTED_EXTS_SET = new Set([
+    '.zip', '.py', '.java', '.js', '.ts', '.jsx', '.tsx', '.go', '.rs',
+    '.c', '.cpp', '.h', '.hpp', '.cs', '.rb', '.php', '.swift', '.kt',
+    '.scala', '.clj', '.yml', '.yaml', '.json', '.xml', '.sh', '.conf',
+    '.cfg', '.ini', '.env', '.properties', '.gradle', '.toml', '.tf',
+    '.pem', '.key', '.crt', '.p12', '.pfx', '.jks', '.dll', '.so',
+    '.dylib', '.exe', '.bin', '.dockerfile',
+  ]);
 
   const handleFiles = useCallback(async (fileList: FileList | null) => {
     if (!fileList || fileList.length === 0) return;
     setUploadError(null); setPendingFiles(null); setFileSummary(null);
 
     try {
-      const files = Array.from(fileList);
-      const allEntries: FileEntry[] = [];
-      let summaryName = files.length === 1 ? files[0].name : `${files.length} selected files`;
+      const MAX_FILES = 2000;
+      const accepted: File[] = [];
 
-      for (const file of files) {
-        if (file.size > MAX_UPLOAD_SIZE) {
-          throw new Error(`${file.name} exceeds the 500 MB upload limit.`);
-        }
-
-        let entries: FileEntry[];
-        if (file.name.toLowerCase().endsWith('.zip')) {
-          entries = await processZip(file);
-        } else {
-          const fileName = file.name.toLowerCase();
-          const ext = '.' + fileName.split('.').pop()?.toLowerCase();
-          const isApplicable = SUPPORTED_EXT.includes(ext) || fileName.includes('dockerfile') || fileName.includes('compose') || !ext || !fileName.includes('.');
-          if (!isApplicable) {
-            continue;
-          }
-          entries = [{ path: file.name, content: await readFileText(file) }];
-        }
-        allEntries.push(...entries);
+      for (let i = 0; i < fileList.length; i++) {
+        const file = fileList[i];
+        if (!file) continue;
+        
+        const path = file.webkitRelativePath || file.name;
+        if (path.includes('node_modules/') || path.includes('.git/') || path.includes('.next/')) continue;
+        
+        accepted.push(file);
+        if (accepted.length >= MAX_FILES) break;
       }
 
-      if (allEntries.length === 0) {
-        throw new Error('No uploadable files were found in the selected files.');
+      if (accepted.length === 0) {
+        throw new Error('No uploadable files were found in the selected folder/archive (or they were excluded).');
       }
 
-      setFileSummary({ name: summaryName, count: allEntries.length });
-      setPendingFiles(allEntries);
+      const summaryName =
+        fileList.length === 1
+          ? fileList[0].name
+          : `${fileList.length} files processed (capped to ${MAX_FILES})`;
+
+      setFileSummary({ name: summaryName, count: accepted.length });
+      setPendingFiles(accepted);
     } catch (err: any) {
       setUploadError(err.message || 'Failed to read file.');
     }
-  }, [processZip]);
+  }, []);
 
-  const handleScan = useCallback(() => { if (pendingFiles) startScan(pendingFiles); }, [pendingFiles, startScan]);
+  const handleScan = useCallback(() => {
+    if (pendingFiles) startScan(pendingFiles);
+  }, [pendingFiles, startScan]);
 
   const handleUploadClick = useCallback((type: 'file' | 'dir' | 'zip') => {
     if (!user) {
