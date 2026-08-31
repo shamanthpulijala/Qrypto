@@ -94,7 +94,7 @@ const store: InMemoryStore = {
   tasks: new Map(),
   simulations: new Map(),
   scans: new Map(),
-  aiApiKey: (import.meta as any).env?.VITE_OPENROUTER_API_KEY || null,
+  aiApiKey: localStorage.getItem('qg_gemini_key') || (import.meta as any).env?.VITE_OPENROUTER_API_KEY || null,
 };
 
 // ─── API Response Wrapper ────────────────────────────────────
@@ -436,29 +436,33 @@ export async function askAI(
   body: {
     question: string;
     chatHistory: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }>;
+    assessment?: any; // Full assessment from Zustand store (preferred)
   }
 ): Promise<ApiResponse<{ answer: string; citedFindings: string[] }>> {
-  const project = store.projects.get(projectId);
-  if (!project) return notFound('Project not found.');
-  
-  // Reconstruct assessment object for consultant
-  const findings = store.findings.get(projectId) || [];
-  const assessment: any = {
-    id: project.id,
-    name: project.name,
-    organization: 'Example Corp',
-    industry: 'Technology',
-    findings,
-    services: store.services.get(projectId) || [],
-    migrationTasks: store.tasks.get(projectId) || [],
-    quantumReadinessScore: computeQuantumReadinessIndex(findings).overall,
-    scanStats: {
-      criticalCount: findings.filter((f) => f.severity === 'critical').length,
-      highCount: findings.filter((f) => f.severity === 'high').length,
-      vulnerableAlgorithms: findings.filter((f) => f.quantumStatus === 'vulnerable').length,
-      secretsFound: findings.filter((f) => f.category === 'secret').length,
-    }
-  };
+  // Use the assessment passed directly from the Zustand store when available.
+  // Fall back to reconstructing from the API store for backward compatibility.
+  let assessment = body.assessment;
+
+  if (!assessment) {
+    const project = store.projects.get(projectId);
+    const findings = store.findings.get(projectId) || [];
+    assessment = {
+      id: projectId,
+      name: project?.name || 'Scanned Repository',
+      organization: project?.owner || 'Your Organization',
+      industry: 'Technology',
+      findings,
+      services: store.services.get(projectId) || [],
+      migrationTasks: store.tasks.get(projectId) || [],
+      quantumReadinessScore: computeQuantumReadinessIndex(findings).overall,
+      scanStats: {
+        criticalCount: findings.filter((f) => f.severity === 'critical').length,
+        highCount: findings.filter((f) => f.severity === 'high').length,
+        vulnerableAlgorithms: findings.filter((f) => f.quantumStatus === 'vulnerable').length,
+        secretsFound: findings.filter((f) => f.category === 'secret').length,
+      }
+    };
+  }
 
   try {
     const result = await askConsultant(

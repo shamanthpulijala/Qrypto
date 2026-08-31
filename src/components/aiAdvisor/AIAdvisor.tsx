@@ -49,7 +49,8 @@ export function AIAdvisor() {
     try {
       const response = await askAI(assessment.id, {
         question: query,
-        chatHistory: messages.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] }))
+        chatHistory: messages.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] })),
+        assessment,
       });
 
       const resData = response.data;
